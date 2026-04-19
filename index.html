@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Flujo — El gestor de finanzas personal premium para controlar tus gastos e ingresos con insights de IA."/>
+  <meta name="keywords" content="finanzas, gestor, dinero, ahorro, IA, presupuesto"/>
+  <meta name="author" content="Antigravity AI"/>
+  <title>Flujo — Gestión Financiera Inteligente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">flujo.</div>
+      <div class="logo-sub">Finance Manager</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-label">Principal</div>
+
+      <div class="nav-item active" onclick="setPage(this,'dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'transacciones')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Transacciones
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'presupuestos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Presupuestos
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'cuentas')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Cuentas
+      </div>
+
+      <div class="nav-section-label">Análisis</div>
+
+      <div class="nav-item" onclick="setPage(this,'reportes')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Reportes
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'objetivos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Objetivos
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">JP</div>
+        <div>
+          <div class="user-name">Juan Pérez</div>
+          <div class="user-plan">Plan Free</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <h1 class="sr-only">Flujo — Aplicación de Gestión de Finanzas Personales</h1>
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-date" id="pageDate"></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="openModal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva Transacción
+        </button>
+        <button class="btn btn-primary" onclick="openIaModal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          IA Insights
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD VIEW ===== -->
+    <div id="dashboardView">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card green fade-in">
+        <div class="stat-label">Saldo Total</div>
+        <div class="stat-value green" id="statBalance">$0</div>
+        <div class="stat-change"><span class="up" id="balanceChange">—</span></div>
+      </div>
+      <div class="stat-card green fade-in">
+        <div class="stat-label">Ingresos del Mes</div>
+        <div class="stat-value green" id="statIncome">$0</div>
+        <div class="stat-change"><span class="up" id="incomeChange">este mes</span></div>
+      </div>
+      <div class="stat-card red fade-in">
+        <div class="stat-label">Gastos del Mes</div>
+        <div class="stat-value red" id="statExpenses">$0</div>
+        <div class="stat-change"><span class="down" id="expensesChange">este mes</span></div>
+      </div>
+      <div class="stat-card blue fade-in">
+        <div class="stat-label">Ahorro Neto</div>
+        <div class="stat-value blue" id="statSavings">$0</div>
+        <div class="stat-change"><span id="savingsChange" class="up">—</span></div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+
+      <!-- Left: Chart + Transactions -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <!-- Chart Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Flujo de Caja</span>
+            <div class="chart-tabs">
+              <button class="chart-tab active" onclick="setChartPeriod(this,'semana')">7D</button>
+              <button class="chart-tab" onclick="setChartPeriod(this,'mes')">30D</button>
+              <button class="chart-tab" onclick="setChartPeriod(this,'año')">12M</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Transactions Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Últimas Transacciones</span>
+            <span class="panel-badge" id="txCount">0 registros</span>
+          </div>
+          <div class="tx-list" id="txList">
+            <div style="padding:32px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+              Sin transacciones aún.<br/>Agregá una usando el botón de arriba.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-col">
+
+        <!-- Quick Add -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Agregar Rápido</span>
+          </div>
+          <div class="quick-add">
+            <div class="type-toggle">
+              <button class="type-btn active-expense" id="typeExpBtn" onclick="setType('expense')">— Gasto</button>
+              <button class="type-btn" id="typeIncBtn" onclick="setType('income')">+ Ingreso</button>
+            </div>
+            <div class="form-full">
+              <label class="field-label">Descripción</label>
+              <input class="field-input" id="qDesc" type="text" placeholder="Ej: Almuerzo, Sueldo…"/>
+            </div>
+            <div class="form-row">
+              <div>
+                <label class="field-label">Monto ($)</label>
+                <input class="field-input" id="qAmount" type="number" min="0" placeholder="0.00"/>
+              </div>
+              <div>
+                <label class="field-label">Categoría</label>
+                <select class="field-select" id="qCat">
+                  <option value="Alimentación">🍔 Alimentación</option>
+                  <option value="Transporte">🚗 Transporte</option>
+                  <option value="Entretenimiento">🎬 Entretenimiento</option>
+                  <option value="Salud">💊 Salud</option>
+                  <option value="Hogar">🏠 Hogar</option>
+                  <option value="Ropa">👕 Ropa</option>
+                  <option value="Sueldo">💼 Sueldo</option>
+                  <option value="Freelance">💻 Freelance</option>
+                  <option value="Inversión">📈 Inversión</option>
+                  <option value="Otros">📦 Otros</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="quickAdd()">
+              Registrar Transacción
+            </button>
+          </div>
+        </div>
+
+        <!-- Budgets Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Presupuestos</span>
+            <span class="panel-badge">Este mes</span>
+          </div>
+          <div class="budget-list" id="budgetList"></div>
+        </div>
+
+      </div>
+    </div><!-- /content-grid -->
+    </div><!-- /dashboardView -->
+
+    <!-- ===== TRANSACTIONS VIEW ===== -->
+    <div id="txView" style="display:none;">
+
+      <!-- Summary Strip -->
+      <div class="txsum-strip">
+        <div class="txsum-item">
+          <span class="txsum-label">Resultados</span>
+          <span class="txsum-val" id="txSumTotal">0 transacciones</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Ingresos</span>
+          <span class="txsum-val green" id="txSumIncome">$0</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Gastos</span>
+          <span class="txsum-val red" id="txSumExpense">$0</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Neto</span>
+          <span class="txsum-val green" id="txSumNet">$0</span>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn btn-primary" onclick="openModal()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-search-wrap">
+          <svg class="filter-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="field-input filter-search" id="txSearch" type="text" placeholder="Buscar transacciones…" oninput="applyTxFilter()"/>
+        </div>
+
+        <select class="field-select" id="txFilterType" onchange="applyTxFilter()" style="width:auto;min-width:130px;">
+          <option value="all">Todos los tipos</option>
+          <option value="income">Ingresos</option>
+          <option value="expense">Gastos</option>
+        </select>
+
+        <select class="field-select" id="txFilterCat" onchange="applyTxFilter()" style="width:auto;min-width:160px;">
+          <option value="all">Todas las categorías</option>
+          <option value="Alimentación">🍔 Alimentación</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Entretenimiento">🎬 Entretenimiento</option>
+          <option value="Salud">💊 Salud</option>
+          <option value="Hogar">🏠 Hogar</option>
+          <option value="Ropa">👕 Ropa</option>
+          <option value="Sueldo">💼 Sueldo</option>
+          <option value="Freelance">💻 Freelance</option>
+          <option value="Inversión">📈 Inversión</option>
+          <option value="Otros">📦 Otros</option>
+        </select>
+
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="field-input" id="txFilterFrom" type="date" onchange="applyTxFilter()" style="width:auto;" title="Desde"/>
+          <span style="color:var(--muted);font-size:12px;">—</span>
+          <input class="field-input" id="txFilterTo" type="date" onchange="applyTxFilter()" style="width:auto;" title="Hasta"/>
+        </div>
+
+        <button class="btn btn-ghost" onclick="clearTxFilters()" style="font-size:12px;padding:7px 12px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Limpiar
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="panel" style="overflow:visible;">
+        <div style="overflow-x:auto;">
+          <table class="tx-table">
+            <thead>
+              <tr>
+                <th class="th-sort" data-field="desc" onclick="sortTx('desc')">Descripción <span class="sort-arrow">↕</span></th>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th class="th-sort" data-field="date" onclick="sortTx('date')">Fecha <span class="sort-arrow">↓</span></th>
+                <th class="th-sort" data-field="amount" onclick="sortTx('amount')" style="text-align:right;">Monto <span class="sort-arrow">↕</span></th>
+                <th style="text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="txTableBody"></tbody>
+          </table>
+        </div>
+        <div class="tx-pagination" id="txPagination"></div>
+      </div>
+
+    </div><!-- /txView -->
+
+    <!-- ===== PRESUPUESTOS VIEW ===== -->
+    <div id="budgetView" style="display:none;">
+
+      <!-- Header strip: navegación de mes + resumen -->
+      <div class="bv-header-strip">
+        <div class="bv-month-nav">
+          <button class="bv-month-btn" onclick="changeBudgetMonth(-1)">‹</button>
+          <div class="bv-month-label" id="bvMonthLabel">—</div>
+          <button class="bv-month-btn" onclick="changeBudgetMonth(1)">›</button>
+        </div>
+        <div class="bv-summary-nums">
+          <div class="bv-num-item">
+            <div class="bv-num-label">Presupuestado</div>
+            <div class="bv-num-val" id="bvTotalLimit" style="color:var(--accent3)">$0</div>
+          </div>
+          <div class="bv-num-item">
+            <div class="bv-num-label">Gastado</div>
+            <div class="bv-num-val" id="bvTotalSpent" style="color:var(--danger)">$0</div>
+          </div>
+          <div class="bv-num-item">
+            <div class="bv-num-label">Disponible</div>
+            <div class="bv-num-val" id="bvTotalLeft">$0</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="openBudgetModal()" style="font-size:12px;padding:8px 16px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo Presupuesto
+        </button>
+      </div>
+
+      <!-- Grid: tarjetas + panel lateral -->
+      <div class="budget-view-grid">
+
+        <!-- Cards -->
+        <div class="bv-cards" id="bvCards">
+          <div style="padding:40px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+            Cargando presupuestos…
+          </div>
+        </div>
+
+        <!-- Right panel: dona + leyenda -->
+        <div class="bv-right">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Distribución</span>
+              <span class="panel-badge" id="bvDonutMonth">—</span>
+            </div>
+            <div class="bv-donut-wrap">
+              <canvas id="budgetDonut"></canvas>
+              <div class="bv-donut-center">
+                <div class="bv-donut-total" id="bvDonutTotal">$0</div>
+                <div class="bv-donut-label">gastado</div>
+              </div>
+            </div>
+            <div class="bv-legend" id="bvLegend"></div>
+          </div>
+
+          <!-- Tip card -->
+          <div class="panel" style="padding:20px 24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Consejo</div>
+            <div id="bvTip" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /budgetView -->
+
+    <!-- ===== CUENTAS VIEW ===== -->
+    <div id="cuentasView" style="display:none;">
+
+      <!-- Patrimonio neto -->
+      <div class="cv-worth-bar">
+        <div class="cv-worth-label">Patrimonio Neto</div>
+        <div class="cv-worth-total" id="cvNetWorth">$0</div>
+        <div class="cv-worth-breakdown" id="cvWorthBreakdown"></div>
+      </div>
+
+      <!-- Cards de cuentas -->
+      <div class="cv-top-grid" id="cvCards"></div>
+
+      <!-- Grid: movimientos + detalle -->
+      <div class="cv-main-grid">
+
+        <!-- Izquierda: transferencia + movimientos de la cuenta -->
+        <div>
+          <!-- Transferencia entre cuentas -->
+          <div class="cv-transfer">
+            <div class="cv-transfer-title">↔ Transferencia entre cuentas</div>
+            <div class="cv-transfer-row">
+              <div>
+                <label class="field-label">Desde</label>
+                <select class="field-select" id="cvTransferFrom"></select>
+              </div>
+              <button class="cv-arrow-btn" onclick="swapTransfer()">⇄</button>
+              <div>
+                <label class="field-label">Hacia</label>
+                <select class="field-select" id="cvTransferTo"></select>
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom:10px;">
+              <div>
+                <label class="field-label">Monto ($)</label>
+                <input class="field-input" id="cvTransferAmount" type="number" min="1" placeholder="0"/>
+              </div>
+              <div>
+                <label class="field-label">Descripción</label>
+                <input class="field-input" id="cvTransferDesc" type="text" placeholder="Ej: Paso a ahorro"/>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doTransfer()">
+              Transferir
+            </button>
+          </div>
+
+          <!-- Movimientos de la cuenta seleccionada -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title" id="cvTxPanelTitle">Movimientos</span>
+              <span class="panel-badge" id="cvTxCount">—</span>
+            </div>
+            <div id="cvTxList" style="padding:0 8px 12px;"></div>
+          </div>
+        </div>
+
+        <!-- Derecha: detalle de la cuenta seleccionada -->
+        <div class="cv-detail">
+          <div class="panel" id="cvDetailPanel">
+            <div class="panel-head">
+              <span class="panel-title">Detalle de cuenta</span>
+            </div>
+            <div style="padding:20px 24px;" id="cvDetailBody">
+              <div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;padding:20px 0;">
+                Seleccioná una cuenta para ver el detalle.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /cuentasView -->
+
+  </main>
+</div>
+
+<!-- ===== ACCOUNT MODAL ===== -->
+<div class="modal-overlay" id="accModalOverlay" onclick="closeAccModal(event)">
+  <div class="modal" style="width:460px;">
+    <div class="modal-title" id="accModalTitle">Nueva Cuenta</div>
+
+    <div class="form-full">
+      <label class="field-label">Nombre de la cuenta</label>
+      <input class="field-input" id="amName" type="text" placeholder="Ej: Cuenta Corriente Galicia"/>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Tipo</label>
+        <select class="field-select" id="amType" onchange="onAmTypeChange()">
+          <option value="banco">🏦 Banco / Cuenta corriente</option>
+          <option value="ahorro">💰 Caja de ahorro</option>
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="tarjeta">💳 Tarjeta de crédito</option>
+          <option value="inversion">📈 Inversión</option>
+          <option value="digital">📱 Billetera digital</option>
+          <option value="custom">✏️ Otro</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Banco / Entidad</label>
+        <input class="field-input" id="amBank" type="text" placeholder="Ej: Galicia, Mercado Pago…"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Saldo inicial ($)</label>
+        <input class="field-input" id="amBalance" type="number" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Moneda</label>
+        <select class="field-select" id="amCurrency">
+          <option value="ARS">🇦🇷 ARS — Peso argentino</option>
+          <option value="USD">🇺🇸 USD — Dólar</option>
+          <option value="EUR">🇪🇺 EUR — Euro</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="amLimitWrap" style="margin-top:12px;display:none;">
+      <label class="field-label">Límite de crédito ($)</label>
+      <input class="field-input" id="amLimit" type="number" placeholder="0"/>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="amNotes" type="text" placeholder="Ej: Cuenta en pesos para gastos diarios"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAccModal()">Cancelar</button>
+      <button class="btn btn-primary" id="amSaveBtn" onclick="saveAccount()">Crear Cuenta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT DELETE MODAL ===== -->
+<div class="modal-overlay" id="accDeleteOverlay" onclick="closeAccDeleteModal(event)">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">¿Eliminar cuenta?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar la cuenta <strong id="adName" style="color:var(--text)"></strong>.
+      Los movimientos asociados no se eliminarán.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAccDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteAccount()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUDGET MODAL ===== -->
+<div class="modal-overlay" id="budgetModalOverlay" onclick="closeBudgetModal(event)">
+  <div class="modal" style="width:480px;">
+    <div class="modal-title" id="budgetModalTitle">Nuevo Presupuesto</div>
+
+    <div class="form-row">
+      <div>
+        <label class="field-label">Categoría</label>
+        <select class="field-select" id="bmCat" onchange="onBmCatChange()">
+          <option value="Alimentación">🍔 Alimentación</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Entretenimiento">🎬 Entretenimiento</option>
+          <option value="Salud">💊 Salud</option>
+          <option value="Hogar">🏠 Hogar</option>
+          <option value="Ropa">👕 Ropa</option>
+          <option value="Otros">📦 Otros</option>
+          <option value="custom">✏️ Personalizada…</option>
+        </select>
+      </div>
+      <div id="bmCustomWrap" style="display:none;">
+        <label class="field-label">Nombre personalizado</label>
+        <input class="field-input" id="bmCustomName" type="text" placeholder="Ej: Gimnasio"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Límite mensual ($)</label>
+        <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Ícono</label>
+        <input class="field-input" id="bmIcon" type="text" placeholder="🎯" style="font-size:18px;text-align:center;" maxlength="2"/>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Color</label>
+      <div class="bv-color-grid" id="bmColorGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="bmNotes" type="text" placeholder="Ej: Incluye delivery y salidas"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBudgetModal()">Cancelar</button>
+      <button class="btn btn-primary" id="bmSaveBtn" onclick="saveBudget()">Crear Presupuesto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUDGET DELETE MODAL ===== -->
+<div class="modal-overlay" id="budgetDeleteOverlay" onclick="closeBudgetDeleteModal(event)">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">¿Eliminar presupuesto?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar el presupuesto de <strong id="bdName" style="color:var(--text)"></strong>.
+      Las transacciones no se ven afectadas.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBudgetDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteBudget()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">Nueva Transacción</div>
+
+    <div class="type-toggle" style="margin-bottom:16px;">
+      <button class="type-btn active-expense" id="mTypeExpBtn" onclick="setModalType('expense')">— Gasto</button>
+      <button class="type-btn" id="mTypeIncBtn" onclick="setModalType('income')">+ Ingreso</button>
+    </div>
+
+    <div class="form-full">
+      <label class="field-label">Descripción</label>
+      <input class="field-input" id="mDesc" type="text" placeholder="Descripción de la transacción"/>
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="mAmount" type="number" min="0" placeholder="0.00"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="mDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Categoría</label>
+      <select class="field-select" id="mCat">
+        <option value="Alimentación">🍔 Alimentación</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Entretenimiento">🎬 Entretenimiento</option>
+        <option value="Salud">💊 Salud</option>
+        <option value="Hogar">🏠 Hogar</option>
+        <option value="Ropa">👕 Ropa</option>
+        <option value="Sueldo">💼 Sueldo</option>
+        <option value="Freelance">💻 Freelance</option>
+        <option value="Inversión">📈 Inversión</option>
+        <option value="Otros">📦 Otros</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="addFromModal()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT MODAL ===== -->
+<div class="modal-overlay" id="editModalOverlay" data-type="expense" onclick="closeEditModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">Editar Transacción</div>
+
+    <div class="type-toggle" style="margin-bottom:16px;">
+      <button class="type-btn active-expense" id="eTypeExpBtn" onclick="setEditType('expense')">— Gasto</button>
+      <button class="type-btn" id="eTypeIncBtn" onclick="setEditType('income')">+ Ingreso</button>
+    </div>
+
+    <div class="form-full">
+      <label class="field-label">Descripción</label>
+      <input class="field-input" id="eDesc" type="text" placeholder="Descripción"/>
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="eAmount" type="number" min="0" placeholder="0.00"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="eDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Categoría</label>
+      <select class="field-select" id="eCat">
+        <option value="Alimentación">🍔 Alimentación</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Entretenimiento">🎬 Entretenimiento</option>
+        <option value="Salud">💊 Salud</option>
+        <option value="Hogar">🏠 Hogar</option>
+        <option value="Ropa">👕 Ropa</option>
+        <option value="Sueldo">💼 Sueldo</option>
+        <option value="Freelance">💻 Freelance</option>
+        <option value="Inversión">📈 Inversión</option>
+        <option value="Otros">📦 Otros</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE MODAL ===== -->
+<div class="modal-overlay" id="deleteModalOverlay" onclick="closeDeleteModal(event)">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">¿Eliminar transacción?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px;">
+      Estás por eliminar:
+    </p>
+    <div id="deleteModalDesc" style="font-family:var(--font-mono);font-size:13px;color:var(--text);background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:4px;"></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px;">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== IA INSIGHTS MODAL ===== -->
+<div class="modal-overlay" id="iaModalOverlay" onclick="closeIaModal(event)">
+  <div class="modal glass" style="width:700px; max-width:95vw;">
+    <div class="modal-title" style="display:flex; align-items:center; gap:10px;">
+      <svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      IA Financial Insights
+    </div>
+    <div class="ia-analysis-content">
+      <div class="ia-mockup-container">
+        <img id="iaMockupImg" src="" alt="IA Analysis Dashboard" style="width:100%; border-radius:12px; border:1px solid var(--border); box-shadow: var(--shadow);"/>
+        <div class="ia-shimmer"></div>
+      </div>
+      <div style="margin-top:20px; font-size:14px; line-height:1.6; color:var(--text);">
+        <p>Nuestro modelo de IA ha analizado tus patrones de gasto de los últimos 30 días. Hemos detectado una oportunidad de ahorro del <strong>12%</strong> en la categoría de <em>Entretenimiento</em>.</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeIaModal()">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast"></div>
+
+<!-- ===== CHART.JS ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script type="module" src="script.js"></script>
+
+</body>
+</html>

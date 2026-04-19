@@ -23,37 +23,37 @@
       <div class="logo-sub">Finance Manager</div>
     </div>
 
-    <nav class="nav">
+    <nav class="nav" id="mainNav">
       <div class="nav-section-label">Principal</div>
 
-      <div class="nav-item active" onclick="setPage(this,'dashboard')">
+      <div class="nav-item active" data-page="dashboard">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Dashboard
       </div>
 
-      <div class="nav-item" onclick="setPage(this,'transacciones')">
+      <div class="nav-item" data-page="transacciones">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Transacciones
       </div>
 
-      <div class="nav-item" onclick="setPage(this,'presupuestos')">
+      <div class="nav-item" data-page="presupuestos">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
         Presupuestos
       </div>
 
-      <div class="nav-item" onclick="setPage(this,'cuentas')">
+      <div class="nav-item" data-page="cuentas">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
         Cuentas
       </div>
 
       <div class="nav-section-label">Análisis</div>
 
-      <div class="nav-item" onclick="setPage(this,'reportes')">
+      <div class="nav-item" data-page="reportes">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Reportes
       </div>
 
-      <div class="nav-item" onclick="setPage(this,'objetivos')">
+      <div class="nav-item" data-page="objetivos">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
         Objetivos
       </div>
@@ -81,11 +81,11 @@
         <div class="page-date" id="pageDate"></div>
       </div>
       <div class="topbar-actions">
-        <button class="btn btn-ghost" onclick="openModal()">
+        <button class="btn btn-ghost" id="openModalBtn">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nueva Transacción
         </button>
-        <button class="btn btn-primary" onclick="openIaModal()">
+        <button class="btn btn-primary" id="openIaModalBtn">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           IA Insights
         </button>
@@ -129,10 +129,10 @@
         <div class="panel">
           <div class="panel-head">
             <span class="panel-title">Flujo de Caja</span>
-            <div class="chart-tabs">
-              <button class="chart-tab active" onclick="setChartPeriod(this,'semana')">7D</button>
-              <button class="chart-tab" onclick="setChartPeriod(this,'mes')">30D</button>
-              <button class="chart-tab" onclick="setChartPeriod(this,'año')">12M</button>
+            <div class="chart-tabs" id="chartTabs">
+              <button class="chart-tab active" data-period="semana">7D</button>
+              <button class="chart-tab" data-period="mes">30D</button>
+              <button class="chart-tab" data-period="año">12M</button>
             </div>
           </div>
           <div class="chart-wrap">
@@ -164,9 +164,9 @@
             <span class="panel-title">Agregar Rápido</span>
           </div>
           <div class="quick-add">
-            <div class="type-toggle">
-              <button class="type-btn active-expense" id="typeExpBtn" onclick="setType('expense')">— Gasto</button>
-              <button class="type-btn" id="typeIncBtn" onclick="setType('income')">+ Ingreso</button>
+            <div class="type-toggle" id="quickAddTypeToggle">
+              <button class="type-btn active-expense" id="typeExpBtn" data-type="expense">— Gasto</button>
+              <button class="type-btn" id="typeIncBtn" data-type="income">+ Ingreso</button>
             </div>
             <div class="form-full">
               <label class="field-label">Descripción</label>
@@ -193,7 +193,7 @@
                 </select>
               </div>
             </div>
-            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="quickAdd()">
+            <button class="btn btn-primary" id="quickAddSubmitBtn" style="width:100%;justify-content:center;">
               Registrar Transacción
             </button>
           </div>
@@ -237,11 +237,11 @@
           <span class="txsum-val green" id="txSumNet">$0</span>
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;">
-          <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:12px;padding:7px 14px;">
+          <button class="btn btn-ghost" id="exportCsvBtn" style="font-size:12px;padding:7px 14px;">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar CSV
           </button>
-          <button class="btn btn-primary" onclick="openModal()" style="font-size:12px;padding:7px 14px;">
+          <button class="btn btn-primary" id="openModalBtn2" style="font-size:12px;padding:7px 14px;">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nueva
           </button>
@@ -252,16 +252,16 @@
       <div class="filter-bar">
         <div class="filter-search-wrap">
           <svg class="filter-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input class="field-input filter-search" id="txSearch" type="text" placeholder="Buscar transacciones…" oninput="applyTxFilter()"/>
+          <input class="field-input filter-search" id="txSearch" type="text" placeholder="Buscar transacciones…"/>
         </div>
 
-        <select class="field-select" id="txFilterType" onchange="applyTxFilter()" style="width:auto;min-width:130px;">
+        <select class="field-select" id="txFilterType" style="width:auto;min-width:130px;">
           <option value="all">Todos los tipos</option>
           <option value="income">Ingresos</option>
           <option value="expense">Gastos</option>
         </select>
 
-        <select class="field-select" id="txFilterCat" onchange="applyTxFilter()" style="width:auto;min-width:160px;">
+        <select class="field-select" id="txFilterCat" style="width:auto;min-width:160px;">
           <option value="all">Todas las categorías</option>
           <option value="Alimentación">🍔 Alimentación</option>
           <option value="Transporte">🚗 Transporte</option>
@@ -276,12 +276,12 @@
         </select>
 
         <div style="display:flex;align-items:center;gap:6px;">
-          <input class="field-input" id="txFilterFrom" type="date" onchange="applyTxFilter()" style="width:auto;" title="Desde"/>
+          <input class="field-input" id="txFilterFrom" type="date" style="width:auto;" title="Desde"/>
           <span style="color:var(--muted);font-size:12px;">—</span>
-          <input class="field-input" id="txFilterTo" type="date" onchange="applyTxFilter()" style="width:auto;" title="Hasta"/>
+          <input class="field-input" id="txFilterTo" type="date" style="width:auto;" title="Hasta"/>
         </div>
 
-        <button class="btn btn-ghost" onclick="clearTxFilters()" style="font-size:12px;padding:7px 12px;">
+        <button class="btn btn-ghost" id="clearTxFiltersBtn" style="font-size:12px;padding:7px 12px;">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           Limpiar
         </button>
@@ -293,11 +293,11 @@
           <table class="tx-table">
             <thead>
               <tr>
-                <th class="th-sort" data-field="desc" onclick="sortTx('desc')">Descripción <span class="sort-arrow">↕</span></th>
+                <th class="th-sort" data-field="desc">Descripción <span class="sort-arrow">↕</span></th>
                 <th>Categoría</th>
                 <th>Tipo</th>
-                <th class="th-sort" data-field="date" onclick="sortTx('date')">Fecha <span class="sort-arrow">↓</span></th>
-                <th class="th-sort" data-field="amount" onclick="sortTx('amount')" style="text-align:right;">Monto <span class="sort-arrow">↕</span></th>
+                <th class="th-sort" data-field="date">Fecha <span class="sort-arrow">↓</span></th>
+                <th class="th-sort" data-field="amount" style="text-align:right;">Monto <span class="sort-arrow">↕</span></th>
                 <th style="text-align:right;">Acciones</th>
               </tr>
             </thead>
@@ -315,9 +315,9 @@
       <!-- Header strip: navegación de mes + resumen -->
       <div class="bv-header-strip">
         <div class="bv-month-nav">
-          <button class="bv-month-btn" onclick="changeBudgetMonth(-1)">‹</button>
+          <button class="bv-month-btn" id="prevBudgetMonth">‹</button>
           <div class="bv-month-label" id="bvMonthLabel">—</div>
-          <button class="bv-month-btn" onclick="changeBudgetMonth(1)">›</button>
+          <button class="bv-month-btn" id="nextBudgetMonth">›</button>
         </div>
         <div class="bv-summary-nums">
           <div class="bv-num-item">
@@ -333,7 +333,7 @@
             <div class="bv-num-val" id="bvTotalLeft">$0</div>
           </div>
         </div>
-        <button class="btn btn-primary" onclick="openBudgetModal()" style="font-size:12px;padding:8px 16px;">
+        <button class="btn btn-primary" id="openBudgetModalBtn" style="font-size:12px;padding:8px 16px;">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo Presupuesto
         </button>
@@ -402,7 +402,7 @@
                 <label class="field-label">Desde</label>
                 <select class="field-select" id="cvTransferFrom"></select>
               </div>
-              <button class="cv-arrow-btn" onclick="swapTransfer()">⇄</button>
+              <button class="cv-arrow-btn" id="swapTransferBtn">⇄</button>
               <div>
                 <label class="field-label">Hacia</label>
                 <select class="field-select" id="cvTransferTo"></select>
@@ -418,7 +418,7 @@
                 <input class="field-input" id="cvTransferDesc" type="text" placeholder="Ej: Paso a ahorro"/>
               </div>
             </div>
-            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doTransfer()">
+            <button class="btn btn-primary" id="doTransferBtn" style="width:100%;justify-content:center;">
               Transferir
             </button>
           </div>
@@ -454,7 +454,7 @@
 </div>
 
 <!-- ===== ACCOUNT MODAL ===== -->
-<div class="modal-overlay" id="accModalOverlay" onclick="closeAccModal(event)">
+<div class="modal-overlay" id="accModalOverlay">
   <div class="modal" style="width:460px;">
     <div class="modal-title" id="accModalTitle">Nueva Cuenta</div>
 
@@ -515,7 +515,7 @@
 </div>
 
 <!-- ===== ACCOUNT DELETE MODAL ===== -->
-<div class="modal-overlay" id="accDeleteOverlay" onclick="closeAccDeleteModal(event)">
+<div class="modal-overlay" id="accDeleteOverlay">
   <div class="modal" style="max-width:380px;">
     <div class="modal-title">¿Eliminar cuenta?</div>
     <p style="font-size:13px;color:var(--muted);line-height:1.6;">
@@ -530,7 +530,7 @@
 </div>
 
 <!-- ===== BUDGET MODAL ===== -->
-<div class="modal-overlay" id="budgetModalOverlay" onclick="closeBudgetModal(event)">
+<div class="modal-overlay" id="budgetModalOverlay">
   <div class="modal" style="width:480px;">
     <div class="modal-title" id="budgetModalTitle">Nuevo Presupuesto</div>
 
@@ -583,7 +583,7 @@
 </div>
 
 <!-- ===== BUDGET DELETE MODAL ===== -->
-<div class="modal-overlay" id="budgetDeleteOverlay" onclick="closeBudgetDeleteModal(event)">
+<div class="modal-overlay" id="budgetDeleteOverlay">
   <div class="modal" style="max-width:360px;">
     <div class="modal-title">¿Eliminar presupuesto?</div>
     <p style="font-size:13px;color:var(--muted);line-height:1.6;">
@@ -598,7 +598,7 @@
 </div>
 
 <!-- ===== MODAL ===== -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+<div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-title">Nueva Transacción</div>
 
@@ -645,7 +645,7 @@
 </div>
 
 <!-- ===== EDIT MODAL ===== -->
-<div class="modal-overlay" id="editModalOverlay" data-type="expense" onclick="closeEditModal(event)">
+<div class="modal-overlay" id="editModalOverlay" data-type="expense">
   <div class="modal">
     <div class="modal-title" id="editModalTitle">Editar Transacción</div>
 
@@ -692,7 +692,7 @@
 </div>
 
 <!-- ===== DELETE MODAL ===== -->
-<div class="modal-overlay" id="deleteModalOverlay" onclick="closeDeleteModal(event)">
+<div class="modal-overlay" id="deleteModalOverlay">
   <div class="modal" style="max-width:380px;">
     <div class="modal-title">¿Eliminar transacción?</div>
     <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px;">
@@ -708,7 +708,7 @@
 </div>
 
 <!-- ===== IA INSIGHTS MODAL ===== -->
-<div class="modal-overlay" id="iaModalOverlay" onclick="closeIaModal(event)">
+<div class="modal-overlay" id="iaModalOverlay">
   <div class="modal glass" style="width:700px; max-width:95vw;">
     <div class="modal-title" style="display:flex; align-items:center; gap:10px;">
       <svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -724,7 +724,7 @@
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeIaModal()">Entendido</button>
+      <button class="btn btn-primary" id="closeIaModalBtn">Entendido</button>
     </div>
   </div>
 </div>
@@ -735,7 +735,7 @@
 <!-- ===== CHART.JS ===== -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-<script type="module" src="script.js"></script>
+<script type="module" src="../src/main.js"></script>
 
 </body>
 </html>

@@ -80,4 +80,29 @@ export class UIManager {
 
     document.getElementById('pageDate').style.display = page === 'dashboard' ? '' : 'none';
   }
+
+  static renderBudgetWidget(el, budgets, spentByCat) {
+    if (!budgets || budgets.length === 0) {
+      el.innerHTML = `<div style="padding:16px 0;text-align:center;font-size:11px;font-family:var(--font-mono);color:var(--muted);">Sin presupuestos creados.</div>`;
+      return;
+    }
+
+    el.innerHTML = budgets.slice(0,5).map(b => {
+      const spent = spentByCat[b.cat] || 0;
+      const pct = Math.min((spent / b.limit) * 100, 100);
+      const over = spent > b.limit;
+
+      return `
+        <div class="budget-item">
+          <div class="budget-head">
+            <span class="budget-name">${b.icon || '📦'} ${b.name}</span>
+            <span class="budget-nums">$${spent.toLocaleString('es-AR')} / $${b.limit.toLocaleString('es-AR')}</span>
+          </div>
+          <div class="budget-bar-bg">
+            <div class="budget-bar-fill" style="width:${pct}%;background:${over ? 'var(--danger)' : b.color};"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
 }

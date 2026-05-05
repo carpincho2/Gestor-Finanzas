@@ -1,29 +1,37 @@
 import { LocalStorageTransactionRepository } from './infrastructure/adapters/LocalStorageTransactionRepository.js';
 import { LocalStorageAccountRepository } from './infrastructure/adapters/LocalStorageAccountRepository.js';
 import { LocalStorageBudgetRepository } from './infrastructure/adapters/LocalStorageBudgetRepository.js';
+import { TesseractOcrAdapter } from './infrastructure/adapters/TesseractOcrAdapter.js';
 import { ChartService } from './shared/ChartService.js';
 
 // --- Application / Use Cases ---
 import { AddTransactionUseCase } from './application/usecases/AddTransactionUseCase.js';
 import { GetFinancialSummaryUseCase } from './application/usecases/GetFinancialSummaryUseCase.js';
+import { ScanReceiptUseCase } from './application/usecases/ScanReceiptUseCase.js';
 
 // --- UI / Entry Adapters ---
 import { WebUIAdapter } from './ui/WebUIAdapter.js';
+import { OcrUIAdapter } from './ui/OcrUIAdapter.js';
 import { UIManager } from './shared/UIManager.js';
 import { ErrorHandler } from './shared/ErrorHandler.js';
 
 class App {
   constructor() {
-    // 1. Iniciar Infraestructura
+    // 1. Iniciar Infraestructura (Adaptadores de Salida)
     this.txRepo = new LocalStorageTransactionRepository();
     this.accRepo = new LocalStorageAccountRepository();
     this.budgetRepo = new LocalStorageBudgetRepository();
+    this.ocrAdapter = new TesseractOcrAdapter();
     this.chartService = new ChartService('mainChart');
 
     // 2. Iniciar Casos de Uso (Inyección de Dependencias)
+    // Cada caso de uso recibe sus dependencias por constructor.
+    // El caso de uso NO sabe si el repo es localStorage o una API REST,
+    // solo sabe que tiene los métodos que necesita (contrato del puerto).
     this.useCases = {
       addTransaction: new AddTransactionUseCase(this.txRepo),
-      getSummary: new GetFinancialSummaryUseCase(this.txRepo, this.accRepo, this.budgetRepo)
+      getSummary: new GetFinancialSummaryUseCase(this.txRepo, this.accRepo, this.budgetRepo),
+      scanReceipt: new ScanReceiptUseCase(this.ocrAdapter)
     };
 
     // 3. Estado de la UI
@@ -38,8 +46,9 @@ class App {
     ErrorHandler.runSafe(() => {
       this.renderAll();
       
-      // Inicializar Adaptador de UI (Puertos de entrada)
+      // Inicializar Adaptadores de UI (Puertos de entrada)
       this.uiAdapter = new WebUIAdapter(this, this.useCases);
+      this.ocrUIAdapter = new OcrUIAdapter(this, this.useCases);
       
       const now = new Date().toISOString().split('T')[0];
       const mDate = document.getElementById('mDate');
@@ -109,3 +118,4 @@ class App {
 
 // Iniciar aplicación
 new App();
+

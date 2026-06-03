@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flujo — Gestor de Finanzas</title>
+  <meta name="description" content="Flujo — tu gestor de finanzas personal con IA. Controlá gastos, presupuestos, objetivos y más."/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">flujo.</div>
+      <div class="logo-sub">Finance Manager</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-label">Principal</div>
+
+      <div class="nav-item active" onclick="setPage(this,'dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'transacciones')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Transacciones
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'presupuestos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Presupuestos
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'cuentas')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Cuentas
+      </div>
+
+      <div class="nav-section-label">Análisis</div>
+
+      <div class="nav-item" onclick="setPage(this,'reportes')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Reportes
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'objetivos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Objetivos
+      </div>
+
+      <div class="nav-section-label">Herramientas IA</div>
+
+      <div class="nav-item" id="navScannerItem" onclick="setPage(this,'scanner')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+        Escanear Ticket
+        <span class="nav-badge-ai">IA</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">JP</div>
+        <div class="user-info-col">
+          <div class="user-name">Juan Pérez</div>
+          <div class="user-plan">Plan Free</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="authLogout()" title="Cerrar sesión">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-date" id="pageDate"></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="openModal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva Transacción
+        </button>
+        <button class="btn btn-primary" onclick="showToast('✨ Próximamente: análisis con IA')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          IA Insights
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD VIEW ===== -->
+    <div id="dashboardView">
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card green fade-in">
+        <div class="stat-label">Saldo Total</div>
+        <div class="stat-value green" id="statBalance">$0</div>
+        <div class="stat-change"><span class="up" id="balanceChange">—</span></div>
+      </div>
+      <div class="stat-card green fade-in">
+        <div class="stat-label">Ingresos del Mes</div>
+        <div class="stat-value green" id="statIncome">$0</div>
+        <div class="stat-change"><span class="up" id="incomeChange">este mes</span></div>
+      </div>
+      <div class="stat-card red fade-in">
+        <div class="stat-label">Gastos del Mes</div>
+        <div class="stat-value red" id="statExpenses">$0</div>
+        <div class="stat-change"><span class="down" id="expensesChange">este mes</span></div>
+      </div>
+      <div class="stat-card blue fade-in">
+        <div class="stat-label">Ahorro Neto</div>
+        <div class="stat-value blue" id="statSavings">$0</div>
+        <div class="stat-change"><span id="savingsChange" class="up">—</span></div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+
+      <!-- Left: Chart + Transactions -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <!-- Chart Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Flujo de Caja</span>
+            <div class="chart-tabs">
+              <button class="chart-tab active" onclick="setChartPeriod(this,'semana')">7D</button>
+              <button class="chart-tab" onclick="setChartPeriod(this,'mes')">30D</button>
+              <button class="chart-tab" onclick="setChartPeriod(this,'año')">12M</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Transactions Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Últimas Transacciones</span>
+            <span class="panel-badge" id="txCount">0 registros</span>
+          </div>
+          <div class="tx-list" id="txList">
+            <div style="padding:32px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+              Sin transacciones aún.<br/>Agregá una usando el botón de arriba.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-col">
+
+        <!-- Quick Add -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Agregar Rápido</span>
+          </div>
+          <div class="quick-add">
+            <div class="type-toggle">
+              <button class="type-btn active-expense" id="typeExpBtn" onclick="setType('expense')">— Gasto</button>
+              <button class="type-btn" id="typeIncBtn" onclick="setType('income')">+ Ingreso</button>
+            </div>
+            <div class="form-full">
+              <label class="field-label">Descripción</label>
+              <input class="field-input" id="qDesc" type="text" placeholder="Ej: Almuerzo, Sueldo…"/>
+            </div>
+            <div class="form-row">
+              <div>
+                <label class="field-label">Monto ($)</label>
+                <input class="field-input" id="qAmount" type="number" min="0" placeholder="0.00"/>
+              </div>
+              <div>
+                <label class="field-label">Categoría</label>
+                <select class="field-select" id="qCat">
+                  <option value="Alimentación">🍔 Alimentación</option>
+                  <option value="Transporte">🚗 Transporte</option>
+                  <option value="Entretenimiento">🎬 Entretenimiento</option>
+                  <option value="Salud">💊 Salud</option>
+                  <option value="Hogar">🏠 Hogar</option>
+                  <option value="Ropa">👕 Ropa</option>
+                  <option value="Sueldo">💼 Sueldo</option>
+                  <option value="Freelance">💻 Freelance</option>
+                  <option value="Inversión">📈 Inversión</option>
+                  <option value="Otros">📦 Otros</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="quickAdd()">
+              Registrar Transacción
+            </button>
+          </div>
+        </div>
+
+        <!-- Budgets Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Presupuestos</span>
+            <span class="panel-badge">Este mes</span>
+          </div>
+          <div class="budget-list" id="budgetList"></div>
+        </div>
+
+      </div>
+    </div><!-- /content-grid -->
+    </div><!-- /dashboardView -->
+
+    <!-- ===== TRANSACTIONS VIEW ===== -->
+    <div id="txView" style="display:none;">
+
+      <!-- Summary Strip -->
+      <div class="txsum-strip">
+        <div class="txsum-item">
+          <span class="txsum-label">Resultados</span>
+          <span class="txsum-val" id="txSumTotal">0 transacciones</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Ingresos</span>
+          <span class="txsum-val green" id="txSumIncome">$0</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Gastos</span>
+          <span class="txsum-val red" id="txSumExpense">$0</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Neto</span>
+          <span class="txsum-val green" id="txSumNet">$0</span>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+          <button class="btn btn-primary" onclick="openModal()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width.5 viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-search-wrap">
+          <svg class="filter-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="field-input filter-search" id="txSearch" type="text" placeholder="Buscar transacciones…" oninput="applyTxFilter()"/>
+        </div>
+
+        <select class="field-select" id="txFilterType" onchange="applyTxFilter()" style="width:auto;min-width:130px;">
+          <option value="all">Todos los tipos</option>
+          <option value="income">Ingresos</option>
+          <option value="expense">Gastos</option>
+        </select>
+
+        <select class="field-select" id="txFilterCat" onchange="applyTxFilter()" style="width:auto;min-width:160px;">
+          <option value="all">Todas las categorías</option>
+          <option value="Alimentación">🍔 Alimentación</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Entretenimiento">🎬 Entretenimiento</option>
+          <option value="Salud">💊 Salud</option>
+          <option value="Hogar">🏠 Hogar</option>
+          <option value="Ropa">👕 Ropa</option>
+          <option value="Sueldo">💼 Sueldo</option>
+          <option value="Freelance">💻 Freelance</option>
+          <option value="Inversión">📈 Inversión</option>
+          <option value="Otros">📦 Otros</option>
+        </select>
+
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="field-input" id="txFilterFrom" type="date" onchange="applyTxFilter()" style="width:auto;" title="Desde"/>
+          <span style="color:var(--muted);font-size:12px;">—</span>
+          <input class="field-input" id="txFilterTo" type="date" onchange="applyTxFilter()" style="width:auto;" title="Hasta"/>
+        </div>
+
+        <button class="btn btn-ghost" onclick="clearTxFilters()" style="font-size:12px;padding:7px 12px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Limpiar
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="panel" style="overflow:visible;">
+        <div style="overflow-x:auto;">
+          <table class="tx-table">
+            <thead>
+              <tr>
+                <th class="th-sort" data-field="desc" onclick="sortTx('desc')">Descripción <span class="sort-arrow">↕</span></th>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th class="th-sort" data-field="date" onclick="sortTx('date')">Fecha <span class="sort-arrow">↓</span></th>
+                <th class="th-sort" data-field="amount" onclick="sortTx('amount')" style="text-align:right;">Monto <span class="sort-arrow">↕</span></th>
+                <th style="text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="txTableBody"></tbody>
+          </table>
+        </div>
+        <div class="tx-pagination" id="txPagination"></div>
+      </div>
+
+    </div><!-- /txView -->
+
+    <!-- ===== PRESUPUESTOS VIEW ===== -->
+    <div id="budgetView" style="display:none;">
+
+      <!-- Header strip: navegación de mes + resumen -->
+      <div class="bv-header-strip">
+        <div class="bv-month-nav">
+          <button class="bv-month-btn" onclick="changeBudgetMonth(-1)">‹</button>
+          <div class="bv-month-label" id="bvMonthLabel">—</div>
+          <button class="bv-month-btn" onclick="changeBudgetMonth(1)">›</button>
+        </div>
+        <div class="bv-summary-nums">
+          <div class="bv-num-item">
+            <div class="bv-num-label">Presupuestado</div>
+            <div class="bv-num-val" id="bvTotalLimit" style="color:var(--accent3)">$0</div>
+          </div>
+          <div class="bv-num-item">
+            <div class="bv-num-label">Gastado</div>
+            <div class="bv-num-val" id="bvTotalSpent" style="color:var(--danger)">$0</div>
+          </div>
+          <div class="bv-num-item">
+            <div class="bv-num-label">Disponible</div>
+            <div class="bv-num-val" id="bvTotalLeft">$0</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="openBudgetModal()" style="font-size:12px;padding:8px 16px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo Presupuesto
+        </button>
+      </div>
+
+      <!-- Grid: tarjetas + panel lateral -->
+      <div class="budget-view-grid">
+
+        <!-- Cards -->
+        <div class="bv-cards" id="bvCards">
+          <div style="padding:40px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+            Cargando presupuestos…
+          </div>
+        </div>
+
+        <!-- Right panel: dona + leyenda -->
+        <div class="bv-right">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Distribución</span>
+              <span class="panel-badge" id="bvDonutMonth">—</span>
+            </div>
+            <div class="bv-donut-wrap">
+              <canvas id="budgetDonut"></canvas>
+              <div class="bv-donut-center">
+                <div class="bv-donut-total" id="bvDonutTotal">$0</div>
+                <div class="bv-donut-label">gastado</div>
+              </div>
+            </div>
+            <div class="bv-legend" id="bvLegend"></div>
+          </div>
+
+          <!-- Tip card -->
+          <div class="panel" style="padding:20px 24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Consejo</div>
+            <div id="bvTip" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /budgetView -->
+
+    <!-- ===== CUENTAS VIEW ===== -->
+    <div id="cuentasView" style="display:none;">
+
+      <!-- Patrimonio neto -->
+      <div class="cv-worth-bar">
+        <div class="cv-worth-label">Patrimonio Neto</div>
+        <div class="cv-worth-total" id="cvNetWorth">$0</div>
+        <div class="cv-worth-breakdown" id="cvWorthBreakdown"></div>
+      </div>
+
+      <!-- Cards de cuentas -->
+      <div class="cv-top-grid" id="cvCards"></div>
+
+      <!-- Grid: movimientos + detalle -->
+      <div class="cv-main-grid">
+
+        <!-- Izquierda: transferencia + movimientos de la cuenta -->
+        <div>
+          <!-- Transferencia entre cuentas -->
+          <div class="cv-transfer">
+            <div class="cv-transfer-title">↔ Transferencia entre cuentas</div>
+            <div class="cv-transfer-row">
+              <div>
+                <label class="field-label">Desde</label>
+                <select class="field-select" id="cvTransferFrom"></select>
+              </div>
+              <button class="cv-arrow-btn" onclick="swapTransfer()">⇄</button>
+              <div>
+                <label class="field-label">Hacia</label>
+                <select class="field-select" id="cvTransferTo"></select>
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom:10px;">
+              <div>
+                <label class="field-label">Monto ($)</label>
+                <input class="field-input" id="cvTransferAmount" type="number" min="1" placeholder="0"/>
+              </div>
+              <div>
+                <label class="field-label">Descripción</label>
+                <input class="field-input" id="cvTransferDesc" type="text" placeholder="Ej: Paso a ahorro"/>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doTransfer()">
+              Transferir
+            </button>
+          </div>
+
+          <!-- Movimientos de la cuenta seleccionada -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title" id="cvTxPanelTitle">Movimientos</span>
+              <span class="panel-badge" id="cvTxCount">—</span>
+            </div>
+            <div id="cvTxList" style="padding:0 8px 12px;"></div>
+          </div>
+        </div>
+
+        <!-- Derecha: detalle de la cuenta seleccionada -->
+        <div class="cv-detail">
+          <div class="panel" id="cvDetailPanel">
+            <div class="panel-head">
+              <span class="panel-title">Detalle de cuenta</span>
+            </div>
+            <div style="padding:20px 24px;" id="cvDetailBody">
+              <div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;padding:20px 0;">
+                Seleccioná una cuenta para ver el detalle.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /cuentasView -->
+
+    <!-- ===== REPORTES VIEW ===== -->
+    <div id="reportesView" style="display:none;">
+
+      <!-- Period selector -->
+      <div class="rv-period-bar">
+        <div class="rv-period-tabs">
+          <button class="rv-tab active" onclick="setRvPeriod(this,'mes')">Este mes</button>
+          <button class="rv-tab" onclick="setRvPeriod(this,'trimestre')">Trimestre</button>
+          <button class="rv-tab" onclick="setRvPeriod(this,'anio')">Este año</button>
+          <button class="rv-tab" onclick="setRvPeriod(this,'custom')">Personalizado</button>
+        </div>
+        <div class="rv-custom-range" id="rvCustomRange" style="display:none;">
+          <input class="field-input" id="rvFrom" type="date" onchange="renderReportesView()" style="width:auto;"/>
+          <span style="color:var(--muted);">—</span>
+          <input class="field-input" id="rvTo"   type="date" onchange="renderReportesView()" style="width:auto;"/>
+        </div>
+        <div class="rv-export-row">
+          <button class="btn btn-ghost" onclick="exportReportCSV()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="rv-kpi-row" id="rvKpis"></div>
+
+      <!-- Charts grid -->
+      <div class="rv-charts-grid">
+
+        <!-- Ingresos vs Gastos (línea, full width) -->
+        <div class="panel rv-chart-full">
+          <div class="panel-head">
+            <span class="panel-title">Ingresos vs Gastos</span>
+            <span class="panel-badge" id="rvLineLabel">—</span>
+          </div>
+          <div style="padding:20px 24px;">
+            <canvas id="rvLineChart" class="rv-canvas" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Gastos por categoría (dona) -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Gastos por Categoría</span>
+            <span class="panel-badge" id="rvDonutLabel">—</span>
+          </div>
+          <div style="padding:16px 24px 0; display:flex; justify-content:center;">
+            <canvas id="rvDonutChart" style="max-width:220px;max-height:220px;"></canvas>
+          </div>
+          <div style="padding:8px 20px 16px;" id="rvDonutLegend"></div>
+        </div>
+
+        <!-- Desglose por categoría (tabla) -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Desglose por Categoría</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="rv-cat-table">
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  <th>Transacciones</th>
+                  <th style="text-align:right;">Total</th>
+                  <th style="text-align:right;">% del gasto</th>
+                </tr>
+              </thead>
+              <tbody id="rvCatTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Comparativa mensual (tabla) -->
+        <div class="panel rv-chart-full">
+          <div class="panel-head">
+            <span class="panel-title">Comparativa Mensual</span>
+            <span class="panel-badge">Últimos 6 meses</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="rv-month-table" id="rvMonthTable">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th>Ingresos</th>
+                  <th>Gastos</th>
+                  <th>Ahorro neto</th>
+                  <th>Tasa de ahorro</th>
+                  <th>Transacciones</th>
+                  <th>vs. mes anterior</th>
+                </tr>
+              </thead>
+              <tbody id="rvMonthTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /reportesView -->
+
+    <!-- ===== OBJETIVOS VIEW ===== -->
+    <div id="objetivosView" style="display:none;">
+
+      <!-- Summary stats -->
+      <div class="ov-summary" id="ovSummary"></div>
+
+      <!-- Main grid: cards + right panel -->
+      <div class="ov-main-grid">
+
+        <!-- Goal cards -->
+        <div style="display:flex;flex-direction:column;gap:14px;" id="ovCards"></div>
+
+        <!-- Right panel -->
+        <div class="ov-right">
+
+          <!-- Progress overview donut -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Progreso Global</span>
+              <span class="panel-badge" id="ovDonutBadge">0 objetivos</span>
+            </div>
+            <div style="padding:16px 24px 6px;display:flex;justify-content:center;position:relative;">
+              <canvas id="ovDonutChart" style="max-width:180px;max-height:180px;"></canvas>
+              <div style="position:absolute;inset:16px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;">
+                <div style="font-size:22px;font-weight:800;letter-spacing:-1px;" id="ovDonutPct">0%</div>
+                <div style="font-size:9px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;">completado</div>
+              </div>
+            </div>
+            <div style="padding:8px 20px 16px;" id="ovDonutLegend"></div>
+          </div>
+
+          <!-- Timeline / milestones -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Próximos Vencimientos</span>
+            </div>
+            <div class="ov-timeline" id="ovTimeline"></div>
+          </div>
+
+          <!-- Tip -->
+          <div class="panel" style="padding:20px 24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Consejo</div>
+            <div id="ovTip" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /objetivosView -->
+
+    <!-- ===== SCANNER VIEW ===== -->
+    <div id="scannerView" style="display:none;">
+
+      <!-- Main scanner grid -->
+      <div class="sc-main-grid">
+
+        <!-- Left: camera + upload -->
+        <div class="sc-left">
+
+          <!-- Tabs: Cámara / Subir archivo -->
+          <div class="sc-tabs">
+            <button class="sc-tab active" id="scTabCamera" onclick="scSwitchTab('camera')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Usar Cámara
+            </button>
+            <button class="sc-tab" id="scTabUpload" onclick="scSwitchTab('upload')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Subir Foto
+            </button>
+          </div>
+
+          <!-- Camera panel -->
+          <div id="scCameraPanel" class="panel sc-camera-panel">
+            <div class="sc-video-wrap" id="scVideoWrap">
+              <video id="scVideo" autoplay muted playsinline></video>
+              <div class="sc-cam-overlay">
+                <div class="sc-cam-corner tl"></div>
+                <div class="sc-cam-corner tr"></div>
+                <div class="sc-cam-corner bl"></div>
+                <div class="sc-cam-corner br"></div>
+                <div class="sc-cam-scan-line" id="scScanLine"></div>
+              </div>
+              <canvas id="scCanvas" style="display:none;"></canvas>
+            </div>
+            <div class="sc-cam-controls">
+              <button class="btn btn-ghost" id="scBtnToggleCam" onclick="scToggleCamera()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span id="scCamBtnLabel">Activar Cámara</span>
+              </button>
+              <button class="btn btn-primary sc-capture-btn" id="scBtnCapture" onclick="scCapturePhoto()" disabled>
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                Capturar y Escanear
+              </button>
+            </div>
+          </div>
+
+          <!-- Upload panel -->
+          <div id="scUploadPanel" class="panel sc-upload-panel" style="display:none;">
+            <div class="sc-dropzone" id="scDropzone" onclick="document.getElementById('scFileInput').click()" ondragover="scDragOver(event)" ondragleave="scDragLeave(event)" ondrop="scDrop(event)">
+              <div class="sc-drop-icon">
+                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="sc-drop-text">Arrastrá tu foto aquí</div>
+              <div class="sc-drop-sub">o hacé click para seleccionar</div>
+              <div class="sc-drop-formats">JPG, PNG, WEBP, HEIC — máx. 10MB</div>
+            </div>
+            <input type="file" id="scFileInput" accept="image/*" style="display:none;" onchange="scFileSelected(event)">
+          </div>
+
+          <!-- Preview de imagen capturada/subida -->
+          <div id="scPreviewSection" style="display:none;">
+            <div class="panel sc-preview-panel">
+              <div class="panel-head">
+                <span class="panel-title">Vista previa del ticket</span>
+                <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="scResetCapture()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Nueva foto
+                </button>
+              </div>
+              <div style="padding:20px;">
+                <img id="scPreviewImg" style="width:100%;border-radius:12px;max-height:400px;object-fit:contain;background:#0b0e13;" alt="Ticket preview"/>
+              </div>
+              <div style="padding:0 20px 20px;">
+                <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:14px;padding:12px;" onclick="scScanTicket()" id="scScanBtn">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+                  Escanear Ticket
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: tips + history -->
+        <div class="sc-right">
+
+          <!-- Tips -->
+          <div class="panel" style="padding:24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">📸 Tips para mejor resultado</div>
+            <div class="sc-tips-list">
+              <div class="sc-tip">
+                <div class="sc-tip-num">01</div>
+                <div class="sc-tip-text">Asegurate de que el ticket esté bien iluminado y sin sombras</div>
+              </div>
+              <div class="sc-tip">
+                <div class="sc-tip-num">02</div>
+                <div class="sc-tip-text">Encuadrá todo el ticket en la foto, incluyendo bordes</div>
+              </div>
+              <div class="sc-tip">
+                <div class="sc-tip-num">03</div>
+                <div class="sc-tip-text">Mantené la cámara estable y el ticket plano para evitar distorsión</div>
+              </div>
+              <div class="sc-tip">
+                <div class="sc-tip-num">04</div>
+                <div class="sc-tip-text">Si el texto no se lee bien, podés editarlo manualmente antes de guardar</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scanner stats -->
+          <div class="panel" style="padding:24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">📊 Historial de escaneos</div>
+            <div id="scHistoryList">
+              <div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:16px 0;">Aún no escaneaste ningún ticket.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /scannerView -->
+
+  </main>
+</div>
+
+<!-- ===== GOAL MODAL ===== -->
+<div class="modal-overlay" id="goalModalOverlay" onclick="closeGoalModal(event)">
+  <div class="modal" style="width:500px;">
+    <div class="modal-title" id="goalModalTitle">Nuevo Objetivo</div>
+
+    <div class="form-full">
+      <label class="field-label">Nombre del objetivo</label>
+      <input class="field-input" id="gmName" type="text" placeholder="Ej: Vacaciones en Europa, Fondo de emergencia…"/>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Meta ($)</label>
+        <input class="field-input" id="gmTarget" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Ahorro inicial ($)</label>
+        <input class="field-input" id="gmCurrent" type="number" min="0" placeholder="0"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Fecha límite</label>
+        <input class="field-input" id="gmDeadline" type="date"/>
+      </div>
+      <div>
+        <label class="field-label">Categoría</label>
+        <select class="field-select" id="gmCat">
+          <option value="Viaje">✈️ Viaje</option>
+          <option value="Ahorro">💰 Ahorro / Emergencia</option>
+          <option value="Hogar">🏠 Hogar</option>
+          <option value="Vehículo">🚗 Vehículo</option>
+          <option value="Educación">📚 Educación</option>
+          <option value="Tecnología">💻 Tecnología</option>
+          <option value="Inversión">📈 Inversión</option>
+          <option value="Salud">💊 Salud</option>
+          <option value="Otro">🎯 Otro</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Ícono</label>
+      <div class="ov-emoji-grid" id="gmEmojiGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Color</label>
+      <div class="bv-color-grid" id="gmColorGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="gmNotes" type="text" placeholder="Descripción o motivación…"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeGoalModal()">Cancelar</button>
+      <button class="btn btn-primary" id="gmSaveBtn" onclick="saveGoal()">Crear Objetivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONTRIBUTE MODAL ===== -->
+<div class="modal-overlay" id="contribModalOverlay" onclick="closeContribModal(event)">
+  <div class="modal" style="width:420px;">
+    <div class="modal-title" id="contribModalTitle">Agregar aporte</div>
+    <p style="font-size:12px;color:var(--muted);font-family:var(--font-mono);margin-bottom:16px;" id="contribGoalInfo">—</p>
+
+    <div class="form-row">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="cmAmount" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="cmDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Nota (opcional)</label>
+      <input class="field-input" id="cmNote" type="text" placeholder="Ej: Sueldo de abril…"/>
+    </div>
+
+    <div class="ov-contrib-history" id="cmHistory"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeContribModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveContrib()">Agregar aporte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GOAL DELETE MODAL ===== -->
+<div class="modal-overlay" id="goalDeleteOverlay" onclick="closeGoalDeleteModal(event)">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">¿Eliminar objetivo?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar <strong id="gdName" style="color:var(--text)"></strong> y todos sus aportes. Esta acción no se puede deshacer.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeGoalDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteGoal()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT MODAL ===== -->
+<div class="modal-overlay" id="accModalOverlay" onclick="closeAccModal(event)">
+  <div class="modal" style="width:460px;">
+    <div class="modal-title" id="accModalTitle">Nueva Cuenta</div>
+
+    <div class="form-full">
+      <label class="field-label">Nombre de la cuenta</label>
+      <input class="field-input" id="amName" type="text" placeholder="Ej: Cuenta Corriente Galicia"/>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Tipo</label>
+        <select class="field-select" id="amType" onchange="onAmTypeChange()">
+          <option value="banco">🏦 Banco / Cuenta corriente</option>
+          <option value="ahorro">💰 Caja de ahorro</option>
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="tarjeta">💳 Tarjeta de crédito</option>
+          <option value="inversion">📈 Inversión</option>
+          <option value="digital">📱 Billetera digital</option>
+          <option value="custom">✏️ Otro</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Banco / Entidad</label>
+        <input class="field-input" id="amBank" type="text" placeholder="Ej: Galicia, Mercado Pago…"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Saldo inicial ($)</label>
+        <input class="field-input" id="amBalance" type="number" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Moneda</label>
+        <select class="field-select" id="amCurrency">
+          <option value="ARS">🇦🇷 ARS — Peso argentino</option>
+          <option value="USD">🇺🇸 USD — Dólar</option>
+          <option value="EUR">🇪🇺 EUR — Euro</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="amLimitWrap" style="margin-top:12px;display:none;">
+      <label class="field-label">Límite de crédito ($)</label>
+      <input class="field-input" id="amLimit" type="number" placeholder="0"/>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="amNotes" type="text" placeholder="Ej: Cuenta en pesos para gastos diarios"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAccModal()">Cancelar</button>
+      <button class="btn btn-primary" id="amSaveBtn" onclick="saveAccount()">Crear Cuenta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT DELETE MODAL ===== -->
+<div class="modal-overlay" id="accDeleteOverlay" onclick="closeAccDeleteModal(event)">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">¿Eliminar cuenta?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar la cuenta <strong id="adName" style="color:var(--text)"></strong>.
+      Los movimientos asociados no se eliminarán.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAccDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteAccount()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUDGET MODAL ===== -->
+<div class="modal-overlay" id="budgetModalOverlay" onclick="closeBudgetModal(event)">
+  <div class="modal" style="width:480px;">
+    <div class="modal-title" id="budgetModalTitle">Nuevo Presupuesto</div>
+
+    <div class="form-row">
+      <div>
+        <label class="field-label">Categoría</label>
+        <select class="field-select" id="bmCat" onchange="onBmCatChange()">
+          <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+          <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+          <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+          <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+          <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+          <option value="Educación">📚 Educación</option>
+          <option value="Otros">📦 Otros</option>
+          <option value="custom">✏️ Personalizada…</option>
+        </select>
+      </div>
+      <div id="bmCustomWrap" style="display:none;">
+        <label class="field-label">Nombre personalizado</label>
+        <input class="field-input" id="bmCustomName" type="text" placeholder="Ej: Gimnasio"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Límite mensual ($)</label>
+        <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Ícono</label>
+        <input class="field-input" id="bmIcon" type="text" placeholder="🎯" style="font-size:18px;text-align:center;" maxlength="2"/>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Color</label>
+      <div class="bv-color-grid" id="bmColorGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="bmNotes" type="text" placeholder="Ej: Incluye delivery y salidas"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBudgetModal()">Cancelar</button>
+      <button class="btn btn-primary" id="bmSaveBtn" onclick="saveBudget()">Crear Presupuesto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUDGET DELETE MODAL ===== -->
+<div class="modal-overlay" id="budgetDeleteOverlay" onclick="closeBudgetDeleteModal(event)">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">¿Eliminar presupuesto?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar el presupuesto de <strong id="bdName" style="color:var(--text)"></strong>.
+      Las transacciones no se ven afectadas.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBudgetDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteBudget()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">Nueva Transacción</div>
+
+    <div class="type-toggle" style="margin-bottom:16px;">
+      <button class="type-btn active-expense" id="mTypeExpBtn" onclick="setModalType('expense')">— Gasto</button>
+      <button class="type-btn" id="mTypeIncBtn" onclick="setModalType('income')">+ Ingreso</button>
+    </div>
+
+    <div class="form-full">
+      <label class="field-label">Descripción</label>
+      <input class="field-input" id="mDesc" type="text" placeholder="Descripción de la transacción"/>
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="mAmount" type="number" min="0" placeholder="0.00"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="mDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Categoría</label>
+      <select class="field-select" id="mCat">
+        <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+        <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+        <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+        <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+        <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+        <option value="Educación">📚 Educación</option>
+        <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+        <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
+        <option value="Otros">📦 Otros</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="addFromModal()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT MODAL ===== -->
+<div class="modal-overlay" id="editModalOverlay" data-type="expense" onclick="closeEditModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">Editar Transacción</div>
+
+    <div class="type-toggle" style="margin-bottom:16px;">
+      <button class="type-btn active-expense" id="eTypeExpBtn" onclick="setEditType('expense')">— Gasto</button>
+      <button class="type-btn" id="eTypeIncBtn" onclick="setEditType('income')">+ Ingreso</button>
+    </div>
+
+    <div class="form-full">
+      <label class="field-label">Descripción</label>
+      <input class="field-input" id="eDesc" type="text" placeholder="Descripción"/>
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="eAmount" type="number" min="0" placeholder="0.00"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="eDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Categoría</label>
+      <select class="field-select" id="eCat">
+        <option value="Alimentación">🍔 Alimentación</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Entretenimiento">🎬 Entretenimiento</option>
+        <option value="Salud">💊 Salud</option>
+        <option value="Hogar">🏠 Hogar</option>
+        <option value="Ropa">👕 Ropa</option>
+        <option value="Sueldo">💼 Sueldo</option>
+        <option value="Freelance">💻 Freelance</option>
+        <option value="Inversión">📈 Inversión</option>
+        <option value="Otros">📦 Otros</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE MODAL ===== -->
+<div class="modal-overlay" id="deleteModalOverlay" onclick="closeDeleteModal(event)">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">¿Eliminar transacción?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px;">
+      Estás por eliminar:
+    </p>
+    <div id="deleteModalDesc" style="font-family:var(--font-mono);font-size:13px;color:var(--text);background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:4px;"></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px;">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCANNER RESULT MODAL ===== -->
+<div class="modal-overlay" id="scResultOverlay" onclick="scCloseResultModal(event)">
+  <div class="modal" style="width:560px;max-height:90vh;overflow-y:auto;">
+    <div class="sc-result-header">
+      <div class="modal-title" style="margin-bottom:0;">📋 Datos del Ticket</div>
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);margin-top:4px;">Revisá y editá los datos antes de guardar</div>
+    </div>
+
+    <!-- Confidence Bar -->
+    <div class="sc-confidence" id="scConfidenceRow" style="display:none; margin-top:12px;">
+      <div class="sc-confidence-label">Confianza OCR</div>
+      <div class="sc-confidence-bar-wrap">
+        <div class="sc-confidence-bar" id="scConfidenceBar" style="width: 0%;"></div>
+      </div>
+      <div class="sc-confidence-val" id="scConfidenceVal">0%</div>
+    </div>
+
+    <!-- Fields -->
+    <div class="sc-result-fields">
+
+      <div class="form-full">
+        <label class="field-label">Nombre del local / lugar <span class="sc-field-status" id="scStatusName"></span></label>
+        <input class="field-input" id="scfName" type="text" placeholder="Ej: Supermercado Disco"/>
+      </div>
+
+      <div class="form-row" style="margin-top:12px;">
+        <div>
+          <label class="field-label">Fecha <span class="sc-field-status" id="scStatusDate"></span></label>
+          <input class="field-input" id="scfDate" type="date"/>
+        </div>
+        <div>
+          <label class="field-label">Hora <span class="sc-field-status" id="scStatusTime"></span></label>
+          <input class="field-input" id="scfTime" type="time"/>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:12px;">
+        <div>
+          <label class="field-label">Total ($) <span class="sc-field-status" id="scStatusAmount"></span></label>
+          <input class="field-input" id="scfAmount" type="number" min="0" step="0.01" placeholder="0.00"/>
+        </div>
+        <div>
+          <label class="field-label">Categoría <span class="sc-field-status" id="scStatusCat"></span></label>
+          <select class="field-select" id="scfCat">
+            <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+            <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+            <option value="Transporte">🚗 Transporte</option>
+            <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+            <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+            <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+            <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+            <option value="Educación">📚 Educación</option>
+            <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+            <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
+            <option value="Otros">📦 Otros</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:12px;">
+        <div>
+          <label class="field-label">Forma de pago <span class="sc-field-status" id="scStatusPayment"></span></label>
+          <select class="field-select" id="scfPayment">
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="Tarjeta de débito">💳 Tarjeta de débito</option>
+            <option value="Tarjeta de crédito">💳 Tarjeta de crédito</option>
+            <option value="Tarjeta Visa">💳 Visa</option>
+            <option value="Tarjeta Mastercard">💳 Mastercard</option>
+            <option value="Tarjeta Amex">💳 American Express</option>
+            <option value="Transferencia">🏦 Transferencia bancaria</option>
+            <option value="Mercado Pago">📱 Mercado Pago</option>
+            <option value="Cuenta DNI">📱 Cuenta DNI</option>
+            <option value="MODO">📱 MODO</option>
+            <option value="Naranja X">📱 Naranja X</option>
+            <option value="QR">📷 Pago por QR</option>
+            <option value="No especificado">❓ No especificado</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Dirección / Sucursal <span class="sc-field-status" id="scStatusAddress"></span></label>
+          <input class="field-input" id="scfAddress" type="text" placeholder="Ej: Av. Corrientes 1234"/>
+        </div>
+      </div>
+
+      <div class="form-full" style="margin-top:12px;">
+        <label class="field-label">Descripción / notas adicionales</label>
+        <input class="field-input" id="scfDesc" type="text" placeholder="Ej: Compra supermercado, artículos del hogar…"/>
+      </div>
+
+      <!-- Preview of items (collapsible) -->
+      <div class="sc-raw-wrap" id="scItemsWrap" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <button class="sc-raw-toggle" onclick="scToggleItems()" style="margin-bottom:8px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          Ver artículos detectados (<span id="scItemsCount">0</span>)
+        </button>
+        <div id="scItemsList" style="display:none;font-size:11px;font-family:var(--font-mono);color:var(--muted);background:var(--surface2);border-radius:8px;padding:10px 14px;max-height:150px;overflow-y:auto;flex-direction:column;gap:4px;">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Raw ticket text (collapsible) -->
+    <div class="sc-raw-wrap" id="scRawWrap">
+      <button class="sc-raw-toggle" onclick="scToggleRaw()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        Ver texto crudo del ticket
+      </button>
+      <div class="sc-raw-text" id="scRawText" style="display:none;"></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="scCloseResultModal()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Cancelar
+      </button>
+      <button class="btn btn-primary" onclick="scSaveTicket()" id="scSaveTicketBtn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Guardar como Gasto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCANNER LOADING OVERLAY ===== -->
+<div class="sc-loading-overlay" id="scLoadingOverlay" style="display:none;">
+  <div class="sc-loading-box">
+    <div class="sc-loading-spinner"></div>
+    <div class="sc-loading-title">Analizando ticket con IA…</div>
+    <div class="sc-loading-sub" id="scLoadingMsg">Procesando imagen</div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast"></div>
+
+<!-- ===== CHART.JS ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- ===== TESSERACT.JS OCR ===== -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+<!-- ===== GOOGLE IDENTITY SERVICES ===== -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>

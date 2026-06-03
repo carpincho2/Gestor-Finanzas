@@ -1,0 +1,8 @@
+# Flujo Finance Manager — Apache config
+Options -Indexes
+
+# PHP: mostrar errores solo en dev (comentar en producción)
+<IfModule mod_php.c>
+    php_flag  display_errors  Off
+    php_value error_reporting 0
+</IfModule>

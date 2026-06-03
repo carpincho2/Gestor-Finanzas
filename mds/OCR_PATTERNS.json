@@ -1,0 +1,178 @@
+{
+  "argentina_stores": {
+    "supermarkets": [
+      { "name": "Coto", "keywords": ["coto"], "category": "Alimentación" },
+      { "name": "Disco", "keywords": ["disco"], "category": "Alimentación" },
+      { "name": "Carrefour", "keywords": ["carrefour"], "category": "Alimentación" },
+      { "name": "Jumbo", "keywords": ["jumbo"], "category": "Alimentación" },
+      { "name": "Día", "keywords": ["dia", "dia%"], "category": "Alimentación" },
+      { "name": "Walmart", "keywords": ["walmart"], "category": "Alimentación" },
+      { "name": "Hiperlibertad", "keywords": ["hiperlibertad"], "category": "Alimentación" },
+      { "name": "Carrefour Express", "keywords": ["carrefour express"], "category": "Alimentación" }
+    ],
+    "pharmacies": [
+      { "name": "Farmacia del Dr. Surtidor", "keywords": ["farmacia", "dr. surtidor"], "category": "Salud" },
+      { "name": "Farmacia del Dr. Ahorro", "keywords": ["farmacia", "dr. ahorro"], "category": "Salud" },
+      { "name": "Farmacia Farmacys", "keywords": ["farmacys"], "category": "Salud" },
+      { "name": "Farmacia 2001", "keywords": ["farmacia 2001"], "category": "Salud" },
+      { "name": "Óptica Santa Lucia", "keywords": ["optica", "santa lucia"], "category": "Salud" }
+    ],
+    "gas_stations": [
+      { "name": "YPF", "keywords": ["ypf"], "category": "Transporte" },
+      { "name": "Shell", "keywords": ["shell"], "category": "Transporte" },
+      { "name": "Axion", "keywords": ["axion"], "category": "Transporte" },
+      { "name": "Puma", "keywords": ["puma"], "category": "Transporte" },
+      { "name": "Estación de Servicio", "keywords": ["estacion", "servicio"], "category": "Transporte" }
+    ],
+    "fast_food": [
+      { "name": "McDonald's", "keywords": ["mcdonalds", "mc donalds"], "category": "Alimentación" },
+      { "name": "Burger King", "keywords": ["burger", "king"], "category": "Alimentación" },
+      { "name": "Subway", "keywords": ["subway"], "category": "Alimentación" },
+      { "name": "Freddo", "keywords": ["freddo"], "category": "Alimentación" },
+      { "name": "Banchero", "keywords": ["banchero"], "category": "Alimentación" },
+      { "name": "Mostaza", "keywords": ["mostaza"], "category": "Alimentación" }
+    ],
+    "restaurants": [
+      { "name": "Restaurante", "keywords": ["restaurant", "restaurante"], "category": "Alimentación" },
+      { "name": "Pizzería", "keywords": ["pizzeria", "pizza"], "category": "Alimentación" },
+      { "name": "Confitería", "keywords": ["confiteria", "cafe"], "category": "Alimentación" },
+      { "name": "Panadería", "keywords": ["panaderia", "pan"], "category": "Alimentación" }
+    ],
+    "entertainment": [
+      { "name": "Netflix", "keywords": ["netflix"], "category": "Entretenimiento" },
+      { "name": "Spotify", "keywords": ["spotify"], "category": "Entretenimiento" },
+      { "name": "Cine", "keywords": ["cine", "cinema", "multiplex"], "category": "Entretenimiento" },
+      { "name": "Teatro", "keywords": ["teatro"], "category": "Entretenimiento" },
+      { "name": "PlayStation", "keywords": ["playstation", "psn"], "category": "Entretenimiento" },
+      { "name": "Steam", "keywords": ["steam"], "category": "Entretenimiento" }
+    ],
+    "hardware_stores": [
+      { "name": "Easy", "keywords": ["easy"], "category": "Hogar" },
+      { "name": "Sodimac", "keywords": ["sodimac"], "category": "Hogar" },
+      { "name": "Ferretería", "keywords": ["ferreteria"], "category": "Hogar" },
+      { "name": "Bazar", "keywords": ["bazar"], "category": "Hogar" }
+    ],
+    "clothing": [
+      { "name": "Zara", "keywords": ["zara"], "category": "Ropa" },
+      { "name": "H&M", "keywords": ["h&m", "hm"], "category": "Ropa" },
+      { "name": "Forever 21", "keywords": ["forever 21"], "category": "Ropa" },
+      { "name": "Pull & Bear", "keywords": ["pull", "bear"], "category": "Ropa" },
+      { "name": "Bershka", "keywords": ["bershka"], "category": "Ropa" }
+    ]
+  },
+
+  "payment_methods": [
+    { "name": "Mercado Pago", "keywords": ["mercadopago", "mercado pago", "mp", "mpago"], "code": "mercado_pago" },
+    { "name": "Tarjeta Visa", "keywords": ["visa"], "code": "visa" },
+    { "name": "Tarjeta Mastercard", "keywords": ["mastercard", "master"], "code": "mastercard" },
+    { "name": "Tarjeta American Express", "keywords": ["amex", "american express"], "code": "amex" },
+    { "name": "Tarjeta Naranja X", "keywords": ["naranja", "naranjax"], "code": "naranja_x" },
+    { "name": "Tarjeta de Débito", "keywords": ["debito", "deb"], "code": "debit" },
+    { "name": "Tarjeta de Crédito", "keywords": ["credito", "cred"], "code": "credit" },
+    { "name": "Transferencia Bancaria", "keywords": ["transferencia", "transf"], "code": "transfer" },
+    { "name": "Efectivo", "keywords": ["efectivo", "cash", "contado"], "code": "cash" },
+    { "name": "QR", "keywords": ["qr", "codigo qr"], "code": "qr" },
+    { "name": "MODO", "keywords": ["modo"], "code": "modo" },
+    { "name": "Cuenta DNI", "keywords": ["cuentadni", "cuenta dni", "dni"], "code": "cuenta_dni" }
+  ],
+
+  "common_ocr_errors": [
+    {
+      "pattern": "0O",
+      "replacements": ["00", "O0"],
+      "context": "El cero y la O mayúscula se confunden frecuentemente",
+      "example": "TATAL 27.0O debe ser TOTAL 27.00"
+    },
+    {
+      "pattern": "1lIL",
+      "replacements": ["1", "i", "l"],
+      "context": "El uno, la L mayúscula, la I mayúscula y la l minúscula se confunden",
+      "example": "HORA 18:3l debe ser HORA 18:31"
+    },
+    {
+      "pattern": "rnm",
+      "replacements": ["rn", "m"],
+      "context": "La eme y rn se pueden confundir por similitud visual",
+      "example": "MONTO puede leerse como IVIONTO"
+    },
+    {
+      "pattern": "58",
+      "replacements": ["5", "8"],
+      "context": "Confusión en tickets borrosos",
+      "example": "2850 puede leerse como 2550"
+    },
+    {
+      "pattern": "SZ",
+      "replacements": ["S", "Z"],
+      "context": "La S y la Z pueden confundirse",
+      "example": "PIZZERIA puede leerse como PIZERIA"
+    }
+  ],
+
+  "realistic_amounts": {
+    "min_argentina": 10,
+    "max_argentina": 100000,
+    "description": "Rango realista de gastos en pesos argentinos (ARS)"
+  },
+
+  "date_formats_argentina": [
+    { "format": "DD/MM/YYYY", "example": "28/05/2026", "regex": "(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[012])/\\d{4}" },
+    { "format": "DD-MM-YYYY", "example": "28-05-2026", "regex": "(?:0[1-9]|[12][0-9]|3[01])-(?:0[1-9]|1[012])-\\d{4}" },
+    { "format": "DD.MM.YYYY", "example": "28.05.2026", "regex": "(?:0[1-9]|[12][0-9]|3[01])\\.(?:0[1-9]|1[012])\\.\\d{4}" }
+  ],
+
+  "time_formats_argentina": [
+    { "format": "HH:MM", "example": "14:35", "regex": "(?:[01][0-9]|2[0-3]):[0-5][0-9]" },
+    { "format": "HH:MM:SS", "example": "14:35:42", "regex": "(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" }
+  ],
+
+  "currency_settings": {
+    "argentina": {
+      "symbol": "$",
+      "decimal_separator": ",",
+      "thousands_separator": ".",
+      "position": "prefix",
+      "example": "$ 1.234,50"
+    }
+  },
+
+  "validation_rules": {
+    "store_name": {
+      "min_length": 3,
+      "max_length": 80,
+      "must_contain_letters": true,
+      "reject_patterns": [
+        "^\\d+$",
+        "^[^a-záéíóúñA-ZÁÉÍÓÚÑ]*$",
+        "[fjwkqb]{3,}",
+        "\\d{2,}[a-z]{2,}"
+      ]
+    },
+    "amount": {
+      "min": 10,
+      "max": 100000,
+      "must_be_positive": true,
+      "decimal_places_max": 2
+    },
+    "date": {
+      "not_in_future": true,
+      "not_older_than_days": 3650,
+      "prefer_recent": true
+    }
+  },
+
+  "confidence_thresholds": {
+    "high": { "min": 85, "label": "Muy seguro", "color": "#00e5a0", "action": "accept" },
+    "medium": { "min": 50, "max": 85, "label": "Revisar", "color": "#ffb84a", "action": "review" },
+    "low": { "min": 0, "max": 50, "label": "Editar", "color": "#ff6b4a", "action": "reject" }
+  },
+
+  "debug_levels": [
+    { "level": 0, "name": "OFF", "description": "Sin debug" },
+    { "level": 1, "name": "ERROR", "description": "Solo errores" },
+    { "level": 2, "name": "WARN", "description": "Errores y advertencias" },
+    { "level": 3, "name": "INFO", "description": "Información general" },
+    { "level": 4, "name": "DEBUG", "description": "Todos los logs incluyendo internos" },
+    { "level": 5, "name": "TRACE", "description": "Traza completa de ejecución" }
+  ]
+}

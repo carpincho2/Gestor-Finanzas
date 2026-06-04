@@ -59,6 +59,7 @@ Como estudiante de desarrollo de software, presta especial atención a estos tem
 *   **Fuzzy Matching (Búsqueda difusa)**: Técnica matemática para encontrar textos que son "similares" aunque no idénticos. Útil para corregir `"Carrefur"` a `"Carrefour"`. (Ver [OCR_IMPROVEMENT_PLAN.md](OCR_IMPROVEMENT_PLAN.md)).
 *   **Separación de Responsabilidades**: Por qué decidimos separar la autenticación (`index.html` + `js/auth.js`) de la pantalla interna del dashboard (`main.html` + `js/app.js`). (Ver [organizacion.md](organizacion.md)).
 *   **Integración de APIs Externas (Finanzas Locales e Internacionales)**: Cómo funciona el flujo OAuth2 y las APIs de Open Banking (Plaid, Belvo, Fintoc) para importar movimientos bancarios y de Mercado Pago de manera unificada y automática. (Ver [investigacion_mp.md](investigacion_mp.md) e [investigacion_multinacional_pagos.md](investigacion_multinacional_pagos.md)).
+*   **Despliegue en la Nube e Infraestructura como Código**: Cómo usar el manifiesto [render.yaml](../render.yaml) para configurar y conectar automáticamente una base de datos PostgreSQL de producción y un servidor web Python (FastAPI) en la nube sin configuraciones manuales.
 
 ---
 

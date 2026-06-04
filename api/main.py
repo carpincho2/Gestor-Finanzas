@@ -5,7 +5,8 @@ import bcrypt
 from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel, EmailStr
@@ -452,3 +453,23 @@ async def ocr_save(request: Request, payload: OCRSaveRequest, db: Session = Depe
         
     db.commit()
     return {"ok": True, "saved_items": saved_count}
+
+# ============================================================
+#  SERVING STATIC FILES (Frontend Monolith)
+# ============================================================
+# Obtener la ruta base absoluta del proyecto (subiendo un nivel desde la carpeta api/)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Montar directorios de archivos estáticos
+app.mount("/js", StaticFiles(directory=os.path.join(BASE_DIR, "js")), name="js")
+app.mount("/css", StaticFiles(directory=os.path.join(BASE_DIR, "css")), name="css")
+app.mount("/mds", StaticFiles(directory=os.path.join(BASE_DIR, "mds")), name="mds")
+
+# Rutas para servir las páginas principales del frontend
+@app.get("/", response_class=FileResponse)
+async def serve_index():
+    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+
+@app.get("/main.html", response_class=FileResponse)
+async def serve_main():
+    return FileResponse(os.path.join(BASE_DIR, "main.html"))

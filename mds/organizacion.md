@@ -12,6 +12,7 @@ El proyecto sigue una estructura modular y limpia para desarrollo web frontend y
 Gestor de Finanzas/
 ├── index.html                   # Entrada principal: pantalla de Login y Registro
 ├── main.html                    # Aplicación principal: Dashboard y vistas del gestor
+├── render.yaml                  # Manifiesto de infraestructura para despliegue automatizado en Render
 ├── .htaccess                    # Configuración del servidor web Apache (si se despliega allí)
 ├── iniciar_backend.bat          # Script por lotes de Windows para iniciar el servidor de desarrollo
 ├── css/

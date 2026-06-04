@@ -28,19 +28,14 @@ Gestor de Finanzas/
 │   └── fluxo_venv/              # Entorno virtual de Python para aislamiento de librerías
 └── mds/                         # Carpeta dedicada a la documentación, planes y referencias
     ├── organizacion.md          # Esta guía explicativa
-    ├── INICIO_AQUI.md           # Guía rápida inicial del OCR
-    ├── DOCUMENTO_ENTREGA.md     # Reporte de la entrega del plan OCR
-    ├── PLAN_RESUMEN.txt         # Resumen imprimible del plan OCR
-    ├── README.md                # Presentación del plan de mejora OCR
-    ├── INDEX_MAESTRO.md         # Mapa general de documentación del plan
-    ├── QUICK_REFERENCE.txt      # Solución de problemas rápida del OCR
-    ├── RESUMEN_EJECUTIVO.md     # Resumen gerencial del OCR
-    ├── README_OCR_PLAN.md       # Plan ejecutivo detallado del OCR
+    ├── INICIO_AQUI.md           # Guía general e índice de navegación
     ├── OCR_IMPROVEMENT_PLAN.md  # Plan técnico completo y algoritmos del OCR
     ├── IMPLEMENTATION_GUIDE.md  # Guía paso a paso para implementar el OCR
     ├── OCR_IMPLEMENTATION_EXAMPLES.js # Ejemplos de código para el OCR
     ├── OCR_TEST_CASES.js        # Casos de prueba de la suite de validación
-    └── OCR_PATTERNS.json        # Diccionario de patrones argentinos para OCR
+    ├── OCR_PATTERNS.json        # Diccionario de patrones globales y universales para OCR
+    ├── investigacion_mp.md      # Investigación para la integración de la API de Mercado Pago (LATAM)
+    └── investigacion_multinacional_pagos.md # Agregación financiera internacional y Open Banking (Mundial)
 ```
 
 ---

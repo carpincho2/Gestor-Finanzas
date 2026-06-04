@@ -1,163 +1,112 @@
 {
-  "argentina_stores": {
+  "global_brands": {
     "supermarkets": [
-      { "name": "Coto", "keywords": ["coto"], "category": "Alimentación" },
-      { "name": "Disco", "keywords": ["disco"], "category": "Alimentación" },
-      { "name": "Carrefour", "keywords": ["carrefour"], "category": "Alimentación" },
-      { "name": "Jumbo", "keywords": ["jumbo"], "category": "Alimentación" },
-      { "name": "Día", "keywords": ["dia", "dia%"], "category": "Alimentación" },
-      { "name": "Walmart", "keywords": ["walmart"], "category": "Alimentación" },
-      { "name": "Hiperlibertad", "keywords": ["hiperlibertad"], "category": "Alimentación" },
-      { "name": "Carrefour Express", "keywords": ["carrefour express"], "category": "Alimentación" }
-    ],
-    "pharmacies": [
-      { "name": "Farmacia del Dr. Surtidor", "keywords": ["farmacia", "dr. surtidor"], "category": "Salud" },
-      { "name": "Farmacia del Dr. Ahorro", "keywords": ["farmacia", "dr. ahorro"], "category": "Salud" },
-      { "name": "Farmacia Farmacys", "keywords": ["farmacys"], "category": "Salud" },
-      { "name": "Farmacia 2001", "keywords": ["farmacia 2001"], "category": "Salud" },
-      { "name": "Óptica Santa Lucia", "keywords": ["optica", "santa lucia"], "category": "Salud" }
+      { "name": "Carrefour", "keywords": ["carrefour", "carrefur"], "category": "Alimentación" },
+      { "name": "Walmart", "keywords": ["walmart", "wallmart"], "category": "Alimentación" },
+      { "name": "Lidl", "keywords": ["lidl"], "category": "Alimentación" },
+      { "name": "Aldi", "keywords": ["aldi"], "category": "Alimentación" },
+      { "name": "Tesco", "keywords": ["tesco"], "category": "Alimentación" },
+      { "name": "Costco", "keywords": ["costco"], "category": "Alimentación" },
+      { "name": "Target", "keywords": ["target"], "category": "Alimentación" },
+      { "name": "Dia", "keywords": ["dia", "dia%"], "category": "Alimentación" },
+      { "name": "Jumbo", "keywords": ["jumbo"], "category": "Alimentación" }
     ],
     "gas_stations": [
-      { "name": "YPF", "keywords": ["ypf"], "category": "Transporte" },
       { "name": "Shell", "keywords": ["shell"], "category": "Transporte" },
+      { "name": "YPF", "keywords": ["ypf"], "category": "Transporte" },
+      { "name": "BP", "keywords": ["bp", "british petroleum"], "category": "Transporte" },
+      { "name": "Total", "keywords": ["total energies", "totalen", "total station"], "category": "Transporte" },
+      { "name": "Texaco", "keywords": ["texaco"], "category": "Transporte" },
+      { "name": "Repso", "keywords": ["repsol"], "category": "Transporte" },
       { "name": "Axion", "keywords": ["axion"], "category": "Transporte" },
-      { "name": "Puma", "keywords": ["puma"], "category": "Transporte" },
-      { "name": "Estación de Servicio", "keywords": ["estacion", "servicio"], "category": "Transporte" }
+      { "name": "Puma", "keywords": ["puma energy", "puma service"], "category": "Transporte" }
     ],
-    "fast_food": [
-      { "name": "McDonald's", "keywords": ["mcdonalds", "mc donalds"], "category": "Alimentación" },
-      { "name": "Burger King", "keywords": ["burger", "king"], "category": "Alimentación" },
+    "fast_food_and_cafes": [
+      { "name": "McDonald's", "keywords": ["mcdonalds", "mc donalds", "mcdonald"], "category": "Alimentación" },
+      { "name": "Burger King", "keywords": ["burger king", "burgerking", "bk"], "category": "Alimentación" },
+      { "name": "Starbucks", "keywords": ["starbucks", "starbuck"], "category": "Alimentación" },
       { "name": "Subway", "keywords": ["subway"], "category": "Alimentación" },
-      { "name": "Freddo", "keywords": ["freddo"], "category": "Alimentación" },
-      { "name": "Banchero", "keywords": ["banchero"], "category": "Alimentación" },
+      { "name": "KFC", "keywords": ["kfc", "kentucky fried"], "category": "Alimentación" },
+      { "name": "Pizza Hut", "keywords": ["pizza hut", "pizzahut"], "category": "Alimentación" },
       { "name": "Mostaza", "keywords": ["mostaza"], "category": "Alimentación" }
     ],
-    "restaurants": [
-      { "name": "Restaurante", "keywords": ["restaurant", "restaurante"], "category": "Alimentación" },
-      { "name": "Pizzería", "keywords": ["pizzeria", "pizza"], "category": "Alimentación" },
-      { "name": "Confitería", "keywords": ["confiteria", "cafe"], "category": "Alimentación" },
-      { "name": "Panadería", "keywords": ["panaderia", "pan"], "category": "Alimentación" }
-    ],
-    "entertainment": [
-      { "name": "Netflix", "keywords": ["netflix"], "category": "Entretenimiento" },
+    "services_and_entertainment": [
+      { "name": "Netflix", "keywords": ["netflix", "netflix.com"], "category": "Entretenimiento" },
       { "name": "Spotify", "keywords": ["spotify"], "category": "Entretenimiento" },
-      { "name": "Cine", "keywords": ["cine", "cinema", "multiplex"], "category": "Entretenimiento" },
-      { "name": "Teatro", "keywords": ["teatro"], "category": "Entretenimiento" },
-      { "name": "PlayStation", "keywords": ["playstation", "psn"], "category": "Entretenimiento" },
-      { "name": "Steam", "keywords": ["steam"], "category": "Entretenimiento" }
+      { "name": "Amazon", "keywords": ["amazon", "amzn"], "category": "Hogar" },
+      { "name": "Steam", "keywords": ["steam", "steampowered"], "category": "Entretenimiento" },
+      { "name": "PlayStation", "keywords": ["playstation", "psn", "sony ent"], "category": "Entretenimiento" },
+      { "name": "Uber", "keywords": ["uber", "uber *trip"], "category": "Transporte" },
+      { "name": "Cabify", "keywords": ["cabify"], "category": "Transporte" }
     ],
-    "hardware_stores": [
-      { "name": "Easy", "keywords": ["easy"], "category": "Hogar" },
-      { "name": "Sodimac", "keywords": ["sodimac"], "category": "Hogar" },
-      { "name": "Ferretería", "keywords": ["ferreteria"], "category": "Hogar" },
-      { "name": "Bazar", "keywords": ["bazar"], "category": "Hogar" }
-    ],
-    "clothing": [
+    "clothing_and_home": [
       { "name": "Zara", "keywords": ["zara"], "category": "Ropa" },
       { "name": "H&M", "keywords": ["h&m", "hm"], "category": "Ropa" },
-      { "name": "Forever 21", "keywords": ["forever 21"], "category": "Ropa" },
-      { "name": "Pull & Bear", "keywords": ["pull", "bear"], "category": "Ropa" },
-      { "name": "Bershka", "keywords": ["bershka"], "category": "Ropa" }
+      { "name": "IKEA", "keywords": ["ikea"], "category": "Hogar" },
+      { "name": "Easy", "keywords": ["easy"], "category": "Hogar" },
+      { "name": "Sodimac", "keywords": ["sodimac"], "category": "Hogar" },
+      { "name": "Decathlon", "keywords": ["decathlon"], "category": "Ropa" }
     ]
   },
 
+  "multilingual_categories": [
+    { "category": "Alimentación", "keywords": ["super", "market", "grocer", "hyper", "aliment", "food", "restauran", "cafe", "coffee", "pizza", "burger", "panader", "bakery", "pizzer", "bistr", "coto", "disco", "jumbo", "dia", "vea", "chango", "anonima"] },
+    { "category": "Transporte", "keywords": ["gas", "station", "fuel", "combust", "nafta", "petrol", "ypf", "shell", "axion", "puma", "repsol", "bp", "uber", "cabify", "taxi", "peaje", "toll", "subte", "metro", "bus", "train", "vuelo", "flight"] },
+    { "category": "Salud", "keywords": ["pharma", "farmac", "apothe", "salud", "health", "medic", "doctor", "clinic", "dental", "optica", "vision", "remedio", "drug"] },
+    { "category": "Entretenimiento", "keywords": ["netflix", "spotify", "steam", "cine", "theatre", "teatro", "music", "game", "playstation", "xbox", "conciert", "show", "ticket", "entrada"] },
+    { "category": "Hogar", "keywords": ["easy", "sodimac", "ikea", "ferreter", "hardware", "bazar", "decor", "furnit", "mueble", "electric", "limpieza", "clean"] },
+    { "category": "Ropa", "keywords": ["zara", "h&m", "hm", "ropa", "clothing", "wear", "shoes", "zapater", "boutique", "fashion", "sportswear", "decathlon"] }
+  ],
+
   "payment_methods": [
     { "name": "Mercado Pago", "keywords": ["mercadopago", "mercado pago", "mp", "mpago"], "code": "mercado_pago" },
+    { "name": "Bizum", "keywords": ["bizum"], "code": "bizum" },
+    { "name": "Pix", "keywords": ["pix"], "code": "pix" },
     { "name": "Tarjeta Visa", "keywords": ["visa"], "code": "visa" },
-    { "name": "Tarjeta Mastercard", "keywords": ["mastercard", "master"], "code": "mastercard" },
+    { "name": "Tarjeta Mastercard", "keywords": ["mastercard", "master", "mc"], "code": "mastercard" },
     { "name": "Tarjeta American Express", "keywords": ["amex", "american express"], "code": "amex" },
     { "name": "Tarjeta Naranja X", "keywords": ["naranja", "naranjax"], "code": "naranja_x" },
-    { "name": "Tarjeta de Débito", "keywords": ["debito", "deb"], "code": "debit" },
-    { "name": "Tarjeta de Crédito", "keywords": ["credito", "cred"], "code": "credit" },
-    { "name": "Transferencia Bancaria", "keywords": ["transferencia", "transf"], "code": "transfer" },
-    { "name": "Efectivo", "keywords": ["efectivo", "cash", "contado"], "code": "cash" },
+    { "name": "Tarjeta de Débito", "keywords": ["debito", "debit", "deb"], "code": "debit" },
+    { "name": "Tarjeta de Crédito", "keywords": ["credito", "credit", "cred"], "code": "credit" },
+    { "name": "Transferencia Bancaria", "keywords": ["transferencia", "transfer", "transf", "wire"], "code": "transfer" },
+    { "name": "Efectivo", "keywords": ["efectivo", "cash", "contado", "dinero", "efetivo", "money"], "code": "cash" },
     { "name": "QR", "keywords": ["qr", "codigo qr"], "code": "qr" },
     { "name": "MODO", "keywords": ["modo"], "code": "modo" },
     { "name": "Cuenta DNI", "keywords": ["cuentadni", "cuenta dni", "dni"], "code": "cuenta_dni" }
   ],
 
   "common_ocr_errors": [
-    {
-      "pattern": "0O",
-      "replacements": ["00", "O0"],
-      "context": "El cero y la O mayúscula se confunden frecuentemente",
-      "example": "TATAL 27.0O debe ser TOTAL 27.00"
-    },
-    {
-      "pattern": "1lIL",
-      "replacements": ["1", "i", "l"],
-      "context": "El uno, la L mayúscula, la I mayúscula y la l minúscula se confunden",
-      "example": "HORA 18:3l debe ser HORA 18:31"
-    },
-    {
-      "pattern": "rnm",
-      "replacements": ["rn", "m"],
-      "context": "La eme y rn se pueden confundir por similitud visual",
-      "example": "MONTO puede leerse como IVIONTO"
-    },
-    {
-      "pattern": "58",
-      "replacements": ["5", "8"],
-      "context": "Confusión en tickets borrosos",
-      "example": "2850 puede leerse como 2550"
-    },
-    {
-      "pattern": "SZ",
-      "replacements": ["S", "Z"],
-      "context": "La S y la Z pueden confundirse",
-      "example": "PIZZERIA puede leerse como PIZERIA"
-    }
+    { "pattern": "0O", "replacements": ["00", "O0"], "context": "Cero y O mayúscula" },
+    { "pattern": "1lIL", "replacements": ["1", "i", "l"], "context": "Uno, L y I" },
+    { "pattern": "rnm", "replacements": ["rn", "m"], "context": "Eme y rn" },
+    { "pattern": "58", "replacements": ["5", "8"], "context": "Cinco y ocho" },
+    { "pattern": "SZ", "replacements": ["S", "Z"], "context": "Ese y zeta" }
   ],
 
-  "realistic_amounts": {
-    "min_argentina": 10,
-    "max_argentina": 100000,
-    "description": "Rango realista de gastos en pesos argentinos (ARS)"
+  "high_denomination_currencies": {
+    "codes": ["CLP", "COP", "JPY", "KRW", "VND", "IDR", "HUF", "PYG"],
+    "description": "Divisas sin centavos o con transacciones de gran escala numérica"
   },
 
-  "date_formats_argentina": [
-    { "format": "DD/MM/YYYY", "example": "28/05/2026", "regex": "(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[012])/\\d{4}" },
-    { "format": "DD-MM-YYYY", "example": "28-05-2026", "regex": "(?:0[1-9]|[12][0-9]|3[01])-(?:0[1-9]|1[012])-\\d{4}" },
-    { "format": "DD.MM.YYYY", "example": "28.05.2026", "regex": "(?:0[1-9]|[12][0-9]|3[01])\\.(?:0[1-9]|1[012])\\.\\d{4}" }
+  "date_formats": [
+    { "name": "DD_MM_YYYY", "regex": "(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[012])/\\d{4}" },
+    { "name": "DD_MM_YY", "regex": "(?:0[1-9]|[12][0-9]|3[01])/(?:0[1-9]|1[012])/\\d{2}\\b" },
+    { "name": "YYYY_MM_DD", "regex": "\\d{4}-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|3[01])" },
+    { "name": "MM_DD_YYYY", "regex": "(?:0[1-9]|1[012])/(?:0[1-9]|[12][0-9]|3[01])/\\d{4}" }
   ],
 
-  "time_formats_argentina": [
-    { "format": "HH:MM", "example": "14:35", "regex": "(?:[01][0-9]|2[0-3]):[0-5][0-9]" },
-    { "format": "HH:MM:SS", "example": "14:35:42", "regex": "(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]" }
-  ],
-
-  "currency_settings": {
-    "argentina": {
-      "symbol": "$",
-      "decimal_separator": ",",
-      "thousands_separator": ".",
-      "position": "prefix",
-      "example": "$ 1.234,50"
-    }
-  },
-
-  "validation_rules": {
+  "validation_settings": {
     "store_name": {
       "min_length": 3,
       "max_length": 80,
-      "must_contain_letters": true,
       "reject_patterns": [
         "^\\d+$",
-        "^[^a-záéíóúñA-ZÁÉÍÓÚÑ]*$",
-        "[fjwkqb]{3,}",
-        "\\d{2,}[a-z]{2,}"
+        "^[^a-zA-ZÁÉÍÓÚÑáéíóúñ]*$"
       ]
     },
-    "amount": {
-      "min": 10,
-      "max": 100000,
-      "must_be_positive": true,
-      "decimal_places_max": 2
-    },
-    "date": {
-      "not_in_future": true,
-      "not_older_than_days": 3650,
-      "prefer_recent": true
+    "amount_ranges": {
+      "standard": { "min": 0.10, "max": 10000 },
+      "high_denomination": { "min": 100, "max": 5000000 }
     }
   },
 
@@ -165,14 +114,5 @@
     "high": { "min": 85, "label": "Muy seguro", "color": "#00e5a0", "action": "accept" },
     "medium": { "min": 50, "max": 85, "label": "Revisar", "color": "#ffb84a", "action": "review" },
     "low": { "min": 0, "max": 50, "label": "Editar", "color": "#ff6b4a", "action": "reject" }
-  },
-
-  "debug_levels": [
-    { "level": 0, "name": "OFF", "description": "Sin debug" },
-    { "level": 1, "name": "ERROR", "description": "Solo errores" },
-    { "level": 2, "name": "WARN", "description": "Errores y advertencias" },
-    { "level": 3, "name": "INFO", "description": "Información general" },
-    { "level": 4, "name": "DEBUG", "description": "Todos los logs incluyendo internos" },
-    { "level": 5, "name": "TRACE", "description": "Traza completa de ejecución" }
-  ]
+  }
 }

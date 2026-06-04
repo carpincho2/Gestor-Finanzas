@@ -2518,11 +2518,96 @@ let scScanHistory = [];
 let scCurrentParsedData = null;
 
 /* =====================================================
+   SCANNER — Internacionalización y Patrones Dinámicos (Universal)
+   ===================================================== */
+let scActivePatterns = null;
+let scUserCountry = 'AR';
+let scCurrencySymbol = '$';
+let scDecimalSeparator = ',';
+let scThousandsSeparator = '.';
+let scIsHighDenomination = false;
+
+function scDetectUserCountry() {
+  const langs = navigator.languages || [navigator.language || 'es-AR'];
+  for (const lang of langs) {
+    const parts = lang.split('-');
+    if (parts.length > 1) {
+      return parts[1].toUpperCase();
+    }
+  }
+  const mainLang = (navigator.language || 'es-AR').split('-')[0].toUpperCase();
+  // Fallbacks de idioma comunes a país
+  const langToCountry = { 'ES': 'ES', 'FR': 'FR', 'IT': 'IT', 'DE': 'DE', 'JA': 'JP', 'KO': 'KR', 'EN': 'US' };
+  return langToCountry[mainLang] || 'AR';
+}
+
+async function scLoadOCRPatterns() {
+  if (scActivePatterns) return;
+  try {
+    const res = await fetch('mds/OCR_PATTERNS.json');
+    scActivePatterns = await res.json();
+    scUserCountry = scDetectUserCountry();
+    console.log('País detectado automáticamente para OCR:', scUserCountry);
+    
+    const locale = navigator.language || 'es-AR';
+    scIsHighDenomination = scActivePatterns.high_denomination_currencies.codes.includes(scUserCountry) || 
+                           ['CL', 'CO', 'JP', 'KR', 'VN', 'ID', 'HU', 'PY'].includes(scUserCountry);
+                           
+    try {
+      const numFormat = new Intl.NumberFormat(locale);
+      const formatted = numFormat.format(1.2);
+      scDecimalSeparator = formatted.includes(',') ? ',' : '.';
+      scThousandsSeparator = scDecimalSeparator === ',' ? '.' : ',';
+      
+      const currencyMap = {
+        'AR': 'ARS', 'ES': 'EUR', 'CL': 'CLP', 'CO': 'COP', 'MX': 'MXN', 
+        'US': 'USD', 'UY': 'UYU', 'PE': 'PEN', 'BR': 'BRL', 'PY': 'PYG',
+        'VE': 'VES', 'BO': 'BOB', 'EC': 'USD', 'GT': 'GTQ', 'HN': 'HNL'
+      };
+      const currencyCode = currencyMap[scUserCountry] || 'USD';
+      const currencyFormat = new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode });
+      const parts = currencyFormat.formatToParts(100);
+      const symbolPart = parts.find(p => p.type === 'currency');
+      scCurrencySymbol = symbolPart ? symbolPart.value : '$';
+      
+      console.log(`[OCR] Configuración regional cargada: Símbolo = ${scCurrencySymbol}, Decimal = ${scDecimalSeparator}, Es alta denominación = ${scIsHighDenomination}`);
+    } catch (intlErr) {
+      console.warn('Error configurando Intl para moneda, usando fallbacks:', intlErr);
+      if (['AR', 'ES', 'UY', 'CL', 'BR'].includes(scUserCountry)) {
+        scDecimalSeparator = ',';
+        scThousandsSeparator = '.';
+        scCurrencySymbol = scUserCountry === 'ES' ? '€' : '$';
+      } else {
+        scDecimalSeparator = '.';
+        scThousandsSeparator = ',';
+        scCurrencySymbol = '$';
+      }
+    }
+  } catch (err) {
+    console.error('Error al cargar OCR_PATTERNS.json, inicializando fallback local:', err);
+    scActivePatterns = {
+      global_brands: { supermarkets: [], gas_stations: [], fast_food_and_cafes: [], services_and_entertainment: [], clothing_and_home: [] },
+      multilingual_categories: [],
+      payment_methods: [
+        { name: "Mercado Pago", keywords: ["mercadopago", "mp"], code: "mercado_pago" },
+        { name: "Efectivo", keywords: ["efectivo", "cash"], code: "cash" }
+      ],
+      common_ocr_errors: [],
+      validation_settings: {
+        store_name: { min_length: 3, max_length: 80, reject_patterns: ["^\\d+$"] },
+        amount_ranges: { standard: { min: 0.1, max: 10000 }, high_denomination: { min: 100, max: 5000000 } }
+      }
+    };
+  }
+}
+
+/* =====================================================
    SCANNER — Nav & View
    ===================================================== */
 function enterScannerView() {
   scRenderHistory();
-  // Pre-inicializar worker en segundo plano para acelerar el escaneo
+  // Pre-inicializar worker y cargar patrones en segundo plano
+  scLoadOCRPatterns().catch(err => console.warn('Carga de patrones fallida:', err));
   scInitWorker().catch(err => console.warn('Pre-inicialización de Tesseract fallida:', err));
 }
 
@@ -3069,17 +3154,22 @@ function scParseTicketText(raw) {
   const text = raw || '';
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-  const rxExclude = /ITEMS|SOLD|RETURNEO|RETURN|CHANGE|VUELTO|VUELT|CHANGE|CANTIDAD|CANT|PRICE|UNIT|FEE|TEL|PHONE|CUIT|FECHA|HORA|CASHIER/i;
-  const rxTotal = /TOTAL|PAGAR|IMPORTE|NETO|FINAL|AMOUNT|EBT|CASH|EFECTIVO|VISA|DEBITO|CREDITO|TRANSFERENCIA|PAGO/i;
+  const rxExclude = /ITEMS|SOLD|RETURNEO|RETURN|CHANGE|VUELTO|VUELT|CHANGE|CANTIDAD|CANT|PRICE|UNIT|FEE|TEL|PHONE|CUIT|RUT|NIF|VAT|TAX|RFC|NIT|FECHA|HORA|CASHIER|CAJERA/i;
+  const rxTotal = /TOTAL|PAGAR|IMPORTE|NETO|FINAL|AMOUNT|EBT|CASH|EFECTIVO|VISA|DEBITO|CREDITO|TRANSFERENCIA|PAGO|TOTAL DUE|BALANCE DUE/i;
   const rxSubtotal = /SUBTOTAL|SUB-OTAL|SUB TOTAL/i;
+
+  // Cargar rangos de montos dinámicos según el tipo de moneda del país
+  const amountLimits = scActivePatterns ? 
+    (scIsHighDenomination ? scActivePatterns.validation_settings.amount_ranges.high_denomination : scActivePatterns.validation_settings.amount_ranges.standard) :
+    { min: 0.10, max: 1000000 };
 
   // 1. EXTRAER ARTÍCULOS
   const items = [];
-  const rxItemLine = /^\s*(?:(\d+(?:[.,]\d+)?)\s*(?:x|unid|un)?\s+)?([A-Z0-9\s&.\-\/]{4,30})\s+[$]?\s*([\d.,OoSsBbIiLl|]+)\s*$/i;
+  const rxItemLine = /^\s*(?:(\d+(?:[.,]\d+)?)\s*(?:x|unid|un)?\s+)?([A-Z0-9\s&.\-\/]{4,30})\s+[$€£¥]?\s*([\d.,OoSsBbIiLl|]+)\s*$/i;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (rxExclude.test(line) || rxTotal.test(line) || rxSubtotal.test(line) || 
-        /cuit|iva|fecha|hora|telefono|tel:|cajera|factura/i.test(line)) {
+        /cuit|rut|nif|vat|tax|rfc|nit|fecha|hora|telefono|tel:|cajera|factura/i.test(line)) {
       continue;
     }
     const m = line.match(rxItemLine);
@@ -3087,7 +3177,7 @@ function scParseTicketText(raw) {
       const qty = m[1] ? parseFloat(m[1].replace(',', '.')) : 1;
       const desc = m[2].trim();
       const priceVal = scParseAmount(m[3]);
-      if (priceVal && priceVal > 0 && priceVal < 500000 && desc.length >= 3) {
+      if (priceVal && priceVal > 0 && priceVal < amountLimits.max && desc.length >= 3) {
         items.push({ qty, desc, price: priceVal, total: qty * priceVal });
       }
     }
@@ -3102,19 +3192,19 @@ function scParseTicketText(raw) {
     line = line.replace(/\b\d{2,4}[\/\-\.]\d{2}[\/\-\.]\d{2,4}\b/g, ''); 
     line = line.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, '');           
     line = line.replace(/\b\d{3}[-\.]\d{3}[-\.]\d{4}\b/g, '');           
-    line = line.replace(/\b(?:20|23|24|27|30|33|34)\-?\d{8}\-?\d\b/g, ''); 
+    line = line.replace(/\b(?:20|23|24|27|30|33|34)\-?\d{8}\-?\d\b/g, ''); // CUITs / RUTs
     
     const numMatches = line.match(/[\d.,OoIiLlSsBb|]{3,}/g);
     if (!numMatches) continue;
 
     for (const numStr of numMatches) {
       const val = scParseAmount(numStr);
-      if (!val || val <= 0 || val > 5000000 || /^\d{11}$/.test(String(val))) continue;
+      if (!val || val < amountLimits.min || val > amountLimits.max || /^\d{11}$/.test(String(val))) continue;
 
       let score = 0;
       if (rxTotal.test(lines[i])) score += 100;
       if (rxSubtotal.test(lines[i])) score += 40;
-      if (lines[i].includes('$')) score += 30;
+      if (lines[i].includes(scCurrencySymbol)) score += 30;
       if (i > lines.length * 0.6) score += 30;
       if (/[.,]\d{2}$/.test(numStr)) score += 20;
       if (sumItems > 0 && Math.abs(val - sumItems) / sumItems <= 0.05) score += 150;
@@ -3129,18 +3219,35 @@ function scParseTicketText(raw) {
     total = candidates[0].value;
   }
 
-  // 3. EXTRAER LA FECHA
+  // 3. EXTRAER LA FECHA (Tolerancia multiformato)
   let fecha = null;
   const cleanTextForDate = text
     .replace(/(\d|[Oo])(\d|[Oo])[\/\-\.](\d|[Oo])(\d|[Oo])[\/\-\.](\d|[Oo]|[IiLl]){2,4}/g, m => {
       return m.replace(/[Oo]/g, '0').replace(/[IiLl]/g, '1');
     });
 
-  const dateRxList = [
-    { rx: /(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/, fn: m => `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` },
-    { rx: /(\d{4})[\/\-\.](\d{2})[\/\-\.](\d{2})/, fn: m => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` },
-    { rx: /(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2})/, fn: m => `20${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` },
-  ];
+  let dateRxList = [];
+  if (scActivePatterns && scActivePatterns.date_formats) {
+    scActivePatterns.date_formats.forEach(f => {
+      let fn;
+      if (f.name === 'YYYY_MM_DD') {
+        fn = m => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+      } else if (f.name === 'MM_DD_YYYY') {
+        fn = m => `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+      } else if (f.name === 'DD_MM_YY') {
+        fn = m => `20${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      } else { // DD_MM_YYYY
+        fn = m => `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      }
+      dateRxList.push({ rx: new RegExp(f.regex), fn: fn });
+    });
+  } else {
+    dateRxList = [
+      { rx: /(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{4})/, fn: m => `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` },
+      { rx: /(\d{4})[\/\-\.](\d{2})[\/\-\.](\d{2})/, fn: m => `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` },
+      { rx: /(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2})/, fn: m => `20${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` },
+    ];
+  }
 
   for (const { rx, fn } of dateRxList) {
     const m = cleanTextForDate.match(rx);
@@ -3171,54 +3278,59 @@ function scParseTicketText(raw) {
     }
   }
 
-  // 5. FORMA DE PAGO
+  // 5. FORMA DE PAGO (Detección dinámica)
   let forma_pago = 'No especificado';
-  const payKeywords = [
-    { keys: ['MERCADOPAGO', 'MPAGO', 'MERCADO PAGO', 'MP'], label: 'Mercado Pago' },
-    { keys: ['CUENTADNI', 'DNI', 'CUENTA DNI'], label: 'Cuenta DNI' },
-    { keys: ['NARANJAX', 'NARANJA'], label: 'Naranja X' },
-    { keys: ['AMEX', 'AMERICAN EXPRESS'], label: 'Tarjeta Amex' },
-    { keys: ['MASTERCARD', 'MASTER'], label: 'Tarjeta Mastercard' },
-    { keys: ['VISA'], label: 'Tarjeta Visa' },
-    { keys: ['DEBITO', 'DEB'], label: 'Tarjeta de débito' },
-    { keys: ['CREDITO', 'CRED'], label: 'Tarjeta de crédito' },
-    { keys: ['TARJETA'], label: 'Tarjeta de crédito' },
-    { keys: ['TRANSFERENCIA', 'TRANSF'], label: 'Transferencia' },
-    { keys: ['MODO'], label: 'MODO' },
-    { keys: ['QR'], label: 'QR' },
-    { keys: ['EFECTIVO', 'CASH', 'CONTADO'], label: 'Efectivo' }
-  ];
+  let payKeywords = [];
+  if (scActivePatterns && scActivePatterns.payment_methods) {
+    payKeywords = scActivePatterns.payment_methods.map(p => ({ keys: p.keywords.map(k => k.toUpperCase()), label: p.name }));
+  } else {
+    payKeywords = [
+      { keys: ['MERCADOPAGO', 'MPAGO', 'MERCADO PAGO', 'MP'], label: 'Mercado Pago' },
+      { keys: ['VISA'], label: 'Tarjeta Visa' },
+      { keys: ['EFECTIVO', 'CASH', 'CONTADO'], label: 'Efectivo' }
+    ];
+  }
   for (const item of payKeywords) {
     const match = findKeywordFuzzy(lines, item.keys, 1);
     if (match) { forma_pago = item.label; break; }
   }
 
-  // 6. NOMBRE DEL LOCAL (Scoring)
+  // 6. NOMBRE DEL LOCAL (Algoritmo Heurístico Universal + Diccionario Global)
   let nombre_local = '';
   let bestNameScore = -100;
-  const rxStoreSuffix = /\b(S\.A\.|S\.R\.L\.|S\.A\.S|S\.A|SRL|SAS|MARKET|SUPERMERCADO|EXPRESS|ALMACEN|DESPENSA|PANADERIA|CARNICERIA|KIOSCO|FARMACIA|CAFE|BAR|RESTAURANTE|RESTAURANT|SHELL|YPF|AXION|PUMA)\b/i;
-  const rxArgBrands = /\b(COTO|CARREFOUR|DIA|JUMBO|DISCO|VEA|CHANGOMAS|YPF|SHELL|AXION|PUMA|FARMACITY|MCDONALD|STARBUCKS|BURGER KING|MOSTAZA|CANDY|KIOSCO|DESPENSA|ALMACEN|LA ANONIMA|CENCOSUD)\b/i;
+  
+  const rxStoreSuffix = /\b(S\.A\.|S\.R\.L\.|S\.A\.S|S\.A|SRL|SAS|MARKET|SUPERMERCADO|EXPRESS|ALMACEN|DESPENSA|PANADERIA|CARNICERIA|KIOSCO|FARMACIA|CAFE|BAR|RESTAURANTE|RESTAURANT|SHELL|YPF|AXION|PUMA|STORE|SHOP|GROCERY|HYPERMARKET|MALL|SUPER)\b/i;
+  
+  let globalBrandsList = [];
+  if (scActivePatterns && scActivePatterns.global_brands) {
+    Object.keys(scActivePatterns.global_brands).forEach(key => {
+      scActivePatterns.global_brands[key].forEach(brand => {
+        globalBrandsList.push(...brand.keywords);
+      });
+    });
+  }
+  const rxGlobalBrands = globalBrandsList.length > 0 ? 
+    new RegExp('\\b(' + globalBrandsList.map(b => b.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|').toUpperCase() + ')\\b', 'i') :
+    /\b(COTO|CARREFOUR|DIA|JUMBO|DISCO|VEA|CHANGOMAS|YPF|SHELL|AXION|PUMA|MCDONALD|STARBUCKS|BURGER KING|MOSTAZA|ZARA|HM|NETFLIX|SPOTIFY|STEAM|EASY|SODIMAC)\b/i;
 
   for (let idx = 0; idx < Math.min(8, lines.length); idx++) {
     const l = lines[idx];
     const cleanL = l.replace(/[^\w\s\u00C0-\u024F&.,\-]/g, '').trim();
     if (cleanL.length <= 3 || /^\d+$/.test(cleanL) || /^[.\-_]/.test(cleanL) || 
-        /cuit|iva|ticket|factura|responsable|monotributo|telefono|tel|email|fecha|hora/i.test(cleanL)) {
+        /cuit|rut|nif|vat|tax|rfc|nit|ticket|factura|responsable|monotributo|telefono|tel:|email|fecha|hora/i.test(cleanL)) {
       continue;
     }
     
     let nameScore = 0;
     nameScore += (8 - idx) * 3;
     if (cleanL.length >= 5 && cleanL.length <= 30) nameScore += 10;
-    if (rxStoreSuffix.test(cleanL)) nameScore += 40;
-    if (rxArgBrands.test(cleanL)) nameScore += 120; // Heavy boost for known local brands!
+    if (rxStoreSuffix.test(cleanL)) nameScore += 45;
+    if (rxGlobalBrands.test(cleanL)) nameScore += 130; // Boost para marcas globales conocidas
     
-    // Penalize total-like keywords to prevent them from becoming the store name
-    if (/\b(total|subtotal|neto|pagar|pago|vuelto|importe|visa|mastercard|debito|efectivo|cambio|items|fiscal|duplicado|original)\b/i.test(cleanL)) {
+    if (/\b(total|subtotal|neto|pagar|pago|vuelto|importe|visa|mastercard|debito|efectivo|cambio|items|fiscal|duplicado|original|tax|vat|invoice|receipt)\b/i.test(cleanL)) {
       nameScore -= 150;
     }
     
-    // Penalize number count inside store name candidates
     const digits = cleanL.replace(/\D/g, '');
     if (digits.length > 0) {
       nameScore -= digits.length * 15;
@@ -3236,22 +3348,25 @@ function scParseTicketText(raw) {
 
   // 7. DIRECCIÓN
   let direccion = null;
-  const addrM = text.match(/\b(AV\.|AVDA|CALLE|RUTA|PASAJE|BVAR|BLVD|DIAGONAL|PEATONAL)\b\.?\s+[\w\sñáéíóúÁÉÍÓÚ]+(?:\bN°?\s*\d+|\d+)/i);
+  const addrM = text.match(/\b(AV\.|AVDA|CALLE|RUTA|PASAJE|BVAR|BLVD|DIAGONAL|PEATONAL|STREET|ST|AVE|ROAD|RD|BOULEVARD)\b\.?\s+[\w\sñáéíóúÁÉÍÓÚ]+(?:\bN°?\s*\d+|\d+)/i);
   if (addrM) direccion = addrM[0].trim();
 
-  // 8. CATEGORÍA
+  // 8. CATEGORÍA (Búsqueda multilingüe)
   let categoria = 'Otros';
-  const catKeywords = [
-    { cat: 'Salud / Farmacia', keys: ['FARMACIA', 'FARMA', 'DROGUERIA', 'OPTICA', 'MEDICO', 'CLINICA', 'HOSPITAL', 'LABORATORIO', 'DENTAL', 'REMEDIO', 'APOTHEKE', 'RECETA', 'PSIQUIATRA', 'PEDIATRA'] },
-    { cat: 'Transporte', keys: ['NAFTA', 'YPF', 'SHELL', 'AXION', 'PUMA', 'SUBE', 'PEAJE', 'ESTACION', 'COMBUSTIBLE', 'ESTACIONAMIENTO', 'COLECTIVO', 'TAXI', 'UBER', 'CABIFY', 'PEAJES', 'COCHERA'] },
-    { cat: 'Entretenimiento / Suscripciones', keys: ['CINE', 'TEATRO', 'NETFLIX', 'SPOTIFY', 'STEAM', 'TICKETEK', 'DISNEY', 'GAMING', 'JUEGOS', 'PLAYSTATION', 'BOULING', 'HBO', 'MAX', 'PRIME', 'COMPLEJO', 'SHOW'] },
-    { cat: 'Compras / Ropa', keys: ['INDUMENTARIA', 'ZAPATERIA', 'CALZADO', 'MODA', 'ROPA', 'VESTIMENTA', 'JEAN', 'ZARA', 'PULL', 'SHOE', 'LOCAL', 'MALL', 'SHOPPING', 'ELECTRONICA', 'CELULAR', 'COMPUTACION'] },
-    { cat: 'Hogar / Servicios', keys: ['FERRETERIA', 'EASY', 'SODIMAC', 'MUEBLE', 'ELECTRICIDAD', 'PLOMERIA', 'PINTURA', 'BAZAR', 'COLCHON', 'SABANAS', 'LUZ', 'AGUA', 'GAS', 'TELECOM', 'FIBERTEL', 'TELECENTRO', 'EXPENSAS', 'ABL', 'INMOBILIARIO', 'ALQUILER'] },
-    { cat: 'Salidas / Restaurantes', keys: ['CAFETERIA', 'CAFE', 'DELIVERY', 'BURGER', 'MCDON', 'PIZZA', 'SUSHI', 'RESTAURANT', 'BAR', 'ROTISERIA', 'SANGUCHERIA', 'CHOCOLATE', 'HELADO', 'HELADERIA', 'CERVECERIA', 'PARRILLA', 'CAFFE', 'COFFEE', 'STARBUCKS', 'MOSTAZA', 'BURGERKING'] },
-    { cat: 'Supermercado / Almacén', keys: ['SUPER', 'MARKET', 'MERCADO', 'CARREFOUR', 'DISCO', 'JUMBO', 'COTO', 'DIA', 'VERDULERIA', 'PANADERIA', 'CARNICERIA', 'ALMACEN', 'MINISUPER', 'VEA', 'CHANGOMAS', 'EXPRESS', 'HIPER', 'HIPERMERCADO', 'COOP', 'COOPERATIVA'] },
-    { cat: 'Educación', keys: ['COLEGIO', 'FACULTAD', 'UNIVERSIDAD', 'CURSO', 'INSCRIPCION', 'LIBRO', 'LIBRERIA', 'UTILES', 'ESCUELA', 'MATRICULA'] },
-    { cat: 'Ahorro / Inversiones', keys: ['PLAZO FIJO', 'INVERSION', 'ACCIONES', 'BONOS', 'CEDEAR', 'DOLAR', 'MEP', 'CRYPTO', 'BITCOIN', 'FINANZAS'] },
-  ];
+  let catKeywords = [];
+  if (scActivePatterns && scActivePatterns.multilingual_categories) {
+    catKeywords = scActivePatterns.multilingual_categories.map(c => ({ cat: c.category, keys: c.keywords.map(k => k.toUpperCase()) }));
+  } else {
+    catKeywords = [
+      { cat: 'Salud / Farmacia', keys: ['FARMACIA', 'FARMA', 'DROGUERIA', 'OPTICA', 'MEDICO', 'CLINICA', 'PHARMACY', 'DRUGSTORE'] },
+      { cat: 'Transporte', keys: ['NAFTA', 'YPF', 'SHELL', 'AXION', 'PUMA', 'SUBE', 'PEAJE', 'TAXI', 'UBER', 'CABIFY', 'GAS', 'STATION', 'FUEL'] },
+      { cat: 'Entretenimiento / Suscripciones', keys: ['CINE', 'TEATRO', 'NETFLIX', 'SPOTIFY', 'STEAM', 'PLAYSTATION', 'GAME', 'SHOW', 'MOVIE'] },
+      { cat: 'Compras / Ropa', keys: ['ROPA', 'ZARA', 'HM', 'SHOPPING', 'ELECTRONICA', 'CLOTHING', 'WEAR', 'SHOES', 'BOUTIQUE'] },
+      { cat: 'Hogar / Servicios', keys: ['FERRETERIA', 'EASY', 'SODIMAC', 'MUEBLE', 'LUZ', 'AGUA', 'GAS', 'EXPENSAS', 'RENT', 'HARDWARE', 'IKEA'] },
+      { cat: 'Salidas / Restaurantes', keys: ['CAFETERIA', 'CAFE', 'DELIVERY', 'BURGER', 'MCDON', 'PIZZA', 'RESTAURANT', 'BAR', 'COFFEE', 'STARBUCKS'] },
+      { cat: 'Supermercado / Almacén', keys: ['SUPER', 'MARKET', 'MERCADO', 'CARREFOUR', 'DISCO', 'JUMBO', 'COTO', 'DIA', 'VERDULERIA', 'ALMACEN', 'GROCERY'] }
+    ];
+  }
   const linesWithLocal = [...lines, nombre_local];
   for (const item of catKeywords) {
     const match = findKeywordFuzzy(linesWithLocal, item.keys, 1);

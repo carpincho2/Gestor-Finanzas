@@ -13,6 +13,8 @@ services:
         generateValue: true
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: GOOGLE_CLIENT_ID
+        sync: false  # Set manually in Render dashboard
 
 databases:
   - name: flujo-db

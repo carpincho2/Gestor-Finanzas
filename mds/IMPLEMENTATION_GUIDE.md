@@ -76,7 +76,7 @@ function scParseTicketText(raw) {
 
 ### Paso B: Agregar Funciones de Validación
 
-**1. Abre archivo**: `mds/OCR_IMPLEMENTATION_EXAMPLES.js`
+**1. Abre archivo**: `tests/OCR_IMPLEMENTATION_EXAMPLES.js`
 
 **2. Copia la función**: `validateLocalName()`
 
@@ -230,7 +230,7 @@ function scShowResultModal(data) {
 
 **1. Abre DevTools**: F12 → Console
 
-**2. Copia y pega desde `mds/OCR_TEST_CASES.js`:**
+**2. Copia y pega desde `tests/OCR_TEST_CASES.js`:**
 
 ```javascript
 // Pegar TODAS las definiciones de OCR_TEST_CASES
@@ -415,9 +415,8 @@ Una vez que lo tengas funcionando:
 ## 📞 ¿Preguntas?
 
 Ver documentación completa:
-- `mds/README_OCR_PLAN.md` - Ejecutivo
 - `mds/OCR_IMPROVEMENT_PLAN.md` - Técnico completo
-- `mds/OCR_PATTERNS.json` - Datos y patrones
+- `data/OCR_PATTERNS.json` - Datos y patrones
 
 ---
 

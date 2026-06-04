@@ -38,6 +38,7 @@ load_env()
 #  DATABASE CONFIGURATION (SQLite / PostgreSQL)
 # ============================================================
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 # Fix for Render/Heroku postgresql:// scheme
 if DATABASE_URL.startswith("postgres://"):
@@ -99,15 +100,16 @@ app.add_middleware(
 )
 
 # Session middleware (equivalent to PHP session_start)
-# Under local development (HTTP), same_site="lax" and secure=False allows cookies to persist
+# Detect HTTPS (production) for secure cookies
 SECRET_KEY = os.getenv("SECRET_KEY", "flujo-secret-key-change-this-in-prod-12345")
+IS_PRODUCTION = bool(os.getenv("RENDER")) or DATABASE_URL.startswith("postgresql")
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
     session_cookie="flujo_session",
     max_age=86400 * 30,  # 30 days
     same_site="lax",
-    https_only=False
+    https_only=IS_PRODUCTION  # True in Render (HTTPS), False in dev (HTTP)
 )
 
 # ============================================================
@@ -286,6 +288,20 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
     token_data = response.json()
     if "error_description" in token_data or "email" not in token_data:
         return JSONResponse(status_code=401, content={"error": f"Token de Google inválido: {token_data.get('error_description', 'desconocido')}"})
+
+    # --- SECURITY: Validate audience (aud) matches our CLIENT_ID ---
+    token_aud = token_data.get("aud", "")
+    if GOOGLE_CLIENT_ID and token_aud != GOOGLE_CLIENT_ID:
+        return JSONResponse(status_code=401, content={
+            "error": "Token de Google no autorizado para esta aplicación."
+        })
+
+    # --- SECURITY: Verify email is confirmed by Google ---
+    email_verified = token_data.get("email_verified", "false")
+    if str(email_verified).lower() != "true":
+        return JSONResponse(status_code=401, content={
+            "error": "El email asociado a esta cuenta de Google no está verificado."
+        })
         
     google_id = token_data.get("sub", "")
     email = token_data.get("email", "")
@@ -464,6 +480,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 app.mount("/js", StaticFiles(directory=os.path.join(BASE_DIR, "js")), name="js")
 app.mount("/css", StaticFiles(directory=os.path.join(BASE_DIR, "css")), name="css")
 app.mount("/mds", StaticFiles(directory=os.path.join(BASE_DIR, "mds")), name="mds")
+app.mount("/data", StaticFiles(directory=os.path.join(BASE_DIR, "data")), name="data")
+app.mount("/tests", StaticFiles(directory=os.path.join(BASE_DIR, "tests")), name="tests")
 
 # Rutas para servir las páginas principales del frontend
 @app.get("/", response_class=FileResponse)

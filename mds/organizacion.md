@@ -12,7 +12,7 @@ El proyecto sigue una estructura modular y limpia para desarrollo web frontend y
 Gestor de Finanzas/
 ├── index.html                   # Entrada principal: pantalla de Login y Registro
 ├── main.html                    # Aplicación principal: Dashboard y vistas del gestor
-├── render.yaml                  # Manifiesto de infraestructura para despliegue automatizado en Render
+├── render.yaml                  # Manifiesto de infraestructura para despliegue automático en Render
 ├── .htaccess                    # Configuración del servidor web Apache (si se despliega allí)
 ├── iniciar_backend.bat          # Script por lotes de Windows para iniciar el servidor de desarrollo
 ├── css/
@@ -20,21 +20,28 @@ Gestor de Finanzas/
 ├── js/
 │   ├── auth.js                  # Lógica JavaScript exclusiva para index.html (Login/Registro)
 │   └── app.js                   # Lógica del cliente para main.html (Dashboard, OCR, etc.)
+├── data/                        # Archivos de datos estáticos y configuraciones de la app [NUEVO]
+│   └── OCR_PATTERNS.json        # Diccionario de patrones globales y universales para OCR
 ├── database/
 │   └── setup.sql                # Script SQL histórico de respaldo
+├── tests/                       # Carpeta dedicada a pruebas y ejemplos didácticos [NUEVO]
+│   ├── OCR_IMPLEMENTATION_EXAMPLES.js # Ejemplos de implementación del OCR
+│   ├── OCR_TEST_CASES.js        # Suite de pruebas automatizadas del OCR
+│   └── tickets/                 # Tickets de prueba manual en formato de imagen
+│       ├── ticket 2.jpg
+│       ├── ticket 3.jpg
+│       └── ticket-compra-junun-cerveza-limon-redes-socialesjpg.jpg
 ├── api/                         # Código backend en Python (FastAPI)
 │   ├── main.py                  # Endpoints de la API, gestión de base de datos y sesiones
 │   ├── database.db              # Base de datos SQLite local autogenerada
 │   ├── requirements.txt         # Dependencias del backend de Python
 │   └── fluxo_venv/              # Entorno virtual de Python para aislamiento de librerías
-└── mds/                         # Carpeta dedicada a la documentación, planes y referencias
+└── mds/                         # Carpeta dedicada EXCLUSIVAMENTE a documentación Markdown (.md)
     ├── organizacion.md          # Esta guía explicativa
     ├── INICIO_AQUI.md           # Guía general e índice de navegación
+    ├── autenticacion_y_responsive.md # Documentación de autenticación y diseño adaptable
     ├── OCR_IMPROVEMENT_PLAN.md  # Plan técnico completo y algoritmos del OCR
     ├── IMPLEMENTATION_GUIDE.md  # Guía paso a paso para implementar el OCR
-    ├── OCR_IMPLEMENTATION_EXAMPLES.js # Ejemplos de código para el OCR
-    ├── OCR_TEST_CASES.js        # Casos de prueba de la suite de validación
-    ├── OCR_PATTERNS.json        # Diccionario de patrones globales y universales para OCR
     ├── investigacion_mp.md      # Investigación para la integración de la API de Mercado Pago (LATAM)
     └── investigacion_multinacional_pagos.md # Agregación financiera internacional y Open Banking (Mundial)
 ```
@@ -48,12 +55,13 @@ Dividir la interfaz en dos páginas HTML limpias e independientes aporta grandes
 - **`index.html` (Autenticación)**: Contiene únicamente el formulario de Login y Registro. Evita cargar componentes pesados del Dashboard antes de que el usuario haya iniciado sesión. Carga `js/auth.js` que maneja las peticiones de ingreso y redirige a `main.html` al tener éxito.
 - **`main.html` (Dashboard principal)**: Es la interfaz interna donde se realiza la gestión. Protege su contenido: si `js/app.js` detecta que no hay una sesión activa, redirige automáticamente al usuario de vuelta a `index.html`.
 
-### B. Separación de Responsabilidades (Concepto "Separation of Concerns")
-En el desarrollo de software, es una buena práctica separar el contenido (HTML), el diseño (CSS), la interactividad (JavaScript) y la persistencia de datos (FastAPI/SQLite):
-- **HTML (`index.html` y `main.html`)**: Define únicamente la estructura de la interfaz (la barra lateral, el dashboard, las tablas y los modales).
-- **CSS (`css/styles.css`)**: Contiene los colores, márgenes, transiciones de pantalla, y efectos visuales de la aplicación.
-- **JavaScript (`js/auth.js` y `js/app.js`)**: `auth.js` maneja el formulario de acceso; `app.js` maneja el estado local del usuario (transacciones, presupuestos), controla los eventos de clic y realiza el escaneo OCR.
-- **Backend y persistencia (`api/main.py` y `api/database.db`)**: Centraliza la lógica en Python usando FastAPI y almacena la información de usuarios en una base de datos SQLite relacional y liviana.
+### B. Separación de Responsabilidades y Limpieza de Recursos (Concepto "Separation of Concerns")
+En el desarrollo de software profesional, cada directorio debe tener un propósito semántico claro:
+- **Datos y Configuración (`data/`)**: Mantenemos los archivos puramente de datos separados del código. `data/OCR_PATTERNS.json` es el diccionario JSON consumido por el frontend, ubicado fuera de la documentación.
+- **Pruebas y Recursos didácticos (`tests/`)**: Los ejemplos de JavaScript (`OCR_IMPLEMENTATION_EXAMPLES.js`), la suite de testeo interactiva (`OCR_TEST_CASES.js`) y las imágenes de prueba (`tests/tickets/`) están agrupados en un espacio de testing para no contaminar el código fuente de producción en `/js` ni la documentación en `/mds`.
+- **Documentación limpia (`mds/`)**: Almacena exclusivamente archivos `.md` de lectura. Esto facilita la navegación del estudiante y mantiene la documentación como un recurso estático puro sin lógica ni scripts ejecutables.
+- **HTML, CSS, JS de Producción (`/`, `css/`, `js/`)**: Contiene únicamente los archivos necesarios para la interfaz visual y la lógica interactiva del usuario final.
+- **Backend y persistencia (`api/`)**: Centraliza la lógica de API de FastAPI y almacena la base de datos de pruebas local.
 
 ### C. Nombres Limpios e Inequívocos
 Hemos evitado nombres con espacios ("finanzas  6.js") o carpetas innecesarias (como el entorno virtual duplicado `venv` que fue eliminado, dejando únicamente `fluxo_venv` que se usa activamente). Esto previene fallos al desplegar en servidores Linux.

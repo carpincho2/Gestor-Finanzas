@@ -422,8 +422,8 @@ function calculateMetrics(testResults) {
    - Actualizar modal de resultados con indicadores
    - Mostrar badges de confianza por campo
 
-4. **`mds/OCR_PATTERNS.json`** (NUEVO):
-   - Base de datos de patrones argentinos conocidos
+4. **`data/OCR_PATTERNS.json`**:
+   - Base de datos de patrones conocidos (marcas, categorías, etc.)
 
 ---
 

@@ -397,9 +397,48 @@ function addTransaction(tx) {
    ===================================================== */
 let currentPage = 'dashboard';
 
+/* =====================================================
+   SIDEBAR TOGGLE (Mobile hamburger)
+   ===================================================== */
+function toggleSidebar() {
+  const sidebar  = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const isOpen   = sidebar.classList.contains('open');
+
+  if (isOpen) {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  } else {
+    sidebar.classList.add('open');
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden'; // Prevent scroll behind overlay
+  }
+}
+
+// Close sidebar on window resize if going back to desktop
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 768) {
+    const sidebar  = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+});
+
 function setPage(el, page) {
   document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
   el.classList.add('active');
+
+  // Close sidebar on mobile after navigation
+  if (window.innerWidth <= 768) {
+    const sidebar  = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  }
 
   // Detener cámara y limpiar worker si salimos del scanner
   if (currentPage === 'scanner' && page !== 'scanner') {
@@ -2544,7 +2583,7 @@ function scDetectUserCountry() {
 async function scLoadOCRPatterns() {
   if (scActivePatterns) return;
   try {
-    const res = await fetch('mds/OCR_PATTERNS.json');
+    const res = await fetch('data/OCR_PATTERNS.json');
     scActivePatterns = await res.json();
     scUserCountry = scDetectUserCountry();
     console.log('País detectado automáticamente para OCR:', scUserCountry);

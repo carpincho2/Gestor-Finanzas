@@ -12,8 +12,11 @@
 
 <div class="app">
 
+  <!-- ===== SIDEBAR BACKDROP (mobile) ===== -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
   <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="logo">
       <div class="logo-mark">flujo.</div>
       <div class="logo-sub">Finance Manager</div>
@@ -86,6 +89,10 @@
 
     <!-- Topbar -->
     <div class="topbar">
+      <!-- Hamburger (mobile only) -->
+      <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Abrir menú">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div>
         <div class="page-title" id="pageTitle">Dashboard</div>
         <div class="page-date" id="pageDate"></div>
@@ -299,7 +306,7 @@
 
       <!-- Table -->
       <div class="panel" style="overflow:visible;">
-        <div style="overflow-x:auto;">
+        <div class="tx-table-wrap" style="overflow-x:auto;">
           <table class="tx-table">
             <thead>
               <tr>

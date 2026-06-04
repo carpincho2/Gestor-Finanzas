@@ -215,9 +215,13 @@ services:
         sync: false  # Se configura manualmente en el panel de Render por seguridad
       - key: SECRET_KEY
         generateValue: true  # Genera una clave secreta aleatoria segura automáticamente
+      - key: AI_PROVIDER
+        value: gemini  # Proveedor de IA por defecto en producción
+      - key: GEMINI_API_KEY
+        sync: false  # Clave API de Gemini (se configura en el panel de Render)
 ```
 
-*   `sync: false` en `GOOGLE_CLIENT_ID` le dice a Render que no sobrescriba este valor desde el repositorio de GitHub. De esta manera, el ID de cliente de Google de producción se configura directamente en el panel de Render de forma segura.
+*   `sync: false` en `GOOGLE_CLIENT_ID` y `GEMINI_API_KEY` le dice a Render que no sobrescriba estos valores desde el repositorio de GitHub. De esta manera, las credenciales sensibles de producción de Google y Gemini se configuran directamente en el panel de Render de forma segura.
 *   `generateValue: true` en `SECRET_KEY` asegura que cada despliegue tenga una clave secreta única para firmar las cookies de sesión.
 
 ---

@@ -15,6 +15,10 @@ services:
         value: 3.11.0
       - key: GOOGLE_CLIENT_ID
         sync: false  # Set manually in Render dashboard
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false  # Set manually in Render dashboard (Gemini API Key)
 
 databases:
   - name: flujo-db

@@ -1,0 +1,16 @@
+# Secretos y Configuraciones Locales
+api/.env
+.env
+
+# Entornos Virtuales y Dependencias de Python
+api/fluxo_venv/
+fluxo_venv/
+venv/
+.venv/
+__pycache__/
+api/__pycache__/
+*.pyc
+
+# Base de Datos Local de Pruebas
+api/database.db
+database.db

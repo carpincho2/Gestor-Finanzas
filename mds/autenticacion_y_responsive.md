@@ -17,8 +17,8 @@ sequenceDiagram
     participant F as Frontend (auth.js)
     participant B as Backend (FastAPI)
     
-    U->>F: Clic en "Continuar con Google"
-    F->>G: Inicializa Google Identity Services (Popup)
+    U->>F: Clic en el botón oficial "Continuar con Google" (iframe nativo)
+    F->>G: Inicializa Google Identity Services y abre Popup
     G->>U: Pide confirmación de cuenta
     U->>G: Selecciona cuenta
     G->>F: Devuelve un ID Token (JWT firmado digitalmente)
@@ -31,6 +31,37 @@ sequenceDiagram
     B->>F: Retorna datos de sesión e inyecta Cookie Segura
     F->>U: Redirige al Dashboard (main.html)
 ```
+
+### 💡 ¿Por qué el botón nativo (`renderButton`) evita bloqueos de popup?
+
+Originalmente, usábamos un botón HTML clásico y llamábamos por JS a `google.accounts.id.prompt()`. Los navegadores modernos (como Chrome y Safari) bloquean ventanas emergentes que se inician por código asíncrono. Consideran que un popup automático puede ser spam.
+
+Al usar **`google.accounts.id.renderButton`**:
+1. Google inyecta un iframe seguro e independiente en nuestro contenedor `#googleBtnContainer`.
+2. El clic del usuario ocurre dentro de ese iframe controlado directamente por Google.
+3. El navegador detecta que la apertura del popup de login proviene de una **acción directa, física y síncrona del usuario (User-Triggered Interaction)**, permitiendo abrir la ventana de autenticación de inmediato sin bloquearla.
+
+---
+
+### ⚙️ ¿Cómo solucionar el error de "Popup Bloqueado / Origen no Autorizado" en Google Cloud Console?
+
+Para que el popup oficial de Google funcione sin errores, Google debe saber que nuestro servidor local es seguro y de confianza. Si Google Cloud no tiene registrada la URL de origen de nuestra app, lanzará un error.
+
+Sigue estos pasos para configurarlo:
+
+1. **Entrar a la Consola de Google Cloud**:
+   Abre [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials).
+2. **Seleccionar tu Proyecto**:
+   Asegúrate de estar en el proyecto correcto donde creaste el `CLIENT_ID`.
+3. **Editar la credencial de OAuth 2.0**:
+   En la sección **ID de cliente de OAuth 2.0**, haz clic en el lápiz para editar tu cliente.
+4. **Configurar los Orígenes de JavaScript Autorizados**:
+   En la sección **Orígenes de JavaScript autorizados**, debes añadir los orígenes exactos desde los que accedes a tu aplicación. **Añade las siguientes URLs**:
+   * `http://localhost` (origen base)
+   * `http://localhost:8000` (¡Crítico! Es el puerto del servidor web FastAPI donde corre tu app localmente)
+   * Si estás desplegando en Render: `https://tu-app-url.onrender.com`
+5. **Guardar los cambios**:
+   Haz clic en guardar. *Nota*: Los servidores de Google pueden tardar entre 2 y 5 minutos en sincronizar los nuevos orígenes. ¡No olvides recargar la página con `Ctrl + Shift + R`!
 
 ### ¿Qué validaciones agregamos en el Backend (`api/main.py`)?
 

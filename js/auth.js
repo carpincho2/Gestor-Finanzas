@@ -218,9 +218,6 @@ async function authRegister() {
 const GOOGLE_CLIENT_ID = window.FLUJO_GOOGLE_CLIENT_ID || '';
 
 function handleGoogleCredential(response) {
-  const googleBtn = document.querySelector('.auth-btn-google');
-  if (googleBtn) googleBtn.classList.add('loading');
-
   if (IS_SERVER) {
     apiFetch('/auth/google', {
       method: 'POST',
@@ -228,7 +225,6 @@ function handleGoogleCredential(response) {
     }).then(data => {
       authFinishLogin(data.user);
     }).catch(e => {
-      if (googleBtn) googleBtn.classList.remove('loading');
       authShowError('⚠️ Error Google: ' + e.message);
     });
   } else {
@@ -242,40 +238,41 @@ function handleGoogleCredential(response) {
       const user   = { name: payload.name || payload.email, email: payload.email, avatar, picture: payload.picture };
       authFinishLogin(user);
     } catch(e) {
-      if (googleBtn) googleBtn.classList.remove('loading');
       authShowError('⚠️ Error procesando respuesta de Google. Intentá de nuevo.');
     }
   }
 }
 
-function authGoogle() {
+function initGoogleAuth() {
   if (!GOOGLE_CLIENT_ID) {
-    authShowError('⚠️ Google Sign-In no está configurado. Ejecutá iniciar_servidor.bat y configurá tu CLIENT_ID.');
+    console.warn('Google Sign-In no configurado. Falta CLIENT_ID.');
     return;
   }
 
-  if (typeof google === 'undefined' || !google.accounts) {
-    setTimeout(() => authShowError('⚠️ Cargando Google… intentá de nuevo en un segundo.'), 300);
-    return;
-  }
+  if (typeof google !== 'undefined' && google.accounts) {
+    google.accounts.id.initialize({
+      client_id:             GOOGLE_CLIENT_ID,
+      callback:              handleGoogleCredential,
+      context:               'signin',
+      ux_mode:               'popup',
+      cancel_on_tap_outside: false
+    });
 
-  const googleBtn = document.querySelector('.auth-btn-google');
-  if (googleBtn) googleBtn.classList.add('loading');
-
-  google.accounts.id.initialize({
-    client_id:             GOOGLE_CLIENT_ID,
-    callback:              handleGoogleCredential,
-    context:               'signin',
-    ux_mode:               'popup',
-    cancel_on_tap_outside: false
-  });
-
-  google.accounts.id.prompt(notification => {
-    if (googleBtn) googleBtn.classList.remove('loading');
-    if (notification.isNotDisplayed()) {
-      authShowError('⚠️ El popup de Google fue bloqueado. Verificá que estés en http://localhost y que el CLIENT_ID sea correcto.');
+    const container = document.getElementById('googleBtnContainer');
+    if (container) {
+      google.accounts.id.renderButton(container, {
+        theme: 'filled_black', // Combina genial con el tema oscuro de Flujo
+        size: 'large',
+        shape: 'rectangular',
+        text: 'continue_with',
+        locale: 'es',
+        width: 350
+      });
     }
-  });
+  } else {
+    // Esperar y reintentar si el script de Google no cargó
+    setTimeout(initGoogleAuth, 300);
+  }
 }
 
 /* ---- Forgot password ---- */
@@ -297,5 +294,6 @@ function authFinishLogin(user, instant) {
   window.location.href = 'main.html';
 }
 
-// Ejecutar chequeo de sesión al cargar
+// Ejecutar chequeo de sesión al cargar e inicializar Google Sign-In
 authCheckSession();
+initGoogleAuth();

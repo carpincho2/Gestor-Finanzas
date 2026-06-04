@@ -2063,30 +2063,16 @@ canvas.rv-canvas { width:100% !important; }
   background: var(--border);
 }
 
-/* Google button */
-.auth-btn-google {
+/* Google container */
+.auth-google-container {
   width: 100%;
-  padding: 12px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-family: var(--font-head);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all .18s;
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 10px;
+  margin-top: 5px;
 }
-
-.auth-btn-google:hover {
-  border-color: rgba(255,255,255,.2);
-  background: rgba(255,255,255,.05);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+.auth-google-container iframe {
+  border-radius: 10px !important;
+  overflow: hidden;
 }
 
 /* Error */

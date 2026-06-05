@@ -2097,22 +2097,27 @@ canvas.rv-canvas { width:100% !important; }
   box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
 }
 
+/* Overlay invisible que contiene el botón real de Google SDK.
+   opacity: 0 lo hace invisible pero el iframe sigue capturando clicks.
+   Esto evita popup-blockers sin mostrar el botón nativo de Google. */
 .auth-google-container-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.001; /* Casi invisible pero detecta clicks */
+  opacity: 0;
   z-index: 10;
   overflow: hidden;
   cursor: pointer;
 }
 
 .auth-google-container-overlay iframe {
-  width: 100% !important;
-  height: 100% !important;
-  transform: scale(1.3); /* Asegura que el botón de Google cubra toda la superficie */
+  width: 400px !important;
+  height: 60px !important;
+  max-width: none !important;
+  transform: scale(1.5);
+  transform-origin: center center;
   cursor: pointer !important;
 }
 

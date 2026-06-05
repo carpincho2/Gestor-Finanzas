@@ -261,12 +261,12 @@ function initGoogleAuth() {
     const container = document.getElementById('googleBtnContainer');
     if (container) {
       google.accounts.id.renderButton(container, {
-        theme: 'filled_black', // Combina genial con el tema oscuro de Flujo
+        theme: 'filled_black',
         size: 'large',
         shape: 'rectangular',
         text: 'continue_with',
         locale: 'es',
-        width: 350
+        width: 400 // Amplio para cubrir todo el overlay invisible
       });
 
       // Sincronizar hover con el botón personalizado de abajo

@@ -32,7 +32,7 @@ sequenceDiagram
     F->>U: Redirige al Dashboard (main.html)
 ```
 
-### 💡 ¿Por qué el botón nativo (`renderButton`) evita bloqueos de popup?
+### 💡 ¿Por qué el botón nativo (`renderButton`) evita bloqueos de popup y cómo lo personalizamos?
 
 Originalmente, usábamos un botón HTML clásico y llamábamos por JS a `google.accounts.id.prompt()`. Los navegadores modernos (como Chrome y Safari) bloquean ventanas emergentes que se inician por código asíncrono. Consideran que un popup automático puede ser spam.
 
@@ -40,6 +40,16 @@ Al usar **`google.accounts.id.renderButton`**:
 1. Google inyecta un iframe seguro e independiente en nuestro contenedor `#googleBtnContainer`.
 2. El clic del usuario ocurre dentro de ese iframe controlado directamente por Google.
 3. El navegador detecta que la apertura del popup de login proviene de una **acción directa, física y síncrona del usuario (User-Triggered Interaction)**, permitiendo abrir la ventana de autenticación de inmediato sin bloquearla.
+
+#### 🎨 Técnica de Personalización Estética (Superposición / Overlay)
+
+Dado que no se puede aplicar estilos CSS dentro del iframe nativo de Google por políticas de seguridad de origen cruzado (*Same-Origin Policy*), para esta versión implementamos una técnica avanzada y elegante llamada **Superposición Invisible**:
+1. Diseñamos un botón HTML visible (`.auth-btn-google`) idéntico estéticamente al de la otra versión del proyecto.
+2. Colocamos el contenedor del botón de Google real (`#googleBtnContainer`) justo encima del botón personalizado usando **posicionamiento absoluto** (`position: absolute`) cubriendo el 100% de la superficie del botón visible.
+3. Cambiamos la opacidad del contenedor oficial a `opacity: 0.001` (invisible, pero totalmente reactivo a los clics del usuario).
+4. Sincronizamos las microanimaciones de hover: escuchamos los eventos de mouse (`mouseenter` y `mouseleave`) en el overlay transparente desde [auth.js](file:///h:/Gestor%20de%20Finanzas%20%28Actualizado%29%20-%20copia%20-%20copia/js/auth.js) y le inyectamos una clase `.hover` al botón de abajo.
+
+De esta forma, el usuario percibe un botón personalizado fluido de Flujo que, al ser clickeado, interactúa síncronamente con el iframe de Google, permitiendo un flujo de login profesional y sin bloqueos.
 
 ---
 

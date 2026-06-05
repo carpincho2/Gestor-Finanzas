@@ -1,5 +1,7 @@
 import os
 import re
+import json
+import time
 import requests
 import bcrypt
 from datetime import datetime
@@ -361,32 +363,51 @@ async def ocr_parse(request: Request, payload: OCRParseRequest):
     
     if provider == "none" or not provider:
         return {"fallback": True}
-        
-    prompt = f"""
-You are an expert OCR receipt parsing assistant.
-Analyze the following raw OCR text from a supermarket/store ticket and extract the fields in JSON format:
+    
+    # ────────────────────────────────────────────────────────
+    #  PROMPT OPTIMIZADO EN ESPAÑOL CON FEW-SHOT EXAMPLES
+    #  Diseñado para Gemini 2.0 Flash (Free Tier)
+    # ────────────────────────────────────────────────────────
+    prompt = f"""Sos un experto en interpretar texto OCR de tickets de supermercados y comercios argentinos.
+El texto que vas a recibir fue extraído con OCR (Tesseract) y puede contener errores de lectura.
+
+**REGLAS CLAVE:**
+1. "nombre_local" SIEMPRE es el nombre del comercio o negocio. NUNCA pongas "TOTAL", "SUBTOTAL", "PAGAR", montos o códigos numéricos como nombre.
+2. Corregí errores comunes de OCR: "C0T0"→"Coto", "D1SC0"→"Disco", "CARRREF0UR"→"Carrefour", "JUMB0"→"Jumbo", "McD0NALDS"→"McDonalds", "Y.P.F"→"YPF".
+3. Si no podés determinar un campo con seguridad, devolvé null para ese campo.
+4. La "categoria" debe ser UNA de las opciones exactas listadas abajo.
+5. Los precios están en pesos argentinos (ARS). El separador decimal puede ser "," o ".".
+
+**EJEMPLO 1:**
+Texto OCR: "C0T0 C.I.C.S.A\\nSuc. 213\\n22/05/2026 14:32\\nLECHE ENTERA 1L    $1.250,00\\nPAN LACTAL         $890,50\\nTOTAL              $2.140,50\\nEFECTIVO           $3.000,00\\nVUELTO             $859,50"
+Respuesta correcta:
+{{"nombre_local":"Coto","fecha":"2026-05-22","hora":"14:32","total":2140.50,"forma_pago":"Efectivo","direccion":null,"categoria":"Supermercado / Almacén","articulos":[{{"qty":1.0,"desc":"Leche Entera 1L","price":1250.00,"total":1250.00}},{{"qty":1.0,"desc":"Pan Lactal","price":890.50,"total":890.50}}]}}
+
+**EJEMPLO 2:**
+Texto OCR: "D1SC0\\nAv. Santa Fe 1234\\n01/06/2026\\nCOCA COLA 1.5L x2  $2.500,00\\nTOTAL: $2.500,00\\nTarjeta Debito"
+Respuesta correcta:
+{{"nombre_local":"Disco","fecha":"2026-06-01","hora":null,"total":2500.00,"forma_pago":"Tarjeta de débito","direccion":"Av. Santa Fe 1234","categoria":"Supermercado / Almacén","articulos":[{{"qty":2.0,"desc":"Coca Cola 1.5L","price":1250.00,"total":2500.00}}]}}
+
+**FORMATO DE RESPUESTA (JSON estricto):**
 {{
-  "nombre_local": "Name of the business or store (e.g. Carrefour, Coto, Dia, Jumbo, Disco, YPF, Kiosco, etc.). Never output 'TOTAL', 'SUBTOTAL', or amounts here.",
-  "fecha": "Date of the purchase in YYYY-MM-DD format (if not found or invalid, return null)",
-  "hora": "Time of the purchase in HH:MM format (if not found or invalid, return null)",
-  "total": total amount paid as a float,
-  "forma_pago": "Payment method (e.g., 'Efectivo', 'Tarjeta de débito', 'Tarjeta de crédito', 'Mercado Pago', 'Cuenta DNI', etc. or null)",
-  "direccion": "Address of the store (if found, otherwise null)",
-  "categoria": "Category (choose one of: 'Supermercado / Almacén', 'Salidas / Restaurantes', 'Transporte', 'Hogar / Servicios', 'Entretenimiento / Suscripciones', 'Salud / Farmacia', 'Compras / Ropa', 'Educación', 'Ingresos (Sueldo/Freelance)', 'Ahorro / Inversiones', 'Otros')",
+  "nombre_local": "Nombre real del comercio (corregido de errores OCR)",
+  "fecha": "YYYY-MM-DD o null",
+  "hora": "HH:MM o null",
+  "total": monto_total_float,
+  "forma_pago": "Método de pago o null",
+  "direccion": "Dirección del local o null",
+  "categoria": "Una de: 'Supermercado / Almacén', 'Salidas / Restaurantes', 'Transporte', 'Hogar / Servicios', 'Entretenimiento / Suscripciones', 'Salud / Farmacia', 'Compras / Ropa', 'Educación', 'Ingresos (Sueldo/Freelance)', 'Ahorro / Inversiones', 'Otros'",
   "articulos": [
     {{
-      "qty": quantity of the item (float, default 1.0),
-      "desc": "Name/description of the item",
-      "price": unit price of the item (float),
-      "total": total price of the item (qty * price) (float)
+      "qty": cantidad_float,
+      "desc": "Descripción del artículo",
+      "price": precio_unitario_float,
+      "total": precio_total_float
     }}
   ]
 }}
 
-Ensure that "nombre_local" is the actual business name and NEVER "TOTAL" or "PAGAR".
-Only output valid JSON matching the schema exactly.
-
-Ticket text:
+**Texto OCR del ticket a analizar:**
 {text}
 """
 
@@ -408,7 +429,6 @@ Ticket text:
             if response.status_code == 200:
                 res_data = response.json()
                 raw_response = res_data.get("response", "{}")
-                import json
                 parsed_data = json.loads(raw_response)
                 return parsed_data
             else:
@@ -418,8 +438,9 @@ Ticket text:
             api_key = os.getenv("GEMINI_API_KEY", "").strip()
             if not api_key:
                 return {"fallback": True, "error": "Gemini API Key missing"}
-                
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+            
+            # Usar gemini-2.0-flash (gratis en Free Tier, más potente que 1.5-flash)
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
             headers = {"Content-Type": "application/json"}
             payload_data = {
                 "contents": [{"parts": [{"text": prompt}]}],
@@ -427,24 +448,68 @@ Ticket text:
                     "responseMimeType": "application/json"
                 }
             }
-            response = requests.post(url, json=payload_data, headers=headers, timeout=20)
-            if response.status_code == 200:
-                res_json = response.json()
-                parts = res_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])
-                if parts:
-                    raw_text = parts[0].get("text", "{}")
-                    import json
-                    parsed_data = json.loads(raw_text)
-                    return parsed_data
-                return {"fallback": True, "error": "No parts returned from Gemini"}
-            else:
-                return {"fallback": True, "error": f"Gemini returned status {response.status_code}"}
+            
+            # Llamar a Gemini con retry automático para errores 429
+            result = _call_gemini_with_retry(url, payload_data, headers, max_retries=3)
+            return result
                 
     except Exception as e:
         print(f"Error parsing with AI provider '{provider}': {e}")
         return {"fallback": True, "error": str(e)}
 
     return {"fallback": True}
+
+
+def _call_gemini_with_retry(url: str, payload: dict, headers: dict, max_retries: int = 3) -> dict:
+    """
+    Llama a la API de Gemini con reintentos automáticos y backoff exponencial.
+    
+    El Free Tier de Gemini tiene límites de:
+    - 15 requests por minuto (RPM)
+    - 1500 requests por día (RPD)
+    
+    Si recibimos un error 429 (Too Many Requests), esperamos y reintentamos.
+    El backoff exponencial funciona así:
+    - Intento 1: espera 2 segundos
+    - Intento 2: espera 4 segundos
+    - Intento 3: espera 8 segundos
+    """
+    for attempt in range(max_retries + 1):
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            # Respuesta exitosa: parsear el JSON de Gemini
+            res_json = response.json()
+            parts = res_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])
+            if parts:
+                raw_text = parts[0].get("text", "{}")
+                parsed_data = json.loads(raw_text)
+                return parsed_data
+            return {"fallback": True, "error": "No parts returned from Gemini"}
+        
+        elif response.status_code == 429:
+            # Rate limit alcanzado: esperar con backoff exponencial
+            if attempt < max_retries:
+                wait_time = 2 ** (attempt + 1)  # 2, 4, 8 segundos
+                print(f"[Gemini] Rate limit (429). Reintentando en {wait_time}s... (intento {attempt + 1}/{max_retries})")
+                time.sleep(wait_time)
+                continue
+            else:
+                return {
+                    "fallback": True,
+                    "error": "Demasiados escaneos seguidos. Esperá unos segundos e intentá de nuevo."
+                }
+        
+        else:
+            # Otro error HTTP: no reintentar
+            error_detail = ""
+            try:
+                error_detail = response.json().get("error", {}).get("message", "")
+            except Exception:
+                error_detail = response.text[:200]
+            return {"fallback": True, "error": f"Gemini returned status {response.status_code}: {error_detail}"}
+    
+    return {"fallback": True, "error": "Max retries exceeded"}
 
 @app.post("/api/ocr/save")
 async def ocr_save(request: Request, payload: OCRSaveRequest, db: Session = Depends(get_db)):

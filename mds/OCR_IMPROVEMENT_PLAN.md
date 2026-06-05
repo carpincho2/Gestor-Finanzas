@@ -446,7 +446,125 @@ Si un ticket sigue fallando:
 3. **Capturar logs** y revisar en qué paso falla
 4. **Comparar con test_cases** para ver si es error conocido
 
+**Versión**: 2.0  
+**Última actualización**: 5 de junio de 2026
+
 ---
 
-**Versión**: 1.0  
-**Próxima actualización**: 2026-06-15
+## 🤖 FASE 5: Integración con IA (Gemini 2.0 Flash — Free Tier)
+
+> **Fecha de implementación**: 5 de junio de 2026
+
+### 5.1: Problema que Resuelve
+
+Las Fases 1-4 mejoran el preprocesamiento y parsing local (en el navegador). Sin embargo, Tesseract.js tiene limitaciones inherentes:
+- No "entiende" el contexto de un ticket (confunde "TOTAL" con un nombre de local)
+- No puede corregir errores de OCR basados en conocimiento (ej: `"C0T0"` → `"Coto"`)
+- Los patrones hardcodeados no cubren todos los comercios posibles
+
+**Solución**: Usar un LLM (Large Language Model) como **segunda pasada** después de Tesseract.
+
+### 5.2: ¿Por qué Gemini 2.0 Flash?
+
+| Criterio | Gemini 2.0 Flash | Alternativas |
+|----------|-------------------|--------------|
+| **Costo** | 100% gratuito (Free Tier) | OpenAI GPT: de pago |
+| **Velocidad** | ~1-2 segundos | GPT-4: 5-10 seg |
+| **Calidad** | Excelente para parsing JSON | Más que suficiente |
+| **Límites** | 15 RPM, 1500 RPD | Suficiente para uso personal |
+
+### 5.3: Flujo de Datos (OCR + IA)
+
+```
+USUARIO toma foto del ticket
+    ↓
+FRONTEND: Preprocesamiento de imagen (Fases 1-4)
+    ↓
+FRONTEND: Tesseract.js extrae texto crudo
+    ↓
+FRONTEND: Envía texto crudo al backend → POST /api/ocr/parse
+    ↓
+BACKEND: Construye prompt optimizado con few-shot examples
+    ↓
+BACKEND: Envía prompt a Gemini 2.0 Flash API
+    ↓
+BACKEND: Recibe JSON estructurado con datos corregidos
+    ↓
+FRONTEND: Muestra datos al usuario para confirmación
+```
+
+### 5.4: Prompt Engineering — Few-Shot Examples
+
+El prompt está diseñado con **dos técnicas clave**:
+
+#### 1️⃣ Instrucciones en Español (System Prompt)
+El modelo recibe instrucciones específicas para tickets argentinos:
+- Correcciones de OCR explícitas (`"C0T0"→"Coto"`, `"D1SC0"→"Disco"`)
+- Formato de precios argentinos (separador decimal `,` o `.`)
+- Categorías predefinidas exactas
+
+#### 2️⃣ Few-Shot Examples (Aprendizaje por Ejemplos)
+Se incluyen **2 ejemplos completos** de entrada/salida:
+- Ejemplo 1: Ticket de Coto con texto corrupto → JSON perfecto
+- Ejemplo 2: Ticket de Disco con dirección y cantidad múltiple → JSON perfecto
+
+**¿Por qué funciona?**: El modelo "aprende" el formato esperado de los ejemplos y lo replica con datos nuevos, corrigiendo errores de OCR automáticamente.
+
+### 5.5: Manejo de Rate-Limiting (Error 429)
+
+El Free Tier tiene límites estrictos. Para evitar que el usuario vea errores:
+
+```python
+def _call_gemini_with_retry(url, payload, headers, max_retries=3):
+    """
+    Backoff exponencial:
+    - Intento 1: espera 2 segundos
+    - Intento 2: espera 4 segundos  
+    - Intento 3: espera 8 segundos
+    """
+    for attempt in range(max_retries + 1):
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            return parse_response(response)
+        elif response.status_code == 429:
+            wait_time = 2 ** (attempt + 1)
+            time.sleep(wait_time)  # Esperar antes de reintentar
+        else:
+            return {"fallback": True, "error": "..."}
+```
+
+**Concepto clave**: El backoff exponencial duplica el tiempo de espera con cada intento. Esto evita "bombardear" la API y da tiempo al servidor a liberar capacidad.
+
+### 5.6: Configuración en Render
+
+Para activar Gemini en producción, se configuran 2 variables de entorno en el panel de Render:
+
+| Variable | Valor | Descripción |
+|----------|-------|-------------|
+| `AI_PROVIDER` | `gemini` | Activa el proveedor de IA Gemini |
+| `GEMINI_API_KEY` | `AIzaSy...` | API Key obtenida de [Google AI Studio](https://aistudio.google.com/apikey) |
+
+> **Nota**: Estas variables ya están definidas en `render.yaml`. Solo hay que completar el valor de `GEMINI_API_KEY` en el dashboard de Render → Environment → Secret Files/Variables.
+
+### 5.7: Fallback Gracioso
+
+Si Gemini falla (sin API key, error de red, rate-limit agotado), el sistema **NO se rompe**. Devuelve `{"fallback": True}` y el frontend usa el parser local de Tesseract como respaldo.
+
+```
+¿Gemini disponible?
+    ├── SÍ → Usar datos de Gemini (más precisos)
+    └── NO → Usar parser local de Tesseract (menos preciso pero funcional)
+```
+
+---
+
+## 📞 Soporte & Debugging
+
+Si un ticket sigue fallando:
+
+1. **Habilitar debug mode**: `localStorage.setItem('ocr_debug', '1')`
+2. **Abrir DevTools** (F12) y revisar console
+3. **Capturar logs** y revisar en qué paso falla
+4. **Comparar con test_cases** para ver si es error conocido
+5. **Verificar en Render**: Ir a Logs para ver si Gemini respondió o devolvió error 429

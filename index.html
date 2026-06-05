@@ -88,8 +88,19 @@
       <!-- DIVIDER -->
       <div class="auth-divider"><span>o continuá con</span></div>
 
-      <!-- GOOGLE BUTTON CONTAINER (Evita bloqueos de popup al usar el SDK oficial de Google) -->
-      <div id="googleBtnContainer" class="auth-google-container"></div>
+      <!-- GOOGLE BUTTON (Diseño personalizado con funcionalidad robusta mediante overlay) -->
+      <div class="auth-google-wrapper">
+        <button class="auth-btn-google" id="authBtnGoogleCustom" type="button" tabindex="-1">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.6 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.4 6.9 29.5 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/>
+            <path fill="#FF3D00" d="m6.3 15.5 6.6 4.8C14.6 16.8 19 14 24 14c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.4 8.9 29.5 7 24 7 16.2 7 9.4 11.3 6.3 15.5z"/>
+            <path fill="#4CAF50" d="M24 43c5.4 0 10.3-1.9 14-5.1l-6.5-5.3C29.6 34.5 26.9 35.5 24 35.5c-5.2 0-9.5-3.2-11.3-7.7l-6.6 5.1C9.3 39.5 16.1 43 24 43z"/>
+            <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.5 5.3C40.9 36.5 44 31.1 44 25c0-1.3-.1-2.6-.4-3.9z"/>
+          </svg>
+          Continuar con Google
+        </button>
+        <div id="googleBtnContainer" class="auth-google-container-overlay"></div>
+      </div>
 
       <!-- Error message -->
       <div class="auth-error" id="authError" style="display:none;"></div>
@@ -113,4 +124,4 @@
 <script src="js/auth.js"></script>
 
 </body>
-</html>
+</html

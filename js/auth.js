@@ -268,6 +268,13 @@ function initGoogleAuth() {
         locale: 'es',
         width: 350
       });
+
+      // Sincronizar hover con el botón personalizado de abajo
+      const customBtn = document.getElementById('authBtnGoogleCustom');
+      if (customBtn) {
+        container.addEventListener('mouseenter', () => customBtn.classList.add('hover'));
+        container.addEventListener('mouseleave', () => customBtn.classList.remove('hover'));
+      }
     }
   } else {
     // Esperar y reintentar si el script de Google no cargó

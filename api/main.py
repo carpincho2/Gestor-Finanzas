@@ -153,6 +153,19 @@ class OCRSaveRequest(BaseModel):
     fecha: Optional[str] = None
     articulos: list[TicketItemSchema]
 
+class AIChatMessage(BaseModel):
+    role: str
+    content: str
+
+class AIChatRequest(BaseModel):
+    contexto_financiero: str
+    pregunta: str
+    historial: list[AIChatMessage]
+
+class AIInsightsRequest(BaseModel):
+    contexto_financiero: str
+
+
 # ============================================================
 #  ENDPOINTS
 # ============================================================
@@ -460,7 +473,7 @@ Respuesta correcta:
     return {"fallback": True}
 
 
-def _call_gemini_with_retry(url: str, payload: dict, headers: dict, max_retries: int = 3) -> dict:
+def _call_gemini_with_retry(url: str, payload: dict, headers: dict, max_retries: int = 3, expect_json: bool = True):
     """
     Llama a la API de Gemini con reintentos automáticos y backoff exponencial.
     
@@ -478,38 +491,118 @@ def _call_gemini_with_retry(url: str, payload: dict, headers: dict, max_retries:
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         
         if response.status_code == 200:
-            # Respuesta exitosa: parsear el JSON de Gemini
             res_json = response.json()
             parts = res_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])
             if parts:
-                raw_text = parts[0].get("text", "{}")
-                parsed_data = json.loads(raw_text)
-                return parsed_data
-            return {"fallback": True, "error": "No parts returned from Gemini"}
+                raw_text = parts[0].get("text", "")
+                if expect_json:
+                    try:
+                        return json.loads(raw_text)
+                    except Exception as e:
+                        return {"fallback": True, "error": f"Failed to parse JSON: {str(e)}", "raw": raw_text}
+                return raw_text
+            return {"fallback": True, "error": "No parts returned from Gemini"} if expect_json else "Error: No parts returned"
         
         elif response.status_code == 429:
-            # Rate limit alcanzado: esperar con backoff exponencial
             if attempt < max_retries:
                 wait_time = 2 ** (attempt + 1)  # 2, 4, 8 segundos
                 print(f"[Gemini] Rate limit (429). Reintentando en {wait_time}s... (intento {attempt + 1}/{max_retries})")
                 time.sleep(wait_time)
                 continue
             else:
-                return {
-                    "fallback": True,
-                    "error": "Demasiados escaneos seguidos. Esperá unos segundos e intentá de nuevo."
-                }
+                msg = "Demasiados escaneos seguidos. Esperá unos segundos e intentá de nuevo."
+                return {"fallback": True, "error": msg} if expect_json else f"Error: {msg}"
         
         else:
-            # Otro error HTTP: no reintentar
             error_detail = ""
             try:
                 error_detail = response.json().get("error", {}).get("message", "")
             except Exception:
                 error_detail = response.text[:200]
-            return {"fallback": True, "error": f"Gemini returned status {response.status_code}: {error_detail}"}
+            msg = f"Gemini returned status {response.status_code}: {error_detail}"
+            return {"fallback": True, "error": msg} if expect_json else f"Error: {msg}"
     
-    return {"fallback": True, "error": "Max retries exceeded"}
+    return {"fallback": True, "error": "Max retries exceeded"} if expect_json else "Error: Max retries exceeded"
+
+@app.post("/api/ai/chat")
+async def ai_chat(payload: AIChatRequest):
+    load_env()
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return {"error": "Gemini API Key missing"}
+
+    # Construimos la conversación
+    # Rol de sistema
+    system_prompt = f"""Sos un asistente financiero personal experto que habla español argentino (usá "vos", "te", "podés"). Sos amigable, directo y muy práctico. Das consejos específicos y accionables.
+Siempre respondés en base al contexto financiero real del usuario que se te proporciona.
+Usás emojis con moderación para hacer la respuesta más clara. Respondés de forma concisa pero completa. Nunca inventás datos que no están en el contexto.
+
+{payload.contexto_financiero}"""
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    
+    contents = []
+    # Historial previo
+    for msg in payload.historial:
+        contents.append({
+            "role": "model" if msg.role == "assistant" else "user",
+            "parts": [{"text": msg.content}]
+        })
+    # Pregunta actual
+    contents.append({
+        "role": "user",
+        "parts": [{"text": payload.pregunta}]
+    })
+
+    payload_data = {
+        "contents": contents,
+        "systemInstruction": {
+            "parts": [{"text": system_prompt}]
+        }
+    }
+
+    result = _call_gemini_with_retry(url, payload_data, headers, max_retries=3, expect_json=False)
+    return {"ok": True, "reply": result}
+
+
+@app.post("/api/ai/insights")
+async def ai_insights(payload: AIInsightsRequest):
+    load_env()
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return {"error": "Gemini API Key missing"}
+
+    prompt = f"""{payload.contexto_financiero}
+
+Generá exactamente 4 insights financieros en formato JSON. Respondé SOLO con el JSON, sin texto extra, sin markdown (no uses ```json ni backticks), sin comentarios.
+
+Formato:
+[
+  {{
+    "tipo": "positivo|negativo|neutro|alerta",
+    "titulo": "Título corto (max 6 palabras)",
+    "descripcion": "Descripción concisa y accionable (max 2 oraciones en español argentino)",
+    "icono": "emoji"
+  }}
+]
+
+Los tipos: "positivo" = buena noticia, "negativo" = preocupación, "neutro" = observación, "alerta" = urgente.
+Basate 100% en los datos reales del contexto."""
+
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    headers = {"Content-Type": "application/json"}
+    payload_data = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json"
+        }
+    }
+
+    result = _call_gemini_with_retry(url, payload_data, headers, max_retries=3, expect_json=True)
+    if isinstance(result, dict) and result.get("fallback") and result.get("error"):
+        return {"ok": False, "error": result.get("error")}
+    return {"ok": True, "cards": result}
 
 @app.post("/api/ocr/save")
 async def ocr_save(request: Request, payload: OCRSaveRequest, db: Session = Depends(get_db)):

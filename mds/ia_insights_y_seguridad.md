@@ -23,7 +23,7 @@ sequenceDiagram
     
     Usuario->>Servidor: POST /api/ai/chat (Contexto + Pregunta)
     Note over Servidor: Carga GEMINI_API_KEY desde .env<br/>de forma totalmente invisible y segura
-    Servidor->>Gemini: POST /v1beta/models/gemini-2.0-flash (Payload seguro)
+    Servidor->>Gemini: client.models.generate_content (SDK - gemini-2.5-flash)
     Gemini-->>Servidor: Devuelve respuesta (JSON / Texto)
     Servidor-->>Usuario: Retorna respuesta segura (ok: true)
 ```
@@ -42,12 +42,12 @@ Este endpoint recibe un objeto que contiene:
 2. `pregunta`: El mensaje escrito por el usuario en el chat.
 3. `historial`: Una lista con los mensajes anteriores de la sesión de chat para que Gemini tenga memoria de la conversación.
 
-En Python, armamos el prompt del sistema especificando las directrices de personalidad (hablar en español argentino, ser directo, práctico y amigable) y lo enviamos junto con el historial al modelo `gemini-2.0-flash`.
+En Python, armamos el prompt del sistema especificando las directrices de personalidad (hablar en español argentino, ser directo, práctico y amigable) y lo enviamos junto con el historial al modelo `gemini-2.5-flash` mediante la SDK oficial.
 
 ### B. Endpoint `/api/ai/insights` (Tarjetas de Análisis Automático)
 Este endpoint recibe únicamente el `contexto_financiero` y utiliza una de las características más avanzadas de Gemini: **Salida estructurada JSON**.
 * Le indicamos al modelo en el prompt que su respuesta debe ser **estrictamente en formato JSON** y con una estructura de llaves exacta (`tipo`, `titulo`, `descripcion`, `icono`).
-* Configurando `"responseMimeType": "application/json"` en la carga de la API, obligamos a Gemini a responder exclusivamente con el JSON esperado, eliminando cualquier texto descriptivo adicional. Esto previene errores en el frontend al procesar la respuesta.
+* Usando el parámetro `response_mime_type="application/json"` en el objeto `GenerateContentConfig` de la SDK, obligamos a Gemini a responder exclusivamente con el JSON esperado, eliminando cualquier texto descriptivo adicional. Esto previene errores en el frontend al procesar la respuesta.
 
 ---
 
@@ -57,8 +57,8 @@ La versión gratuita del servicio de Google AI Studio posee límites de velocida
 * **15 peticiones por minuto (RPM)**
 
 Si varios usuarios realizaran escaneos y preguntas de chat muy seguidos, la API devolvería un código de error **HTTP 429 (Too Many Requests)**.
-Para evitar que la aplicación falle, implementamos una lógica de **backoff exponencial** en la función del backend `_call_gemini_with_retry`:
-* Si recibe un error 429, el servidor "se duerme" y espera:
+Para evitar que la aplicación falle, implementamos una lógica de **backoff exponencial** en la función del backend `_call_gemini_sdk_with_retry` capturando la excepción `APIError` del SDK oficial:
+* Si se produce una excepción `APIError` y el código de estado es `429` (límite de cuota excedido), el servidor "se duerme" y espera:
   * Intento 1: Espera **2 segundos** y reintenta.
   * Intento 2: Espera **4 segundos** y reintenta.
   * Intento 3: Espera **8 segundos** y reintenta.

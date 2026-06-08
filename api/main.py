@@ -15,6 +15,9 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Index, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
 
 # Helper to load .env variables manually (without external package dependencies)
 def load_env():
@@ -35,6 +38,9 @@ def load_env():
 
 # Load it right away
 load_env()
+
+# Initialize Gemini Client (automatically loads GEMINI_API_KEY from environment variables)
+client = genai.Client()
 
 # ============================================================
 #  DATABASE CONFIGURATION (SQLite / PostgreSQL)
@@ -452,18 +458,12 @@ Respuesta correcta:
             if not api_key:
                 return {"fallback": True, "error": "Gemini API Key missing"}
             
-            # Usar gemini-2.0-flash (gratis en Free Tier, más potente que 1.5-flash)
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-            headers = {"Content-Type": "application/json"}
-            payload_data = {
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "responseMimeType": "application/json"
-                }
-            }
-            
-            # Llamar a Gemini con retry automático para errores 429
-            result = _call_gemini_with_retry(url, payload_data, headers, max_retries=3)
+            # Llamamos a Gemini usando la SDK oficial con el modelo gemini-2.5-flash
+            result = _call_gemini_sdk_with_retry(
+                prompt=prompt,
+                model_name="gemini-2.5-flash",
+                expect_json=True
+            )
             return result
                 
     except Exception as e:
@@ -473,56 +473,69 @@ Respuesta correcta:
     return {"fallback": True}
 
 
-def _call_gemini_with_retry(url: str, payload: dict, headers: dict, max_retries: int = 3, expect_json: bool = True):
+def _call_gemini_sdk_with_retry(prompt: str, model_name: str = "gemini-2.5-flash", max_retries: int = 3, expect_json: bool = True, system_instruction: Optional[str] = None, contents = None):
     """
-    Llama a la API de Gemini con reintentos automáticos y backoff exponencial.
+    Llama a la API de Gemini utilizando la SDK oficial google-genai, con reintentos automáticos
+    y backoff exponencial en caso de recibir errores 429 (Rate Limit).
     
-    El Free Tier de Gemini tiene límites de:
-    - 15 requests por minuto (RPM)
-    - 1500 requests por día (RPD)
-    
-    Si recibimos un error 429 (Too Many Requests), esperamos y reintentamos.
-    El backoff exponencial funciona así:
-    - Intento 1: espera 2 segundos
-    - Intento 2: espera 4 segundos
-    - Intento 3: espera 8 segundos
+    El Free Tier de Gemini 2.5 Flash tiene límites de:
+    - 15 peticiones por minuto (RPM)
+    - 1500 peticiones por día (RPD)
     """
     for attempt in range(max_retries + 1):
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        
-        if response.status_code == 200:
-            res_json = response.json()
-            parts = res_json.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])
-            if parts:
-                raw_text = parts[0].get("text", "")
-                if expect_json:
-                    try:
-                        return json.loads(raw_text)
-                    except Exception as e:
-                        return {"fallback": True, "error": f"Failed to parse JSON: {str(e)}", "raw": raw_text}
-                return raw_text
-            return {"fallback": True, "error": "No parts returned from Gemini"} if expect_json else "Error: No parts returned"
-        
-        elif response.status_code == 429:
-            if attempt < max_retries:
-                wait_time = 2 ** (attempt + 1)  # 2, 4, 8 segundos
-                print(f"[Gemini] Rate limit (429). Reintentando en {wait_time}s... (intento {attempt + 1}/{max_retries})")
-                time.sleep(wait_time)
-                continue
+        try:
+            # Determinamos los parámetros de configuración
+            config_args = {}
+            if expect_json:
+                config_args["response_mime_type"] = "application/json"
+            if system_instruction:
+                config_args["system_instruction"] = system_instruction
+                
+            config = types.GenerateContentConfig(**config_args) if config_args else None
+            
+            # Si se pasa un contenido estructurado (historial del chat), lo usamos. Si no, usamos el prompt de texto simple.
+            if contents is not None:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=contents,
+                    config=config
+                )
             else:
-                msg = "Demasiados escaneos seguidos. Esperá unos segundos e intentá de nuevo."
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=config
+                )
+            
+            raw_text = response.text or ""
+            if expect_json:
+                try:
+                    return json.loads(raw_text)
+                except Exception as e:
+                    return {"fallback": True, "error": f"Error al parsear el JSON retornado: {str(e)}", "raw": raw_text}
+            return raw_text
+
+        except APIError as api_err:
+            # Capturamos el error 429 específico de la SDK oficial (Too Many Requests / Resource Exhausted)
+            if api_err.code == 429:
+                if attempt < max_retries:
+                    wait_time = 2 ** (attempt + 1)  # 2, 4, 8 segundos
+                    print(f"[Gemini SDK] Límite de cuota (429). Reintentando en {wait_time}s... (Intento {attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    msg = "Límite de peticiones de Gemini excedido. Esperá un momento y volvé a intentar."
+                    return {"fallback": True, "error": msg} if expect_json else f"Error: {msg}"
+            else:
+                msg = f"Error de la API de Gemini: {api_err.message} (Código {api_err.code})"
                 return {"fallback": True, "error": msg} if expect_json else f"Error: {msg}"
-        
-        else:
-            error_detail = ""
-            try:
-                error_detail = response.json().get("error", {}).get("message", "")
-            except Exception:
-                error_detail = response.text[:200]
-            msg = f"Gemini returned status {response.status_code}: {error_detail}"
+                
+        except Exception as e:
+            msg = f"Error inesperado al conectar con Gemini: {str(e)}"
             return {"fallback": True, "error": msg} if expect_json else f"Error: {msg}"
-    
-    return {"fallback": True, "error": "Max retries exceeded"} if expect_json else "Error: Max retries exceeded"
+            
+    return {"fallback": True, "error": "Se superaron los reintentos máximos"} if expect_json else "Error: Reintentos agotados"
+
 
 @app.post("/api/ai/chat")
 async def ai_chat(payload: AIChatRequest):
@@ -539,30 +552,31 @@ Usás emojis con moderación para hacer la respuesta más clara. Respondés de f
 
 {payload.contexto_financiero}"""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-    headers = {"Content-Type": "application/json"}
-    
     contents = []
-    # Historial previo
+    # Cargamos el historial previo adaptándolo a la estructura de la SDK
     for msg in payload.historial:
-        contents.append({
-            "role": "model" if msg.role == "assistant" else "user",
-            "parts": [{"text": msg.content}]
-        })
-    # Pregunta actual
-    contents.append({
-        "role": "user",
-        "parts": [{"text": payload.pregunta}]
-    })
+        role = "model" if msg.role == "assistant" else "user"
+        contents.append(
+            types.Content(
+                role=role,
+                parts=[types.Part.from_text(text=msg.content)]
+            )
+        )
+    # Agregamos el mensaje actual
+    contents.append(
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=payload.pregunta)]
+        )
+    )
 
-    payload_data = {
-        "contents": contents,
-        "systemInstruction": {
-            "parts": [{"text": system_prompt}]
-        }
-    }
-
-    result = _call_gemini_with_retry(url, payload_data, headers, max_retries=3, expect_json=False)
+    result = _call_gemini_sdk_with_retry(
+        prompt="",
+        model_name="gemini-2.5-flash",
+        expect_json=False,
+        system_instruction=system_prompt,
+        contents=contents
+    )
     return {"ok": True, "reply": result}
 
 
@@ -590,16 +604,11 @@ Formato:
 Los tipos: "positivo" = buena noticia, "negativo" = preocupación, "neutro" = observación, "alerta" = urgente.
 Basate 100% en los datos reales del contexto."""
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
-    headers = {"Content-Type": "application/json"}
-    payload_data = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "responseMimeType": "application/json"
-        }
-    }
-
-    result = _call_gemini_with_retry(url, payload_data, headers, max_retries=3, expect_json=True)
+    result = _call_gemini_sdk_with_retry(
+        prompt=prompt,
+        model_name="gemini-2.5-flash",
+        expect_json=True
+    )
     if isinstance(result, dict) and result.get("fallback") and result.get("error"):
         return {"ok": False, "error": result.get("error")}
     return {"ok": True, "cards": result}

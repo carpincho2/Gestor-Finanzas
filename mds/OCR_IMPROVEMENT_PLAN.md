@@ -451,9 +451,9 @@ Si un ticket sigue fallando:
 
 ---
 
-## 🤖 FASE 5: Integración con IA (Gemini 2.0 Flash — Free Tier)
+## 🤖 FASE 5: Integración con IA (Gemini 2.5 Flash — Free Tier)
 
-> **Fecha de implementación**: 5 de junio de 2026
+> **Fecha de implementación**: 5 de junio de 2026 (Actualizado a SDK GenAI el 8 de junio de 2026)
 
 ### 5.1: Problema que Resuelve
 
@@ -464,9 +464,9 @@ Las Fases 1-4 mejoran el preprocesamiento y parsing local (en el navegador). Sin
 
 **Solución**: Usar un LLM (Large Language Model) como **segunda pasada** después de Tesseract.
 
-### 5.2: ¿Por qué Gemini 2.0 Flash?
+### 5.2: ¿Por qué Gemini 2.5 Flash?
 
-| Criterio | Gemini 2.0 Flash | Alternativas |
+| Criterio | Gemini 2.5 Flash | Alternativas |
 |----------|-------------------|--------------|
 | **Costo** | 100% gratuito (Free Tier) | OpenAI GPT: de pago |
 | **Velocidad** | ~1-2 segundos | GPT-4: 5-10 seg |
@@ -486,7 +486,7 @@ FRONTEND: Envía texto crudo al backend → POST /api/ocr/parse
     ↓
 BACKEND: Construye prompt optimizado con few-shot examples
     ↓
-BACKEND: Envía prompt a Gemini 2.0 Flash API
+BACKEND: Envía prompt a Gemini 2.5 Flash API (usando el SDK oficial google-genai)
     ↓
 BACKEND: Recibe JSON estructurado con datos corregidos
     ↓
@@ -515,23 +515,29 @@ Se incluyen **2 ejemplos completos** de entrada/salida:
 El Free Tier tiene límites estrictos. Para evitar que el usuario vea errores:
 
 ```python
-def _call_gemini_with_retry(url, payload, headers, max_retries=3):
+def _call_gemini_sdk_with_retry(prompt, model_name="gemini-2.5-flash", max_retries=3, expect_json=True):
     """
-    Backoff exponencial:
+    Backoff exponencial con el SDK oficial google-genai:
     - Intento 1: espera 2 segundos
     - Intento 2: espera 4 segundos  
     - Intento 3: espera 8 segundos
     """
     for attempt in range(max_retries + 1):
-        response = requests.post(url, json=payload, headers=headers, timeout=30)
-        
-        if response.status_code == 200:
-            return parse_response(response)
-        elif response.status_code == 429:
-            wait_time = 2 ** (attempt + 1)
-            time.sleep(wait_time)  # Esperar antes de reintentar
-        else:
-            return {"fallback": True, "error": "..."}
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(response_mime_type="application/json") if expect_json else None
+            )
+            return json.loads(response.text)
+        except APIError as api_err:
+            if api_err.code == 429:
+                wait_time = 2 ** (attempt + 1)
+                time.sleep(wait_time)  # Esperar antes de reintentar
+            else:
+                return {"fallback": True, "error": api_err.message}
+        except Exception as e:
+            return {"fallback": True, "error": str(e)}
 ```
 
 **Concepto clave**: El backoff exponencial duplica el tiempo de espera con cada intento. Esto evita "bombardear" la API y da tiempo al servidor a liberar capacidad.

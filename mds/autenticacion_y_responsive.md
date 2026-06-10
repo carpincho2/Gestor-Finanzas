@@ -109,6 +109,19 @@ Sigue estos pasos para configurarlo:
    * En **producción (Render)**, la cookie de sesión tiene el atributo `secure` (`https_only=True`), lo que significa que el navegador solo la transmitirá en conexiones cifradas HTTPS. Esto evita ataques de interceptación de red (Man-in-the-Middle).
    * En **desarrollo local (localhost)** se desactiva (`https_only=False`) para permitirnos probar la aplicación sobre HTTP sin problemas.
 
+### 🔄 1.2. Sincronización Segura y Aislamiento de Datos de Recursos Financieros
+
+En un gestor de finanzas multiusuario, la privacidad y seguridad son fundamentales. Para evitar que la información de un usuario se filtre a otro o quede expuesta residualmente en navegadores de equipos compartidos, implementamos una arquitectura híbrida de persistencia:
+
+1. **Persistencia Local (Modo sin Servidor - `file://`)**:
+   El frontend almacena las transacciones, presupuestos, objetivos e historial en el `localStorage` del navegador. Para aislar los datos entre diferentes usuarios en un mismo navegador, utilizamos la función helper `userKey(key)` que combina el nombre de la clave con el correo del usuario activo (por ejemplo, `flujo_tx_usuario@email.com`), garantizando que cada correo tenga su propio espacio aislado en el navegador.
+
+2. **Persistencia Remota (Modo Servidor - FastAPI)**:
+   Cuando la app corre conectada al backend (`IS_SERVER = true`), **el LocalStorage queda deshabilitado para datos financieros**. Toda acción del usuario (crear cuenta, modificar transacción, definir presupuesto, aportar a objetivos, o borrar registros) genera una petición HTTP inmediata al backend (`POST`, `PUT`, `DELETE`). 
+   - El servidor FastAPI recupera el `user_id` de la cookie de sesión segura firmada (`flujo_session`), validando que sea una sesión activa y autorizada.
+   - Los datos se guardan y filtran en la base de datos relacional (SQLite/PostgreSQL) exclusivamente bajo el `user_id` del usuario logueado.
+   - De esta manera, al cerrar la sesión o cerrar el navegador, no queda ningún dato financiero sensible guardado de forma permanente en el cliente, logrando un aislamiento de datos total y profesional de extremo a extremo.
+
 ---
 
 ## 📱 2. Diseño 100% Responsive

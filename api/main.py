@@ -90,6 +90,73 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    type = Column(String(50), nullable=False)  # banco, ahorro, efectivo, tarjeta, inversion, digital, custom
+    bank = Column(String(255), nullable=True)
+    balance = Column(Float, default=0.0)
+    currency = Column(String(10), default="ARS")
+    limit = Column(Float, default=0.0)
+    notes = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    account_id = Column(Integer, index=True, nullable=True)  # Asociado a una cuenta
+    type = Column(String(50), nullable=False)  # income o expense
+    desc = Column(String(255), nullable=False)
+    amount = Column(Float, nullable=False)
+    cat = Column(String(100), nullable=False)
+    date = Column(String(50), nullable=False)  # YYYY-MM-DD
+    transfer_id = Column(Integer, nullable=True)  # Si pertenece a una transferencia
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Budget(Base):
+    __tablename__ = "budgets"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    cat = Column(String(100), nullable=False)
+    name = Column(String(255), nullable=False)
+    icon = Column(String(50), default="📦")
+    limit = Column(Float, nullable=False)
+    color = Column(String(50), nullable=False)
+    notes = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Goal(Base):
+    __tablename__ = "goals"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    cat = Column(String(100), nullable=False)
+    emoji = Column(String(50), default="🎯")
+    color = Column(String(50), nullable=False)
+    target = Column(Float, nullable=False)
+    current = Column(Float, default=0.0)
+    deadline = Column(String(50), nullable=True)  # YYYY-MM-DD
+    notes = Column(String(500), nullable=True)
+    status = Column(String(50), default="active")  # active, paused, completed
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class GoalContribution(Base):
+    __tablename__ = "goal_contributions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    goal_id = Column(Integer, index=True, nullable=False)
+    amount = Column(Float, nullable=False)
+    date = Column(String(50), nullable=False)  # YYYY-MM-DD
+    note = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Auto-create tables (SQLite and PostgreSQL)
 Base.metadata.create_all(bind=engine)
 
@@ -170,6 +237,108 @@ class AIChatRequest(BaseModel):
 
 class AIInsightsRequest(BaseModel):
     contexto_financiero: str
+
+class AccountCreate(BaseModel):
+    name: str
+    type: str
+    bank: Optional[str] = None
+    balance: float = 0.0
+    currency: str = "ARS"
+    limit: float = 0.0
+    notes: Optional[str] = None
+
+class AccountUpdate(BaseModel):
+    name: str
+    type: str
+    bank: Optional[str] = None
+    balance: float
+    currency: str = "ARS"
+    limit: float = 0.0
+    notes: Optional[str] = None
+
+class TransactionCreate(BaseModel):
+    account_id: Optional[int] = None
+    type: str
+    desc: str
+    amount: float
+    cat: str
+    date: str
+    transfer_id: Optional[int] = None
+
+class BudgetCreate(BaseModel):
+    cat: str
+    name: str
+    icon: Optional[str] = "📦"
+    limit: float
+    color: str
+    notes: Optional[str] = None
+
+class GoalCreate(BaseModel):
+    name: str
+    cat: str
+    emoji: Optional[str] = "🎯"
+    color: str
+    target: float
+    current: float = 0.0
+    deadline: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[str] = "active"
+
+class GoalContributionCreate(BaseModel):
+    amount: float
+    date: str
+    note: Optional[str] = None
+
+
+def seed_user_data(user_id: int, db: Session):
+    # 1. Crear cuentas demo
+    acc1 = Account(user_id=user_id, name="Cuenta Corriente", type="banco", bank="Galicia", balance=85000.0, currency="ARS", notes="Cuenta principal")
+    acc2 = Account(user_id=user_id, name="Caja de Ahorro", type="ahorro", bank="Galicia", balance=42000.0, currency="ARS", notes="Fondo de emergencia")
+    acc3 = Account(user_id=user_id, name="Efectivo", type="efectivo", balance=12500.0, currency="ARS")
+    acc4 = Account(user_id=user_id, name="Mercado Pago", type="digital", bank="Mercado Pago", balance=8300.0, currency="ARS", notes="Para compras online")
+    acc5 = Account(user_id=user_id, name="Visa Naranja X", type="tarjeta", bank="Naranja X", balance=-15200.0, currency="ARS", limit=100000.0, notes="Vence el 10 de cada mes")
+    
+    db.add_all([acc1, acc2, acc3, acc4, acc5])
+    db.commit()
+    
+    # 2. Crear transacciones demo vinculadas a las cuentas
+    t1 = Transaction(user_id=user_id, account_id=acc1.id, type="income", desc="Sueldo", amount=150000.0, cat="Ingresos (Sueldo/Freelance)", date="2026-04-01")
+    t2 = Transaction(user_id=user_id, account_id=acc1.id, type="expense", desc="Alquiler", amount=55000.0, cat="Hogar / Servicios", date="2026-04-03")
+    t3 = Transaction(user_id=user_id, account_id=acc4.id, type="expense", desc="Supermercado", amount=12300.0, cat="Supermercado / Almacén", date="2026-04-05")
+    t4 = Transaction(user_id=user_id, account_id=acc4.id, type="expense", desc="UberEats", amount=4200.0, cat="Salidas / Restaurantes", date="2026-04-07")
+    t5 = Transaction(user_id=user_id, account_id=acc2.id, type="income", desc="Freelance web", amount=35000.0, cat="Ingresos (Sueldo/Freelance)", date="2026-04-08")
+    t6 = Transaction(user_id=user_id, account_id=acc3.id, type="expense", desc="SUBE + taxi", amount=3100.0, cat="Transporte", date="2026-04-09")
+    t7 = Transaction(user_id=user_id, account_id=acc5.id, type="expense", desc="Netflix + Spotify", amount=3200.0, cat="Entretenimiento / Suscripciones", date="2026-04-10")
+    t8 = Transaction(user_id=user_id, account_id=acc3.id, type="expense", desc="Farmacia", amount=2800.0, cat="Salud / Farmacia", date="2026-04-11")
+    
+    db.add_all([t1, t2, t3, t4, t5, t6, t7, t8])
+    
+    # 3. Crear presupuestos demo
+    b1 = Budget(user_id=user_id, cat="Supermercado / Almacén", name="Supermercado / Almacén", icon="🍔", limit=20000.0, color="#00e5a0", notes="Súper, delivery y cafés")
+    b2 = Budget(user_id=user_id, cat="Transporte", name="Transporte", icon="🚗", limit=8000.0, color="#5b8cff", notes="SUBE, taxi, nafta")
+    b3 = Budget(user_id=user_id, cat="Entretenimiento / Suscripciones", name="Entretenimiento / Suscripciones", icon="🎬", limit=5000.0, color="#ffb84a", notes="Streaming, salidas")
+    b4 = Budget(user_id=user_id, cat="Hogar / Servicios", name="Hogar / Servicios", icon="🏠", limit=60000.0, color="#ff6b4a", notes="Alquiler y servicios")
+    b5 = Budget(user_id=user_id, cat="Salud / Farmacia", name="Salud / Farmacia", icon="💊", limit=6000.0, color="#a78bfa", notes="Farmacia y médicos")
+    
+    db.add_all([b1, b2, b3, b4, b5])
+    
+    # 4. Crear objetivos demo
+    g1 = Goal(user_id=user_id, name="Fondo de emergencia", cat="Ahorro / Inversiones", emoji="💰", color="#00e5a0", target=300000.0, current=120000.0, deadline="2026-12-01", notes="3 meses de gastos cubiertos", status="active")
+    g2 = Goal(user_id=user_id, name="Vacaciones en Bariloche", cat="Otros", emoji="✈️", color="#5b8cff", target=150000.0, current=45000.0, deadline="2027-02-15", notes="Esquí en julio", status="active")
+    g3 = Goal(user_id=user_id, name="Notebook nueva", cat="Otros", emoji="💻", color="#ffb84a", target=800000.0, current=800000.0, deadline="2026-05-01", notes="", status="active")
+    
+    db.add_all([g1, g2, g3])
+    db.commit()
+    
+    # Crear aportes demo
+    gc1 = GoalContribution(goal_id=g1.id, amount=60000.0, date="2026-04-05", note="Primer aporte")
+    gc2 = GoalContribution(goal_id=g1.id, amount=60000.0, date="2026-05-05", note="Mes 2")
+    gc3 = GoalContribution(goal_id=g2.id, amount=45000.0, date="2026-05-10", note="Inicio")
+    gc4 = GoalContribution(goal_id=g3.id, amount=400000.0, date="2026-02-01", note="")
+    gc5 = GoalContribution(goal_id=g3.id, amount=400000.0, date="2026-04-01", note="")
+    
+    db.add_all([gc1, gc2, gc3, gc4, gc5])
+    db.commit()
 
 
 # ============================================================
@@ -276,6 +445,12 @@ async def register(request: Request, payload: RegisterRequest, db: Session = Dep
     db.commit()
     db.refresh(new_user)
     
+    # Precargar datos semilla para el usuario nuevo
+    try:
+        seed_user_data(new_user.id, db)
+    except Exception as e:
+        print(f"Error seeding user data: {e}")
+    
     request.session["user_id"] = new_user.id
     request.session["email"] = new_user.email
     
@@ -356,6 +531,12 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
         db.commit()
         db.refresh(user)
         
+        # Precargar datos semilla para el usuario nuevo de Google
+        try:
+            seed_user_data(user.id, db)
+        except Exception as e:
+            print(f"Error seeding google user data: {e}")
+        
     request.session["user_id"] = user.id
     request.session["email"] = user.email
     
@@ -376,6 +557,7 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
 
 @app.post("/api/ocr/parse")
 async def ocr_parse(request: Request, payload: OCRParseRequest):
+    user_id = get_current_user_id(request)
     load_env()
     provider = os.getenv("AI_PROVIDER", "none").strip().lower()
     text = payload.text
@@ -538,7 +720,8 @@ def _call_gemini_sdk_with_retry(prompt: str, model_name: str = "gemini-2.5-flash
 
 
 @app.post("/api/ai/chat")
-async def ai_chat(payload: AIChatRequest):
+async def ai_chat(payload: AIChatRequest, request: Request):
+    user_id = get_current_user_id(request)
     load_env()
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -581,7 +764,8 @@ Usás emojis con moderación para hacer la respuesta más clara. Respondés de f
 
 
 @app.post("/api/ai/insights")
-async def ai_insights(payload: AIInsightsRequest):
+async def ai_insights(payload: AIInsightsRequest, request: Request):
+    user_id = get_current_user_id(request)
     load_env()
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
@@ -615,7 +799,7 @@ Basate 100% en los datos reales del contexto."""
 
 @app.post("/api/ocr/save")
 async def ocr_save(request: Request, payload: OCRSaveRequest, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
+    user_id = get_current_user_id(request)
     
     store_name = payload.nombre_local.strip() if payload.nombre_local else "Desconocido"
     fecha = payload.fecha.strip() if payload.fecha else datetime.utcnow().strftime("%Y-%m-%d")
@@ -636,6 +820,406 @@ async def ocr_save(request: Request, payload: OCRSaveRequest, db: Session = Depe
         
     db.commit()
     return {"ok": True, "saved_items": saved_count}
+
+    db.commit()
+    return {"ok": True, "saved_items": saved_count}
+
+
+# ============================================================
+#  CRUD FINANCIAL DATA ENDPOINTS (Secure User Isolation)
+# ============================================================
+
+def get_current_user_id(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    return user_id
+
+# --- ACCOUNTS ---
+@app.get("/api/accounts")
+async def get_accounts(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    accs = db.query(Account).filter(Account.user_id == user_id).all()
+    return {"ok": True, "accounts": accs}
+
+@app.post("/api/accounts", status_code=201)
+async def create_account(payload: AccountCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    new_acc = Account(
+        user_id=user_id,
+        name=payload.name.strip(),
+        type=payload.type,
+        bank=payload.bank.strip() if payload.bank else None,
+        balance=payload.balance,
+        currency=payload.currency,
+        limit=payload.limit,
+        notes=payload.notes.strip() if payload.notes else None
+    )
+    db.add(new_acc)
+    db.commit()
+    db.refresh(new_acc)
+    return {"ok": True, "account": new_acc}
+
+@app.put("/api/accounts/{id}")
+async def update_account(id: int, payload: AccountUpdate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    acc = db.query(Account).filter(Account.id == id, Account.user_id == user_id).first()
+    if not acc:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    
+    acc.name = payload.name.strip()
+    acc.type = payload.type
+    acc.bank = payload.bank.strip() if payload.bank else None
+    acc.balance = payload.balance
+    acc.currency = payload.currency
+    acc.limit = payload.limit
+    acc.notes = payload.notes.strip() if payload.notes else None
+    
+    db.commit()
+    db.refresh(acc)
+    return {"ok": True, "account": acc}
+
+@app.delete("/api/accounts/{id}")
+async def delete_account(id: int, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    acc = db.query(Account).filter(Account.id == id, Account.user_id == user_id).first()
+    if not acc:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    
+    # Desasociar transacciones vinculadas a esta cuenta (poner account_id en null)
+    db.query(Transaction).filter(Transaction.account_id == id, Transaction.user_id == user_id).update({Transaction.account_id: None})
+    
+    db.delete(acc)
+    db.commit()
+    return {"ok": True, "message": "Cuenta eliminada"}
+
+
+# --- TRANSACTIONS ---
+@app.get("/api/transactions")
+async def get_transactions(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    txs = db.query(Transaction).filter(Transaction.user_id == user_id).order_by(Transaction.date.desc(), Transaction.id.desc()).all()
+    return {"ok": True, "transactions": txs}
+
+@app.post("/api/transactions", status_code=201)
+async def create_transaction(payload: TransactionCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    
+    new_tx = Transaction(
+        user_id=user_id,
+        account_id=payload.account_id,
+        type=payload.type,
+        desc=payload.desc.strip(),
+        amount=payload.amount,
+        cat=payload.cat,
+        date=payload.date,
+        transfer_id=payload.transfer_id
+    )
+    db.add(new_tx)
+    
+    # Actualizar saldo de la cuenta asociada
+    if payload.account_id:
+        acc = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == user_id).first()
+        if acc:
+            if payload.type == "income":
+                acc.balance += payload.amount
+            else:
+                acc.balance -= payload.amount
+                
+    db.commit()
+    db.refresh(new_tx)
+    return {"ok": True, "transaction": new_tx}
+
+@app.put("/api/transactions/{id}")
+async def update_transaction(id: int, payload: TransactionCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    tx = db.query(Transaction).filter(Transaction.id == id, Transaction.user_id == user_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
+        
+    # Revertir saldo en la cuenta original
+    if tx.account_id:
+        old_acc = db.query(Account).filter(Account.id == tx.account_id, Account.user_id == user_id).first()
+        if old_acc:
+            if tx.type == "income":
+                old_acc.balance -= tx.amount
+            else:
+                old_acc.balance += tx.amount
+                
+    # Actualizar valores
+    tx.account_id = payload.account_id
+    tx.type = payload.type
+    tx.desc = payload.desc.strip()
+    tx.amount = payload.amount
+    tx.cat = payload.cat
+    tx.date = payload.date
+    tx.transfer_id = payload.transfer_id
+    
+    # Aplicar nuevo saldo en la cuenta (puede ser la misma o una nueva)
+    if payload.account_id:
+        new_acc = db.query(Account).filter(Account.id == payload.account_id, Account.user_id == user_id).first()
+        if new_acc:
+            if payload.type == "income":
+                new_acc.balance += payload.amount
+            else:
+                new_acc.balance -= payload.amount
+                
+    db.commit()
+    db.refresh(tx)
+    return {"ok": True, "transaction": tx}
+
+@app.delete("/api/transactions/{id}")
+async def delete_transaction(id: int, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    tx = db.query(Transaction).filter(Transaction.id == id, Transaction.user_id == user_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
+        
+    # Revertir saldo de la cuenta asociada
+    if tx.account_id:
+        acc = db.query(Account).filter(Account.id == tx.account_id, Account.user_id == user_id).first()
+        if acc:
+            if tx.type == "income":
+                acc.balance -= tx.amount
+            else:
+                acc.balance += tx.amount
+                
+    db.delete(tx)
+    db.commit()
+    return {"ok": True, "message": "Transacción eliminada"}
+
+
+# --- BUDGETS ---
+@app.get("/api/budgets")
+async def get_budgets(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    bgts = db.query(Budget).filter(Budget.user_id == user_id).all()
+    return {"ok": True, "budgets": bgts}
+
+@app.post("/api/budgets", status_code=201)
+async def create_budget(payload: BudgetCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    new_bgt = Budget(
+        user_id=user_id,
+        cat=payload.cat,
+        name=payload.name.strip(),
+        icon=payload.icon,
+        limit=payload.limit,
+        color=payload.color,
+        notes=payload.notes.strip() if payload.notes else None
+    )
+    db.add(new_bgt)
+    db.commit()
+    db.refresh(new_bgt)
+    return {"ok": True, "budget": new_bgt}
+
+@app.put("/api/budgets/{id}")
+async def update_budget(id: int, payload: BudgetCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    bgt = db.query(Budget).filter(Budget.id == id, Budget.user_id == user_id).first()
+    if not bgt:
+        raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+        
+    bgt.cat = payload.cat
+    bgt.name = payload.name.strip()
+    bgt.icon = payload.icon
+    bgt.limit = payload.limit
+    bgt.color = payload.color
+    bgt.notes = payload.notes.strip() if payload.notes else None
+    
+    db.commit()
+    db.refresh(bgt)
+    return {"ok": True, "budget": bgt}
+
+@app.delete("/api/budgets/{id}")
+async def delete_budget(id: int, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    bgt = db.query(Budget).filter(Budget.id == id, Budget.user_id == user_id).first()
+    if not bgt:
+        raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
+        
+    db.delete(bgt)
+    db.commit()
+    return {"ok": True, "message": "Presupuesto eliminado"}
+
+
+# --- GOALS & CONTRIBUTIONS ---
+@app.get("/api/goals")
+async def get_goals(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    gls = db.query(Goal).filter(Goal.user_id == user_id).all()
+    
+    # Construir respuesta con las contribuciones incluidas
+    result = []
+    for g in gls:
+        contribs = db.query(GoalContribution).filter(GoalContribution.goal_id == g.id).order_by(GoalContribution.date.asc()).all()
+        result.append({
+            "id": g.id,
+            "name": g.name,
+            "cat": g.cat,
+            "emoji": g.emoji,
+            "color": g.color,
+            "target": g.target,
+            "current": g.current,
+            "deadline": g.deadline,
+            "notes": g.notes,
+            "status": g.status,
+            "contributions": contribs
+        })
+    return {"ok": True, "goals": result}
+
+@app.post("/api/goals", status_code=201)
+async def create_goal(payload: GoalCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    new_goal = Goal(
+        user_id=user_id,
+        name=payload.name.strip(),
+        cat=payload.cat,
+        emoji=payload.emoji,
+        color=payload.color,
+        target=payload.target,
+        current=payload.current,
+        deadline=payload.deadline if payload.deadline else None,
+        notes=payload.notes.strip() if payload.notes else None,
+        status=payload.status
+    )
+    db.add(new_goal)
+    db.commit()
+    db.refresh(new_goal)
+    return {"ok": True, "goal": {
+        "id": new_goal.id,
+        "name": new_goal.name,
+        "cat": new_goal.cat,
+        "emoji": new_goal.emoji,
+        "color": new_goal.color,
+        "target": new_goal.target,
+        "current": new_goal.current,
+        "deadline": new_goal.deadline,
+        "notes": new_goal.notes,
+        "status": new_goal.status,
+        "contributions": []
+    }}
+
+@app.put("/api/goals/{id}")
+async def update_goal(id: int, payload: GoalCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    g = db.query(Goal).filter(Goal.id == id, Goal.user_id == user_id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Objetivo no encontrado")
+        
+    g.name = payload.name.strip()
+    g.cat = payload.cat
+    g.emoji = payload.emoji
+    g.color = payload.color
+    g.target = payload.target
+    g.current = payload.current
+    g.deadline = payload.deadline if payload.deadline else None
+    g.notes = payload.notes.strip() if payload.notes else None
+    g.status = payload.status
+    
+    db.commit()
+    db.refresh(g)
+    
+    contribs = db.query(GoalContribution).filter(GoalContribution.goal_id == g.id).order_by(GoalContribution.date.asc()).all()
+    return {"ok": True, "goal": {
+        "id": g.id,
+        "name": g.name,
+        "cat": g.cat,
+        "emoji": g.emoji,
+        "color": g.color,
+        "target": g.target,
+        "current": g.current,
+        "deadline": g.deadline,
+        "notes": g.notes,
+        "status": g.status,
+        "contributions": contribs
+    }}
+
+@app.delete("/api/goals/{id}")
+async def delete_goal(id: int, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    g = db.query(Goal).filter(Goal.id == id, Goal.user_id == user_id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Objetivo no encontrado")
+        
+    # Eliminar contribuciones de este objetivo
+    db.query(GoalContribution).filter(GoalContribution.goal_id == id).delete()
+    
+    db.delete(g)
+    db.commit()
+    return {"ok": True, "message": "Objetivo eliminado"}
+
+@app.post("/api/goals/{id}/contributions", status_code=201)
+async def add_goal_contribution(id: int, payload: GoalContributionCreate, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    g = db.query(Goal).filter(Goal.id == id, Goal.user_id == user_id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Objetivo no encontrado")
+        
+    new_contrib = GoalContribution(
+        goal_id=id,
+        amount=payload.amount,
+        date=payload.date,
+        note=payload.note.strip() if payload.note else None
+    )
+    db.add(new_contrib)
+    
+    # Actualizar saldo actual del objetivo
+    g.current += payload.amount
+    
+    db.commit()
+    db.refresh(new_contrib)
+    db.refresh(g)
+    
+    contribs = db.query(GoalContribution).filter(GoalContribution.goal_id == g.id).order_by(GoalContribution.date.asc()).all()
+    return {"ok": True, "goal": {
+        "id": g.id,
+        "name": g.name,
+        "cat": g.cat,
+        "emoji": g.emoji,
+        "color": g.color,
+        "target": g.target,
+        "current": g.current,
+        "deadline": g.deadline,
+        "notes": g.notes,
+        "status": g.status,
+        "contributions": contribs
+    }}
+
+@app.delete("/api/goals/{goal_id}/contributions/{contrib_id}")
+async def delete_goal_contribution(goal_id: int, contrib_id: int, request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    g = db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user_id).first()
+    if not g:
+        raise HTTPException(status_code=404, detail="Objetivo no encontrado")
+        
+    contrib = db.query(GoalContribution).filter(GoalContribution.id == contrib_id, GoalContribution.goal_id == goal_id).first()
+    if not contrib:
+        raise HTTPException(status_code=404, detail="Contribución no encontrada")
+        
+    # Actualizar saldo actual del objetivo
+    g.current = max(g.current - contrib.amount, 0.0)
+    
+    db.delete(contrib)
+    db.commit()
+    db.refresh(g)
+    
+    contribs = db.query(GoalContribution).filter(GoalContribution.goal_id == g.id).order_by(GoalContribution.date.asc()).all()
+    return {"ok": True, "goal": {
+        "id": g.id,
+        "name": g.name,
+        "cat": g.cat,
+        "emoji": g.emoji,
+        "color": g.color,
+        "target": g.target,
+        "current": g.current,
+        "deadline": g.deadline,
+        "notes": g.notes,
+        "status": g.status,
+        "contributions": contribs
+    }}
+
+
 
 # ============================================================
 #  SERVING STATIC FILES (Frontend Monolith)

@@ -6,12 +6,53 @@
 let currentUserEmail = null;
 function userKey(k) { return currentUserEmail ? k + '_' + currentUserEmail : k; }
 
-function loadUserData() {
-  transactions = JSON.parse(localStorage.getItem(userKey('flujo_tx')) || '[]');
-  budgets = JSON.parse(localStorage.getItem(userKey('flujo_budgets')) || '[]');
-  accounts = JSON.parse(localStorage.getItem(userKey('flujo_accounts')) || '[]');
-  goals = JSON.parse(localStorage.getItem(userKey('flujo_goals')) || '[]');
-  scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
+const IS_SERVER = window.location.protocol !== 'file:';
+const API_BASE = IS_SERVER
+  ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://' + window.location.hostname + ':8000/api'
+      : window.location.origin + '/api')
+  : null;
+
+async function apiFetchLocal(path, options = {}) {
+  if (typeof apiFetch !== 'undefined') {
+    return apiFetch(path, options);
+  }
+  const url = API_BASE + path;
+  const r = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options
+  });
+  return r.json();
+}
+
+async function loadUserData() {
+  if (IS_SERVER) {
+    try {
+      const [resAcc, resTx, resBgt, resGoal] = await Promise.all([
+        apiFetchLocal('/accounts'),
+        apiFetchLocal('/transactions'),
+        apiFetchLocal('/budgets'),
+        apiFetchLocal('/goals')
+      ]);
+      
+      if (resAcc && resAcc.ok) accounts = resAcc.accounts;
+      if (resTx && resTx.ok) transactions = resTx.transactions;
+      if (resBgt && resBgt.ok) budgets = resBgt.budgets;
+      if (resGoal && resGoal.ok) goals = resGoal.goals;
+      
+      scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
+    } catch (err) {
+      console.error("Error cargando datos del backend:", err);
+      showToast("⚠️ Error al sincronizar con el servidor", true);
+    }
+  } else {
+    transactions = JSON.parse(localStorage.getItem(userKey('flujo_tx')) || '[]');
+    budgets = JSON.parse(localStorage.getItem(userKey('flujo_budgets')) || '[]');
+    accounts = JSON.parse(localStorage.getItem(userKey('flujo_accounts')) || '[]');
+    goals = JSON.parse(localStorage.getItem(userKey('flujo_goals')) || '[]');
+    scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
+  }
 }
 
 let transactions = [];
@@ -58,27 +99,32 @@ const CAT_COLORS = {
 /* =====================================================
    INIT
    ===================================================== */
-function init() {
-  // Seed demo data if empty
-  if (transactions.length === 0) {
-    const demo = [
-      { id: 1, type: 'income', desc: 'Sueldo', amount: 150000, cat: 'Sueldo', date: '2025-04-01' },
-      { id: 2, type: 'expense', desc: 'Alquiler', amount: 55000, cat: 'Hogar', date: '2025-04-03' },
-      { id: 3, type: 'expense', desc: 'Supermercado', amount: 12300, cat: 'Alimentación', date: '2025-04-05' },
-      { id: 4, type: 'expense', desc: 'UberEats', amount: 4200, cat: 'Alimentación', date: '2025-04-07' },
-      { id: 5, type: 'income', desc: 'Freelance web', amount: 35000, cat: 'Freelance', date: '2025-04-08' },
-      { id: 6, type: 'expense', desc: 'SUBE + taxi', amount: 3100, cat: 'Transporte', date: '2025-04-09' },
-      { id: 7, type: 'expense', desc: 'Netflix + Spotify', amount: 3200, cat: 'Entretenimiento', date: '2025-04-10' },
-      { id: 8, type: 'expense', desc: 'Farmacia', amount: 2800, cat: 'Salud', date: '2025-04-11' },
-    ];
-    transactions = demo;
-    save();
+async function init() {
+  await loadUserData();
+
+  // Si no está corriendo en servidor, sembramos datos en localStorage
+  if (!IS_SERVER) {
+    if (transactions.length === 0) {
+      const demo = [
+        { id: 1, type: 'income', desc: 'Sueldo', amount: 150000, cat: 'Ingresos (Sueldo/Freelance)', date: '2025-04-01' },
+        { id: 2, type: 'expense', desc: 'Alquiler', amount: 55000, cat: 'Hogar / Servicios', date: '2025-04-03' },
+        { id: 3, type: 'expense', desc: 'Supermercado', amount: 12300, cat: 'Supermercado / Almacén', date: '2025-04-05' },
+        { id: 4, type: 'expense', desc: 'UberEats', amount: 4200, cat: 'Salidas / Restaurantes', date: '2025-04-07' },
+        { id: 5, type: 'income', desc: 'Freelance web', amount: 35000, cat: 'Ingresos (Sueldo/Freelance)', date: '2025-04-08' },
+        { id: 6, type: 'expense', desc: 'SUBE + taxi', amount: 3100, cat: 'Transporte', date: '2025-04-09' },
+        { id: 7, type: 'expense', desc: 'Netflix + Spotify', amount: 3200, cat: 'Entretenimiento / Suscripciones', date: '2025-04-10' },
+        { id: 8, type: 'expense', desc: 'Farmacia', amount: 2800, cat: 'Salud / Farmacia', date: '2025-04-11' },
+      ];
+      transactions = demo;
+      save();
+    }
+
+    initBudgets();
+    initAccounts();
+    initGoals();
   }
 
   setDate();
-  initBudgets();
-  initAccounts();
-  initGoals();
   renderAll();
 }
 
@@ -93,7 +139,9 @@ function setDate() {
 }
 
 function save() {
-  localStorage.setItem(userKey('flujo_tx'), JSON.stringify(transactions));
+  if (!IS_SERVER) {
+    localStorage.setItem(userKey('flujo_tx'), JSON.stringify(transactions));
+  }
 }
 
 /* =====================================================
@@ -384,12 +432,35 @@ function addFromModal() {
   showToast('✅ Transacción registrada');
 }
 
-function addTransaction(tx) {
-  tx.id = Date.now();
-  transactions.unshift(tx);
-  save();
-  renderAll();
-  if (currentPage === 'transacciones') renderTxView();
+async function addTransaction(tx) {
+  if (IS_SERVER) {
+    try {
+      await apiFetchLocal('/transactions', {
+        method: 'POST',
+        body: JSON.stringify({
+          account_id: tx.account_id || null,
+          type: tx.type,
+          desc: tx.desc,
+          amount: tx.amount,
+          cat: tx.cat,
+          date: tx.date,
+          transfer_id: tx.transfer_id || null
+        })
+      });
+      await loadUserData();
+      renderAll();
+      if (currentPage === 'transacciones') renderTxView();
+    } catch (err) {
+      console.error("Error al guardar transacción:", err);
+      showToast("Error al guardar la transacción en el servidor", true);
+    }
+  } else {
+    tx.id = Date.now();
+    transactions.unshift(tx);
+    save();
+    renderAll();
+    if (currentPage === 'transacciones') renderTxView();
+  }
 }
 
 /* =====================================================
@@ -723,7 +794,7 @@ function setEditType(type) {
   document.getElementById('editModalOverlay').dataset.type = type;
 }
 
-function saveEdit() {
+async function saveEdit() {
   const type = document.getElementById('editModalOverlay').dataset.type || 'expense';
   const desc = document.getElementById('eDesc').value.trim();
   const amount = parseFloat(document.getElementById('eAmount').value);
@@ -734,13 +805,38 @@ function saveEdit() {
   if (!amount || amount <= 0) { showToast('⚠️ Monto inválido', true); return; }
   if (!date) { showToast('⚠️ Seleccioná una fecha', true); return; }
 
-  const idx = transactions.findIndex(x => x.id === editingId);
-  if (idx > -1) {
-    transactions[idx] = { ...transactions[idx], type, desc, amount, cat, date };
-    save();
-    renderAll();
-    if (currentPage === 'transacciones') renderTxView();
-    showToast('✏️ Transacción actualizada');
+  if (IS_SERVER) {
+    try {
+      const orig = transactions.find(x => x.id === editingId);
+      await apiFetchLocal(`/transactions/${editingId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          account_id: orig ? orig.account_id : null,
+          type,
+          desc,
+          amount,
+          cat,
+          date,
+          transfer_id: orig ? orig.transfer_id : null
+        })
+      });
+      await loadUserData();
+      renderAll();
+      if (currentPage === 'transacciones') renderTxView();
+      showToast('Transacción actualizada');
+    } catch (err) {
+      console.error("Error al actualizar transacción:", err);
+      showToast("Error al actualizar la transacción en el servidor", true);
+    }
+  } else {
+    const idx = transactions.findIndex(x => x.id === editingId);
+    if (idx > -1) {
+      transactions[idx] = { ...transactions[idx], type, desc, amount, cat, date };
+      save();
+      renderAll();
+      if (currentPage === 'transacciones') renderTxView();
+      showToast('Transacción actualizada');
+    }
   }
   closeEditModal();
 }
@@ -767,13 +863,28 @@ function closeDeleteModal(e) {
   }
 }
 
-function doDelete() {
-  transactions = transactions.filter(x => x.id !== editingId);
-  save();
-  renderAll();
-  if (currentPage === 'transacciones') renderTxView();
+async function doDelete() {
+  if (IS_SERVER) {
+    try {
+      await apiFetchLocal(`/transactions/${editingId}`, {
+        method: 'DELETE'
+      });
+      await loadUserData();
+      renderAll();
+      if (currentPage === 'transacciones') renderTxView();
+      showToast('Transacción eliminada');
+    } catch (err) {
+      console.error("Error al eliminar transacción:", err);
+      showToast("Error al eliminar la transacción en el servidor", true);
+    }
+  } else {
+    transactions = transactions.filter(x => x.id !== editingId);
+    save();
+    renderAll();
+    if (currentPage === 'transacciones') renderTxView();
+    showToast('Transacción eliminada');
+  }
   closeDeleteModal();
-  showToast('🗑️ Transacción eliminada');
 }
 
 function escHtml(s) {
@@ -1138,7 +1249,7 @@ function closeBudgetModal(e) {
   }
 }
 
-function saveBudget() {
+async function saveBudget() {
   const catSel = document.getElementById('bmCat').value;
   const cat = catSel === 'custom' ? document.getElementById('bmCustomName').value.trim() : catSel;
   const limit = parseFloat(document.getElementById('bmLimit').value);
@@ -1148,22 +1259,60 @@ function saveBudget() {
   if (!cat) { showToast('⚠️ Ingresá un nombre de categoría', true); return; }
   if (!limit || limit <= 0) { showToast('⚠️ Ingresá un límite válido', true); return; }
 
-  if (bmEditingId) {
-    const idx = budgets.findIndex(x => x.id === bmEditingId);
-    if (idx > -1) {
-      budgets[idx] = { ...budgets[idx], cat, name: cat, limit, icon, color: bmSelectedColor, notes };
-      saveBudgets();
+  if (IS_SERVER) {
+    try {
+      if (bmEditingId) {
+        await apiFetchLocal(`/budgets/${bmEditingId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            cat,
+            name: cat,
+            limit,
+            icon,
+            color: bmSelectedColor,
+            notes: notes || null
+          })
+        });
+        showToast('Presupuesto actualizado');
+      } else {
+        await apiFetchLocal('/budgets', {
+          method: 'POST',
+          body: JSON.stringify({
+            cat,
+            name: cat,
+            limit,
+            icon,
+            color: bmSelectedColor,
+            notes: notes || null
+          })
+        });
+        showToast('Presupuesto creado');
+      }
+      await loadUserData();
       renderBudgetView();
-      renderBudgets(); // update dashboard widget
-      showToast('✏️ Presupuesto actualizado');
+      renderBudgets();
+    } catch (err) {
+      console.error("Error al guardar presupuesto:", err);
+      showToast("Error al guardar presupuesto en el servidor", true);
     }
   } else {
-    const newB = { id: Date.now(), cat, name: cat, limit, icon, color: bmSelectedColor, notes };
-    budgets.push(newB);
-    saveBudgets();
-    renderBudgetView();
-    renderBudgets();
-    showToast('✅ Presupuesto creado');
+    if (bmEditingId) {
+      const idx = budgets.findIndex(x => x.id === bmEditingId);
+      if (idx > -1) {
+        budgets[idx] = { ...budgets[idx], cat, name: cat, limit, icon, color: bmSelectedColor, notes };
+        saveBudgets();
+        renderBudgetView();
+        renderBudgets();
+        showToast('Presupuesto actualizado');
+      }
+    } else {
+      const newB = { id: Date.now(), cat, name: cat, limit, icon, color: bmSelectedColor, notes };
+      budgets.push(newB);
+      saveBudgets();
+      renderBudgetView();
+      renderBudgets();
+      showToast('Presupuesto creado');
+    }
   }
   closeBudgetModal();
 }
@@ -1183,13 +1332,28 @@ function closeBudgetDeleteModal(e) {
   }
 }
 
-function doDeleteBudget() {
-  budgets = budgets.filter(x => x.id !== bmEditingId);
-  saveBudgets();
-  renderBudgetView();
-  renderBudgets();
+async function doDeleteBudget() {
+  if (IS_SERVER) {
+    try {
+      await apiFetchLocal(`/budgets/${bmEditingId}`, {
+        method: 'DELETE'
+      });
+      await loadUserData();
+      renderBudgetView();
+      renderBudgets();
+      showToast('Presupuesto eliminado');
+    } catch (err) {
+      console.error("Error al eliminar presupuesto:", err);
+      showToast("Error al eliminar presupuesto en el servidor", true);
+    }
+  } else {
+    budgets = budgets.filter(x => x.id !== bmEditingId);
+    saveBudgets();
+    renderBudgetView();
+    renderBudgets();
+    showToast('Presupuesto eliminado');
+  }
   closeBudgetDeleteModal();
-  showToast('🗑️ Presupuesto eliminado');
 }
 
 /* =====================================================
@@ -1205,17 +1369,10 @@ const ACC_TYPE_LABELS = {
 };
 
 const ACC_TYPE_ICONS = {
-  banco: '🏦', ahorro: '💰', efectivo: '💵',
-  tarjeta: '💳', inversion: '📈', digital: '📱', custom: '🗂️'
-};
-
-const ACC_TYPE_COLORS = {
-  banco: '#5b8cff', ahorro: '#ffb84a', efectivo: '#00e5a0',
-  tarjeta: '#ff4a6b', inversion: '#a78bfa', digital: '#22d3ee', custom: '#e8edf5'
-};
-
-function saveAccounts() {
-  localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(accounts));
+  banco: '🏦', ahorro: '�function saveAccounts() {
+  if (!IS_SERVER) {
+    localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(accounts));
+  }
 }
 
 function initAccounts() {
@@ -1276,7 +1433,8 @@ function renderCvCards() {
     const m = now.getMonth(), y = now.getFullYear();
     const monthTx = transactions.filter(t => {
       const d = new Date(t.date);
-      return (t.accountId === a.id) && d.getMonth() === m && d.getFullYear() === y;
+      const tAccId = t.account_id || t.accountId;
+      return (tAccId === a.id) && d.getMonth() === m && d.getFullYear() === y;
     });
     const mInc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const mExp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -1325,7 +1483,7 @@ function renderCvDetail() {
 
   const now = new Date();
   const m = now.getMonth(), y = now.getFullYear();
-  const accTx = transactions.filter(t => t.accountId === a.id);
+  const accTx = transactions.filter(t => (t.account_id || t.accountId) === a.id);
   const monthTx = accTx.filter(t => {
     const d = new Date(t.date);
     return d.getMonth() === m && d.getFullYear() === y;
@@ -1378,7 +1536,7 @@ function renderCvDetail() {
       </div>
       <div class="cv-detail-stat">
         <span class="cv-detail-stat-label">Gastos este mes</span>
-        <span class="cv-detail-stat-val" style="color:var(--danger);">-${fmt(monthOut)}</span>
+        <span class="cv-detail-stat-val" style="color:var(--danger);">${fmt(-monthOut)}</span>
       </div>
       <div class="cv-detail-stat">
         <span class="cv-detail-stat-label">Total ingresos</span>
@@ -1386,7 +1544,7 @@ function renderCvDetail() {
       </div>
       <div class="cv-detail-stat">
         <span class="cv-detail-stat-label">Total gastos</span>
-        <span class="cv-detail-stat-val" style="color:var(--danger);">-${fmt(totalOut)}</span>
+        <span class="cv-detail-stat-val" style="color:var(--danger);">${fmt(-totalOut)}</span>
       </div>
       <div class="cv-detail-stat">
         <span class="cv-detail-stat-label">Transacciones</span>
@@ -1424,7 +1582,7 @@ function renderCvTxList() {
   }
 
   const a = accounts.find(x => x.id === selectedAccountId);
-  const list = transactions.filter(t => t.accountId === selectedAccountId)
+  const list = transactions.filter(t => (t.account_id || t.accountId) === selectedAccountId)
     .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15);
 
   document.getElementById('cvTxPanelTitle').textContent = a ? `Movimientos — ${a.name}` : 'Movimientos';
@@ -1469,7 +1627,7 @@ function swapTransfer() {
   [f.value, t.value] = [t.value, f.value];
 }
 
-function doTransfer() {
+async function doTransfer() {
   const fromId = parseInt(document.getElementById('cvTransferFrom').value);
   const toId = parseInt(document.getElementById('cvTransferTo').value);
   const amount = parseFloat(document.getElementById('cvTransferAmount').value);
@@ -1482,23 +1640,64 @@ function doTransfer() {
   const toAcc = accounts.find(x => x.id === toId);
   if (!fromAcc || !toAcc) return;
 
-  // Adjust balances
-  fromAcc.balance -= amount;
-  toAcc.balance += amount;
-  saveAccounts();
+  if (IS_SERVER) {
+    try {
+      const dateStr = new Date().toISOString().split('T')[0];
+      const linkId = Date.now();
+      
+      await apiFetchLocal('/transactions', {
+        method: 'POST',
+        body: JSON.stringify({
+          account_id: fromId,
+          type: 'expense',
+          desc: `${desc} → ${toAcc.name}`,
+          amount,
+          cat: 'Otros',
+          date: dateStr,
+          transfer_id: linkId
+        })
+      });
+      
+      await apiFetchLocal('/transactions', {
+        method: 'POST',
+        body: JSON.stringify({
+          account_id: toId,
+          type: 'income',
+          desc: `${desc} ← ${fromAcc.name}`,
+          amount,
+          cat: 'Otros',
+          date: dateStr,
+          transfer_id: linkId
+        })
+      });
+      
+      await loadUserData();
+      
+      document.getElementById('cvTransferAmount').value = '';
+      document.getElementById('cvTransferDesc').value = '';
+      renderCuentasView();
+      showToast(`✅ Transferidos $${amount.toLocaleString('es-AR')} de ${fromAcc.name} a ${toAcc.name}`);
+    } catch (err) {
+      console.error(err);
+      showToast('⚠️ Error al realizar la transferencia en el servidor', true);
+    }
+  } else {
+    fromAcc.balance -= amount;
+    toAcc.balance += amount;
+    saveAccounts();
 
-  // Register two linked transactions
-  const dateStr = new Date().toISOString().split('T')[0];
-  const linkId = Date.now();
-  transactions.unshift({ id: linkId, type: 'expense', desc: `${desc} → ${toAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
-  transactions.unshift({ id: linkId + 1, type: 'income', desc: `${desc} ← ${fromAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
-  save();
+    const dateStr = new Date().toISOString().split('T')[0];
+    const linkId = Date.now();
+    transactions.unshift({ id: linkId, type: 'expense', desc: `${desc} → ${toAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
+    transactions.unshift({ id: linkId + 1, type: 'income', desc: `${desc} ← ${fromAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
+    save();
 
-  document.getElementById('cvTransferAmount').value = '';
-  document.getElementById('cvTransferDesc').value = '';
+    document.getElementById('cvTransferAmount').value = '';
+    document.getElementById('cvTransferDesc').value = '';
 
-  renderCuentasView();
-  showToast(`✅ Transferidos $${amount.toLocaleString('es-AR')} de ${fromAcc.name} a ${toAcc.name}`);
+    renderCuentasView();
+    showToast(`✅ Transferidos $${amount.toLocaleString('es-AR')} de ${fromAcc.name} a ${toAcc.name}`);
+  }
 }
 
 function selectAccount(id) {
@@ -1554,7 +1753,7 @@ function closeAccModal(e) {
   }
 }
 
-function saveAccount() {
+async function saveAccount() {
   const name = document.getElementById('amName').value.trim();
   const type = document.getElementById('amType').value;
   const bank = document.getElementById('amBank').value.trim();
@@ -1565,21 +1764,56 @@ function saveAccount() {
 
   if (!name) { showToast('⚠️ Ingresá un nombre para la cuenta', true); return; }
 
-  if (editingAccountId) {
-    const idx = accounts.findIndex(x => x.id === editingAccountId);
-    if (idx > -1) {
-      accounts[idx] = { ...accounts[idx], name, type, bank, balance, currency, limit, notes };
-      saveAccounts();
-      renderCuentasView();
-      showToast('✏️ Cuenta actualizada');
+  const payload = { name, type, bank, balance, currency, limit, notes };
+
+  if (IS_SERVER) {
+    try {
+      if (editingAccountId) {
+        const res = await apiFetchLocal(`/accounts/${editingAccountId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+        if (res && res.ok) {
+          const idx = accounts.findIndex(x => x.id === editingAccountId);
+          if (idx > -1) {
+            accounts[idx] = res.account;
+            renderCuentasView();
+            showToast('✏️ Cuenta actualizada');
+          }
+        }
+      } else {
+        const res = await apiFetchLocal('/accounts', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        if (res && res.ok) {
+          accounts.push(res.account);
+          selectedAccountId = res.account.id;
+          renderCuentasView();
+          showToast('✅ Cuenta creada');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('⚠️ Error al guardar en el servidor', true);
     }
   } else {
-    const newA = { id: Date.now(), name, type, bank, balance, currency, limit, notes };
-    accounts.push(newA);
-    selectedAccountId = newA.id;
-    saveAccounts();
-    renderCuentasView();
-    showToast('✅ Cuenta creada');
+    if (editingAccountId) {
+      const idx = accounts.findIndex(x => x.id === editingAccountId);
+      if (idx > -1) {
+        accounts[idx] = { ...accounts[idx], name, type, bank, balance, currency, limit, notes };
+        saveAccounts();
+        renderCuentasView();
+        showToast('✏️ Cuenta actualizada');
+      }
+    } else {
+      const newA = { id: Date.now(), name, type, bank, balance, currency, limit, notes };
+      accounts.push(newA);
+      selectedAccountId = newA.id;
+      saveAccounts();
+      renderCuentasView();
+      showToast('✅ Cuenta creada');
+    }
   }
   closeAccModal();
 }
@@ -1596,6 +1830,40 @@ function closeAccDeleteModal(e) {
   if (!e || e.target.id === 'accDeleteOverlay') {
     document.getElementById('accDeleteOverlay').classList.remove('open');
     editingAccountId = null;
+  }
+}
+
+async function doDeleteAccount() {
+  if (IS_SERVER) {
+    try {
+      const res = await apiFetchLocal(`/accounts/${editingAccountId}`, {
+        method: 'DELETE'
+      });
+      if (res && res.ok) {
+        transactions.forEach(t => {
+          if (t.account_id === editingAccountId || t.accountId === editingAccountId) {
+            t.account_id = null;
+            t.accountId = null;
+          }
+        });
+        accounts = accounts.filter(x => x.id !== editingAccountId);
+        if (selectedAccountId === editingAccountId) selectedAccountId = accounts[0]?.id || null;
+        renderCuentasView();
+        showToast('🗑️ Cuenta eliminada');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('⚠️ Error al eliminar en el servidor', true);
+    }
+  } else {
+    accounts = accounts.filter(x => x.id !== editingAccountId);
+    if (selectedAccountId === editingAccountId) selectedAccountId = accounts[0]?.id || null;
+    saveAccounts();
+    renderCuentasView();
+    showToast('🗑️ Cuenta eliminada');
+  }
+  closeAccDeleteModal();
+}itingAccountId = null;
   }
 }
 
@@ -2418,7 +2686,7 @@ function closeGoalModal(e) {
   }
 }
 
-function saveGoal() {
+async function saveGoal() {
   const name = document.getElementById('gmName').value.trim();
   const target = parseFloat(document.getElementById('gmTarget').value);
   const current = parseFloat(document.getElementById('gmCurrent').value) || 0;
@@ -2429,17 +2697,60 @@ function saveGoal() {
   if (!name) { showToast('⚠️ Ingresá un nombre', true); return; }
   if (!target || target <= 0) { showToast('⚠️ Ingresá una meta válida', true); return; }
 
-  if (editingGoalId) {
-    const idx = goals.findIndex(x => x.id === editingGoalId);
-    if (idx > -1) {
-      goals[idx] = { ...goals[idx], name, target, current, deadline, cat, notes, emoji: gmSelectedEmoji, color: gmSelectedColor };
-      saveGoals(); renderObjetivosView();
-      showToast('✏️ Objetivo actualizado');
+  if (IS_SERVER) {
+    try {
+      if (editingGoalId) {
+        await apiFetchLocal(`/goals/${editingGoalId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            name,
+            target,
+            current,
+            deadline: deadline || null,
+            cat,
+            notes: notes || null,
+            emoji: gmSelectedEmoji,
+            color: gmSelectedColor,
+            status: 'active'
+          })
+        });
+        showToast('Objetivo actualizado');
+      } else {
+        await apiFetchLocal('/goals', {
+          method: 'POST',
+          body: JSON.stringify({
+            name,
+            target,
+            current,
+            deadline: deadline || null,
+            cat,
+            notes: notes || null,
+            emoji: gmSelectedEmoji,
+            color: gmSelectedColor,
+            status: 'active'
+          })
+        });
+        showToast('Objetivo creado');
+      }
+      await loadUserData();
+      renderObjetivosView();
+    } catch (err) {
+      console.error("Error al guardar objetivo:", err);
+      showToast("Error al guardar objetivo en el servidor", true);
     }
   } else {
-    goals.push({ id: Date.now(), name, target, current, deadline, cat, notes, emoji: gmSelectedEmoji, color: gmSelectedColor, contributions: [], status: 'active' });
-    saveGoals(); renderObjetivosView();
-    showToast('✅ Objetivo creado');
+    if (editingGoalId) {
+      const idx = goals.findIndex(x => x.id === editingGoalId);
+      if (idx > -1) {
+        goals[idx] = { ...goals[idx], name, target, current, deadline, cat, notes, emoji: gmSelectedEmoji, color: gmSelectedColor };
+        saveGoals(); renderObjetivosView();
+        showToast('Objetivo actualizado');
+      }
+    } else {
+      goals.push({ id: Date.now(), name, target, current, deadline, cat, notes, emoji: gmSelectedEmoji, color: gmSelectedColor, contributions: [], status: 'active' });
+      saveGoals(); renderObjetivosView();
+      showToast('Objetivo creado');
+    }
   }
   closeGoalModal();
 }
@@ -2484,7 +2795,7 @@ function closeContribModal(e) {
   }
 }
 
-function saveContrib() {
+async function saveContrib() {
   const amount = parseFloat(document.getElementById('cmAmount').value);
   const date = document.getElementById('cmDate').value;
   const note = document.getElementById('cmNote').value.trim();
@@ -2495,27 +2806,63 @@ function saveContrib() {
   const idx = goals.findIndex(x => x.id === contribGoalId);
   if (idx < 0) return;
 
-  if (!goals[idx].contributions) goals[idx].contributions = [];
-  goals[idx].contributions.push({ id: Date.now(), amount, date, note });
-  goals[idx].current += amount;
+  if (IS_SERVER) {
+    try {
+      await apiFetchLocal(`/goals/${contribGoalId}/contributions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          amount,
+          date,
+          note: note || null
+        })
+      });
+      await loadUserData();
+      renderObjetivosView();
+      openContribModal(contribGoalId);
+      showToast(`Aportado $${amount.toLocaleString('es-AR')}`);
+    } catch (err) {
+      console.error("Error al guardar aporte:", err);
+      showToast("Error al registrar aporte en el servidor", true);
+    }
+  } else {
+    if (!goals[idx].contributions) goals[idx].contributions = [];
+    goals[idx].contributions.push({ id: Date.now(), amount, date, note });
+    goals[idx].current += amount;
 
-  saveGoals();
-  renderObjetivosView();
-  openContribModal(contribGoalId); // refresh history in modal
-  showToast(`✅ +$${amount.toLocaleString('es-AR')} aportado`);
+    saveGoals();
+    renderObjetivosView();
+    openContribModal(contribGoalId); // refresh history in modal
+    showToast(`Aportado $${amount.toLocaleString('es-AR')}`);
+  }
 }
 
-function deleteContrib(goalId, contribId) {
+async function deleteContrib(goalId, contribId) {
   const idx = goals.findIndex(x => x.id === goalId);
   if (idx < 0) return;
-  const c = goals[idx].contributions.find(x => x.id === contribId);
-  if (!c) return;
-  goals[idx].current = Math.max(goals[idx].current - c.amount, 0);
-  goals[idx].contributions = goals[idx].contributions.filter(x => x.id !== contribId);
-  saveGoals();
-  renderObjetivosView();
-  openContribModal(goalId);
-  showToast('🗑️ Aporte eliminado');
+
+  if (IS_SERVER) {
+    try {
+      await apiFetchLocal(`/goals/${goalId}/contributions/${contribId}`, {
+        method: 'DELETE'
+      });
+      await loadUserData();
+      renderObjetivosView();
+      openContribModal(goalId);
+      showToast('Aporte eliminado');
+    } catch (err) {
+      console.error("Error al eliminar aporte:", err);
+      showToast("Error al eliminar aporte en el servidor", true);
+    }
+  } else {
+    const c = goals[idx].contributions.find(x => x.id === contribId);
+    if (!c) return;
+    goals[idx].current = Math.max(goals[idx].current - c.amount, 0);
+    goals[idx].contributions = goals[idx].contributions.filter(x => x.id !== contribId);
+    saveGoals();
+    renderObjetivosView();
+    openContribModal(goalId);
+    showToast('Aporte eliminado');
+  }
 }
 
 /* ---- Delete goal ---- */
@@ -2533,11 +2880,25 @@ function closeGoalDeleteModal(e) {
   }
 }
 
-function doDeleteGoal() {
-  goals = goals.filter(x => x.id !== editingGoalId);
-  saveGoals(); renderObjetivosView();
+async function doDeleteGoal() {
+  if (IS_SERVER) {
+    try {
+      await apiFetchLocal(`/goals/${editingGoalId}`, {
+        method: 'DELETE'
+      });
+      await loadUserData();
+      renderObjetivosView();
+      showToast('Objetivo eliminado');
+    } catch (err) {
+      console.error("Error al eliminar objetivo:", err);
+      showToast("Error al eliminar objetivo en el servidor", true);
+    }
+  } else {
+    goals = goals.filter(x => x.id !== editingGoalId);
+    saveGoals(); renderObjetivosView();
+    showToast('Objetivo eliminado');
+  }
   closeGoalDeleteModal();
-  showToast('🗑️ Objetivo eliminado');
 }
 
 /* =====================================================

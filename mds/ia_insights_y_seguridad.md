@@ -32,9 +32,13 @@ De esta manera, el navegador **nunca** conoce ni tiene acceso a tu clave API de 
 
 ---
 
-## 2. Los Endpoints del Backend (`api/main.py`)
+## 2. Los Endpoints del Backend (`api/main.py`) y su Seguridad Privada
 
-Se han añadido dos nuevos puntos de entrada en FastAPI para dar servicio a la interfaz:
+Para garantizar el aislamiento completo de la información y proteger los recursos del servidor frente a abusos (evitando el consumo no autorizado de nuestra cuota de Gemini), **todos los endpoints privados del backend requieren de manera obligatoria una sesión activa**.
+
+Al inicio de la ejecución de cada endpoint, el servidor FastAPI ejecuta la función `user_id = get_current_user_id(request)`. Si la cookie de sesión no es válida o está ausente, el servidor interrumpe la petición inmediatamente y devuelve un código de estado **HTTP 401 (No autorizado)**.
+
+Se han protegido y adaptado los siguientes puntos de entrada:
 
 ### A. Endpoint `/api/ai/chat` (Asistente Financiero)
 Este endpoint recibe un objeto que contiene:

@@ -1369,7 +1369,16 @@ const ACC_TYPE_LABELS = {
 };
 
 const ACC_TYPE_ICONS = {
-  banco: '🏦', ahorro: '�function saveAccounts() {
+  banco: '🏦', ahorro: '🐷', efectivo: '💵',
+  tarjeta: '💳', inversion: '📈', digital: '📱', custom: '💼'
+};
+
+const ACC_TYPE_COLORS = {
+  banco: '#5b8cff', ahorro: '#00e5a0', efectivo: '#ffb84a',
+  tarjeta: '#ff6b4a', inversion: '#a78bfa', digital: '#38bdf8', custom: '#64748b'
+};
+
+function saveAccounts() {
   if (!IS_SERVER) {
     localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(accounts));
   }
@@ -1523,7 +1532,7 @@ function renderCvDetail() {
           <span>${fmt(Math.abs(a.balance))} / ${fmt(a.limit)}</span>
         </div>
         <div class="bv-bar-bg">
-          <div class="bv-bar-fill" style="width:${Math.min((Math.abs(a.balance) / a.limit) * 100, 100)}%;background:${(Math.abs(a.balance) / a.limit) > 0.8 ? 'var(--danger)' : 'var(--danger)'};"></div>
+          <div class="bv-bar-fill" style="width:${Math.min((Math.abs(a.balance) / a.limit) * 100, 100)}%;background:${(Math.abs(a.balance) / a.limit) > 0.8 ? 'var(--danger)' : color};"></div>
         </div>
         <div style="font-size:10px;font-family:var(--font-mono);color:var(--muted);margin-top:4px;text-align:right;">Disponible: ${fmt(a.limit + a.balance)}</div>
       </div>
@@ -1863,17 +1872,6 @@ async function doDeleteAccount() {
     showToast('🗑️ Cuenta eliminada');
   }
   closeAccDeleteModal();
-}itingAccountId = null;
-  }
-}
-
-function doDeleteAccount() {
-  accounts = accounts.filter(x => x.id !== editingAccountId);
-  if (selectedAccountId === editingAccountId) selectedAccountId = accounts[0]?.id || null;
-  saveAccounts();
-  renderCuentasView();
-  closeAccDeleteModal();
-  showToast('🗑️ Cuenta eliminada');
 }
 
 /* =====================================================
@@ -4096,15 +4094,6 @@ function scRenderHistory() {
 
 const AUTH_KEY = 'flujo_auth_user';
 
-// Modo servidor vs. archivo local
-const IS_SERVER = window.location.protocol !== 'file:';
-
-// Base URL de la API (si está en localhost apunta al puerto 8000 de FastAPI)
-const API_BASE = IS_SERVER
-  ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://' + window.location.hostname + ':8000/api'
-    : window.location.origin + '/api')
-  : null;
 
 // Helper: llamadas a la API
 async function apiFetch(path, options = {}) {
@@ -4169,13 +4158,13 @@ async function authCheckSession() {
   }
 
   // Si no hay sesión válida, redirigir a index.html
-  window.location.href = 'index.html';
+  window.location.href = IS_SERVER ? './' : 'index.html';
 }
 
 /* ---- Finish login: update UI and initialize data ---- */
-function authFinishLogin(user) {
+async function authFinishLogin(user) {
   currentUserEmail = user.email;
-  loadUserData();
+  await loadUserData();
 
   // Actualizar sidebar con los datos del usuario
   const initials = user.avatar ||
@@ -4217,7 +4206,7 @@ async function authLogout() {
   localStorage.removeItem(AUTH_KEY);
 
   // Redirigir a index.html
-  window.location.href = 'index.html';
+  window.location.href = IS_SERVER ? './' : 'index.html';
 }
 
 /* =====================================================

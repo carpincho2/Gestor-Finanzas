@@ -1,5 +1,9 @@
 -- ============================================================
---  Flujo Finance Manager — Base de datos MySQL
+--  Flujo Finance Manager — Base de datos MySQL (LEGACY/REFERENCIA)
+--  NOTA: Este archivo es solo de referencia histórica.
+--  El proyecto usa SQLAlchemy ORM con SQLite (desarrollo) y
+--  PostgreSQL (producción). Las tablas se crean automáticamente
+--  desde los modelos definidos en api/main.py.
 --  Ejecutar en phpMyAdmin o con: mysql -u root < setup.sql
 -- ============================================================
 

@@ -12,9 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Index, Float
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Index, Float, func
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
@@ -59,7 +58,8 @@ else:
     engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 class TicketItem(Base):
     __tablename__ = "ticket_items"
@@ -72,7 +72,7 @@ class TicketItem(Base):
     unit_price = Column(Float, nullable=True)
     total_price = Column(Float, nullable=True)
     date = Column(String(50), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
 # ============================================================
 #  MODELS
@@ -87,8 +87,8 @@ class User(Base):
     google_id = Column(String(255), index=True, nullable=True)
     avatar = Column(String(10), default="JP")
     picture = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class Account(Base):
     __tablename__ = "accounts"
@@ -102,7 +102,7 @@ class Account(Base):
     currency = Column(String(10), default="ARS")
     limit = Column(Float, default=0.0)
     notes = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -116,7 +116,7 @@ class Transaction(Base):
     cat = Column(String(100), nullable=False)
     date = Column(String(50), nullable=False)  # YYYY-MM-DD
     transfer_id = Column(Integer, nullable=True)  # Si pertenece a una transferencia
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
 class Budget(Base):
     __tablename__ = "budgets"
@@ -129,7 +129,7 @@ class Budget(Base):
     limit = Column(Float, nullable=False)
     color = Column(String(50), nullable=False)
     notes = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
 class Goal(Base):
     __tablename__ = "goals"
@@ -145,7 +145,7 @@ class Goal(Base):
     deadline = Column(String(50), nullable=True)  # YYYY-MM-DD
     notes = Column(String(500), nullable=True)
     status = Column(String(50), default="active")  # active, paused, completed
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
 class GoalContribution(Base):
     __tablename__ = "goal_contributions"
@@ -155,7 +155,7 @@ class GoalContribution(Base):
     amount = Column(Float, nullable=False)
     date = Column(String(50), nullable=False)  # YYYY-MM-DD
     note = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
 # Auto-create tables (SQLite and PostgreSQL)
 Base.metadata.create_all(bind=engine)
@@ -552,6 +552,16 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
     }
 
 # ============================================================
+#  HELPERS
+# ============================================================
+
+def get_current_user_id(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    return user_id
+
+# ============================================================
 #  OCR AND AI INTEGRATION ENDPOINTS
 # ============================================================
 
@@ -821,19 +831,10 @@ async def ocr_save(request: Request, payload: OCRSaveRequest, db: Session = Depe
     db.commit()
     return {"ok": True, "saved_items": saved_count}
 
-    db.commit()
-    return {"ok": True, "saved_items": saved_count}
-
 
 # ============================================================
 #  CRUD FINANCIAL DATA ENDPOINTS (Secure User Isolation)
 # ============================================================
-
-def get_current_user_id(request: Request):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="No autorizado")
-    return user_id
 
 # --- ACCOUNTS ---
 @app.get("/api/accounts")
@@ -1237,6 +1238,10 @@ app.mount("/tests", StaticFiles(directory=os.path.join(BASE_DIR, "tests")), name
 # Rutas para servir las páginas principales del frontend
 @app.get("/", response_class=FileResponse)
 async def serve_index():
+    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+
+@app.get("/index.html", response_class=FileResponse)
+async def serve_index_html():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 @app.get("/main.html", response_class=FileResponse)

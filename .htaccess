@@ -1,4 +1,6 @@
-# Flujo Finance Manager — Apache config
+# Flujo Finance Manager — Apache config (LEGACY)
+# NOTA: Este archivo es legacy de una arquitectura anterior basada en PHP/Apache.
+# El proyecto actual usa FastAPI + Uvicorn. Este archivo no tiene efecto.
 Options -Indexes
 
 # PHP: mostrar errores solo en dev (comentar en producción)

@@ -105,17 +105,7 @@ async function init() {
   // Si no está corriendo en servidor, sembramos datos en localStorage
   if (!IS_SERVER) {
     if (transactions.length === 0) {
-      const demo = [
-        { id: 1, type: 'income', desc: 'Sueldo', amount: 150000, cat: 'Ingresos (Sueldo/Freelance)', date: '2025-04-01' },
-        { id: 2, type: 'expense', desc: 'Alquiler', amount: 55000, cat: 'Hogar / Servicios', date: '2025-04-03' },
-        { id: 3, type: 'expense', desc: 'Supermercado', amount: 12300, cat: 'Supermercado / Almacén', date: '2025-04-05' },
-        { id: 4, type: 'expense', desc: 'UberEats', amount: 4200, cat: 'Salidas / Restaurantes', date: '2025-04-07' },
-        { id: 5, type: 'income', desc: 'Freelance web', amount: 35000, cat: 'Ingresos (Sueldo/Freelance)', date: '2025-04-08' },
-        { id: 6, type: 'expense', desc: 'SUBE + taxi', amount: 3100, cat: 'Transporte', date: '2025-04-09' },
-        { id: 7, type: 'expense', desc: 'Netflix + Spotify', amount: 3200, cat: 'Entretenimiento / Suscripciones', date: '2025-04-10' },
-        { id: 8, type: 'expense', desc: 'Farmacia', amount: 2800, cat: 'Salud / Farmacia', date: '2025-04-11' },
-      ];
-      transactions = demo;
+      // Demo data removida para iniciar en cero
       save();
     }
 
@@ -920,13 +910,6 @@ function saveBudgets() {
 
 function initBudgets() {
   if (budgets.length === 0) {
-    budgets = [
-      { id: 1, cat: 'Alimentación', name: 'Alimentación', icon: '🍔', limit: 20000, color: '#00e5a0', notes: 'Súper, delivery y cafés' },
-      { id: 2, cat: 'Transporte', name: 'Transporte', icon: '🚗', limit: 8000, color: '#5b8cff', notes: 'SUBE, taxi, nafta' },
-      { id: 3, cat: 'Entretenimiento', name: 'Entretenimiento', icon: '🎬', limit: 5000, color: '#ffb84a', notes: 'Streaming, salidas' },
-      { id: 4, cat: 'Hogar', name: 'Hogar', icon: '🏠', limit: 60000, color: '#ff6b4a', notes: 'Alquiler y servicios' },
-      { id: 5, cat: 'Salud', name: 'Salud', icon: '💊', limit: 6000, color: '#a78bfa', notes: 'Farmacia y médicos' },
-    ];
     saveBudgets();
   }
 }
@@ -1386,13 +1369,6 @@ function saveAccounts() {
 
 function initAccounts() {
   if (accounts.length === 0) {
-    accounts = [
-      { id: 1, name: 'Cuenta Corriente', type: 'banco', bank: 'Galicia', balance: 85000, currency: 'ARS', limit: 0, notes: 'Cuenta principal' },
-      { id: 2, name: 'Caja de Ahorro', type: 'ahorro', bank: 'Galicia', balance: 42000, currency: 'ARS', limit: 0, notes: 'Fondo de emergencia' },
-      { id: 3, name: 'Efectivo', type: 'efectivo', bank: '', balance: 12500, currency: 'ARS', limit: 0, notes: '' },
-      { id: 4, name: 'Mercado Pago', type: 'digital', bank: 'Mercado Pago', balance: 8300, currency: 'ARS', limit: 0, notes: 'Para compras online' },
-      { id: 5, name: 'Visa Naranja X', type: 'tarjeta', bank: 'Naranja X', balance: -15200, currency: 'ARS', limit: 100000, notes: 'Vence el 10 de cada mes' },
-    ];
     saveAccounts();
   }
 }
@@ -2268,35 +2244,6 @@ function saveGoals() { localStorage.setItem(userKey('flujo_goals'), JSON.stringi
 
 function initGoals() {
   if (goals.length === 0) {
-    const now = new Date();
-    goals = [
-      {
-        id: 1, name: 'Fondo de emergencia', cat: 'Ahorro', emoji: '💰', color: '#00e5a0',
-        target: 300000, current: 120000, contributions: [
-          { id: 1, amount: 60000, date: new Date(now.getFullYear(), now.getMonth() - 2, 5).toISOString().split('T')[0], note: 'Primer aporte' },
-          { id: 2, amount: 60000, date: new Date(now.getFullYear(), now.getMonth() - 1, 5).toISOString().split('T')[0], note: 'Mes 2' },
-        ],
-        deadline: new Date(now.getFullYear(), now.getMonth() + 4, 1).toISOString().split('T')[0],
-        notes: '3 meses de gastos cubiertos', status: 'active'
-      },
-      {
-        id: 2, name: 'Vacaciones en Bariloche', cat: 'Viaje', emoji: '✈️', color: '#5b8cff',
-        target: 150000, current: 45000, contributions: [
-          { id: 1, amount: 45000, date: new Date(now.getFullYear(), now.getMonth() - 1, 10).toISOString().split('T')[0], note: 'Inicio' },
-        ],
-        deadline: new Date(now.getFullYear(), now.getMonth() + 6, 15).toISOString().split('T')[0],
-        notes: 'Esquí en julio', status: 'active'
-      },
-      {
-        id: 3, name: 'Notebook nueva', cat: 'Tecnología', emoji: '💻', color: '#ffb84a',
-        target: 800000, current: 800000, contributions: [
-          { id: 1, amount: 400000, date: new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString().split('T')[0], note: '' },
-          { id: 2, amount: 400000, date: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0], note: '' },
-        ],
-        deadline: new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0],
-        notes: '', status: 'active'
-      },
-    ];
     saveGoals();
   }
 }

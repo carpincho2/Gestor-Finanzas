@@ -290,55 +290,7 @@ class GoalContributionCreate(BaseModel):
     note: Optional[str] = None
 
 
-def seed_user_data(user_id: int, db: Session):
-    # 1. Crear cuentas demo
-    acc1 = Account(user_id=user_id, name="Cuenta Corriente", type="banco", bank="Galicia", balance=85000.0, currency="ARS", notes="Cuenta principal")
-    acc2 = Account(user_id=user_id, name="Caja de Ahorro", type="ahorro", bank="Galicia", balance=42000.0, currency="ARS", notes="Fondo de emergencia")
-    acc3 = Account(user_id=user_id, name="Efectivo", type="efectivo", balance=12500.0, currency="ARS")
-    acc4 = Account(user_id=user_id, name="Mercado Pago", type="digital", bank="Mercado Pago", balance=8300.0, currency="ARS", notes="Para compras online")
-    acc5 = Account(user_id=user_id, name="Visa Naranja X", type="tarjeta", bank="Naranja X", balance=-15200.0, currency="ARS", limit=100000.0, notes="Vence el 10 de cada mes")
-    
-    db.add_all([acc1, acc2, acc3, acc4, acc5])
-    db.commit()
-    
-    # 2. Crear transacciones demo vinculadas a las cuentas
-    t1 = Transaction(user_id=user_id, account_id=acc1.id, type="income", desc="Sueldo", amount=150000.0, cat="Ingresos (Sueldo/Freelance)", date="2026-04-01")
-    t2 = Transaction(user_id=user_id, account_id=acc1.id, type="expense", desc="Alquiler", amount=55000.0, cat="Hogar / Servicios", date="2026-04-03")
-    t3 = Transaction(user_id=user_id, account_id=acc4.id, type="expense", desc="Supermercado", amount=12300.0, cat="Supermercado / Almacén", date="2026-04-05")
-    t4 = Transaction(user_id=user_id, account_id=acc4.id, type="expense", desc="UberEats", amount=4200.0, cat="Salidas / Restaurantes", date="2026-04-07")
-    t5 = Transaction(user_id=user_id, account_id=acc2.id, type="income", desc="Freelance web", amount=35000.0, cat="Ingresos (Sueldo/Freelance)", date="2026-04-08")
-    t6 = Transaction(user_id=user_id, account_id=acc3.id, type="expense", desc="SUBE + taxi", amount=3100.0, cat="Transporte", date="2026-04-09")
-    t7 = Transaction(user_id=user_id, account_id=acc5.id, type="expense", desc="Netflix + Spotify", amount=3200.0, cat="Entretenimiento / Suscripciones", date="2026-04-10")
-    t8 = Transaction(user_id=user_id, account_id=acc3.id, type="expense", desc="Farmacia", amount=2800.0, cat="Salud / Farmacia", date="2026-04-11")
-    
-    db.add_all([t1, t2, t3, t4, t5, t6, t7, t8])
-    
-    # 3. Crear presupuestos demo
-    b1 = Budget(user_id=user_id, cat="Supermercado / Almacén", name="Supermercado / Almacén", icon="🍔", limit=20000.0, color="#00e5a0", notes="Súper, delivery y cafés")
-    b2 = Budget(user_id=user_id, cat="Transporte", name="Transporte", icon="🚗", limit=8000.0, color="#5b8cff", notes="SUBE, taxi, nafta")
-    b3 = Budget(user_id=user_id, cat="Entretenimiento / Suscripciones", name="Entretenimiento / Suscripciones", icon="🎬", limit=5000.0, color="#ffb84a", notes="Streaming, salidas")
-    b4 = Budget(user_id=user_id, cat="Hogar / Servicios", name="Hogar / Servicios", icon="🏠", limit=60000.0, color="#ff6b4a", notes="Alquiler y servicios")
-    b5 = Budget(user_id=user_id, cat="Salud / Farmacia", name="Salud / Farmacia", icon="💊", limit=6000.0, color="#a78bfa", notes="Farmacia y médicos")
-    
-    db.add_all([b1, b2, b3, b4, b5])
-    
-    # 4. Crear objetivos demo
-    g1 = Goal(user_id=user_id, name="Fondo de emergencia", cat="Ahorro / Inversiones", emoji="💰", color="#00e5a0", target=300000.0, current=120000.0, deadline="2026-12-01", notes="3 meses de gastos cubiertos", status="active")
-    g2 = Goal(user_id=user_id, name="Vacaciones en Bariloche", cat="Otros", emoji="✈️", color="#5b8cff", target=150000.0, current=45000.0, deadline="2027-02-15", notes="Esquí en julio", status="active")
-    g3 = Goal(user_id=user_id, name="Notebook nueva", cat="Otros", emoji="💻", color="#ffb84a", target=800000.0, current=800000.0, deadline="2026-05-01", notes="", status="active")
-    
-    db.add_all([g1, g2, g3])
-    db.commit()
-    
-    # Crear aportes demo
-    gc1 = GoalContribution(goal_id=g1.id, amount=60000.0, date="2026-04-05", note="Primer aporte")
-    gc2 = GoalContribution(goal_id=g1.id, amount=60000.0, date="2026-05-05", note="Mes 2")
-    gc3 = GoalContribution(goal_id=g2.id, amount=45000.0, date="2026-05-10", note="Inicio")
-    gc4 = GoalContribution(goal_id=g3.id, amount=400000.0, date="2026-02-01", note="")
-    gc5 = GoalContribution(goal_id=g3.id, amount=400000.0, date="2026-04-01", note="")
-    
-    db.add_all([gc1, gc2, gc3, gc4, gc5])
-    db.commit()
+
 
 
 # ============================================================
@@ -445,11 +397,8 @@ async def register(request: Request, payload: RegisterRequest, db: Session = Dep
     db.commit()
     db.refresh(new_user)
     
-    # Precargar datos semilla para el usuario nuevo
-    try:
-        seed_user_data(new_user.id, db)
-    except Exception as e:
-        print(f"Error seeding user data: {e}")
+    # Los usuarios nuevos inician con cuentas y balances en cero.
+    # (El código de datos semilla fue removido)
     
     request.session["user_id"] = new_user.id
     request.session["email"] = new_user.email
@@ -531,11 +480,7 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
         db.commit()
         db.refresh(user)
         
-        # Precargar datos semilla para el usuario nuevo de Google
-        try:
-            seed_user_data(user.id, db)
-        except Exception as e:
-            print(f"Error seeding google user data: {e}")
+        # Los usuarios nuevos inician en cero.
         
     request.session["user_id"] = user.id
     request.session["email"] = user.email

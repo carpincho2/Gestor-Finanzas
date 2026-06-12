@@ -2521,9 +2521,11 @@ canvas.rv-canvas { width:100% !important; }
   .sidebar {
     position: fixed;
     top: 0; left: 0; bottom: 0;
+    height: 100dvh; /* Fix for mobile address bars hiding the bottom */
     transform: translateX(-100%);
     border-right: 1px solid var(--border);
     box-shadow: 8px 0 32px rgba(0,0,0,.5);
+    padding-bottom: 24px; /* Extra bottom padding for safe areas */
   }
   .sidebar.open { transform: translateX(0); }
 

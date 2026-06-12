@@ -4477,4 +4477,42 @@ async function aiGenerateCards() {
     btn.disabled = false;
     btn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Actualizar`;
   }
+  }
 }
+
+/* =====================================================
+   GLOBAL KEYBOARD SHORTCUTS
+   ===================================================== */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'SELECT')) {
+      // 1. Chat AI
+      if (active.id === 'aiInput') {
+        const btn = document.getElementById('aiSendBtn');
+        if (btn && !btn.disabled) aiSendMessage();
+        return;
+      }
+
+      // 2. Modals en main.html
+      const overlays = [
+        { id: 'goalModalOverlay', fn: () => saveGoal() },
+        { id: 'contribModalOverlay', fn: () => saveContrib() },
+        { id: 'accModalOverlay', fn: () => saveAccount() },
+        { id: 'budgetModalOverlay', fn: () => saveBudget() },
+        { id: 'editModalOverlay', fn: () => saveEdit() },
+        { id: 'modalOverlay', fn: () => addFromModal() },
+        { id: 'scResultOverlay', fn: () => { const b = document.getElementById('scSaveTicketBtn'); if(b) b.click(); else scSaveTicket(); } }
+      ];
+
+      for (const ov of overlays) {
+        const el = document.getElementById(ov.id);
+        if (el && el.style.display === 'flex') {
+          e.preventDefault(); // Prevenir submit por defecto si estuviese en un form
+          ov.fn();
+          return;
+        }
+      }
+    }
+  }
+});

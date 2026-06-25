@@ -4156,6 +4156,53 @@ async function authLogout() {
   window.location.href = IS_SERVER ? './' : 'index.html';
 }
 
+/* ---- Delete Account ---- */
+function authConfirmDeleteAccount() {
+  document.getElementById('userDeleteOverlay').classList.add('open');
+}
+
+function closeUserDeleteModal(e) {
+  if (!e || e.target.id === 'userDeleteOverlay') {
+    document.getElementById('userDeleteOverlay').classList.remove('open');
+  }
+}
+
+async function doDeleteUserAccount() {
+  if (IS_SERVER) {
+    try {
+      const res = await apiFetch('/auth/me', { method: 'DELETE' });
+      if (res.error) throw new Error(res.error);
+    } catch (e) {
+      console.error("Error al eliminar la cuenta del servidor:", e);
+      showToast("⚠️ " + e.message, true);
+      closeUserDeleteModal();
+      return;
+    }
+  }
+
+  // Revocar sesión de Google si se usó
+  if (typeof google !== 'undefined' && google.accounts && currentUserEmail) {
+    try { google.accounts.id.revoke(currentUserEmail, () => { }); } catch (e) { }
+  }
+
+  // Limpiar datos locales del usuario
+  const keysToDelete = [
+    userKey('flujo_tx'),
+    userKey('flujo_budgets'),
+    userKey('flujo_accounts'),
+    userKey('flujo_goals'),
+    userKey('flujo_scan_history'),
+    userKey('flujo_ocr_dictionary')
+  ];
+  keysToDelete.forEach(k => localStorage.removeItem(k));
+
+  currentUserEmail = null;
+  localStorage.removeItem(AUTH_KEY);
+
+  // Redirigir a la página de login
+  window.location.href = IS_SERVER ? './' : 'index.html';
+}
+
 /* =====================================================
    START
    ===================================================== */

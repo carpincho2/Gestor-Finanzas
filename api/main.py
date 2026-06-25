@@ -324,6 +324,40 @@ async def logout(request: Request):
     request.session.clear()
     return {"ok": True, "message": "Sesión cerrada"}
 
+@app.delete("/api/auth/me")
+async def delete_me(request: Request, db: Session = Depends(get_db)):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse(status_code=401, content={"error": "Sin sesión activa"})
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return JSONResponse(status_code=404, content={"error": "Usuario no encontrado"})
+    
+    try:
+        # Delete user related data
+        db.query(Transaction).filter(Transaction.user_id == user_id).delete()
+        db.query(Budget).filter(Budget.user_id == user_id).delete()
+        db.query(Account).filter(Account.user_id == user_id).delete()
+        
+        # Goals and Contributions
+        user_goals = db.query(Goal).filter(Goal.user_id == user_id).all()
+        for g in user_goals:
+            db.query(GoalContribution).filter(GoalContribution.goal_id == g.id).delete()
+        db.query(Goal).filter(Goal.user_id == user_id).delete()
+        
+        db.query(TicketItem).filter(TicketItem.user_id == user_id).delete()
+        
+        # Delete user itself
+        db.delete(user)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        return JSONResponse(status_code=500, content={"error": f"Error al eliminar la cuenta: {str(e)}"})
+        
+    request.session.clear()
+    return {"ok": True, "message": "Cuenta eliminada correctamente"}
+
 @app.post("/api/auth/login")
 async def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     email = payload.email.strip()

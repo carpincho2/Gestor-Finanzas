@@ -80,13 +80,23 @@
           <div class="user-plan">Plan Free</div>
         </div>
       </div>
-      <button class="logout-btn" onclick="authLogout()" title="Cerrar sesión">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="logout-btn" onclick="authLogout()" title="Cerrar sesión">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+        <button class="logout-btn" onclick="authConfirmDeleteAccount()" title="Eliminar cuenta" style="color:var(--danger);border-color:rgba(255,74,107,0.25);">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </aside>
 
@@ -943,6 +953,23 @@
   </div>
 </div>
 
+<!-- ===== USER DELETE MODAL ===== -->
+<div class="modal-overlay" id="userDeleteOverlay" onclick="closeUserDeleteModal(event)">
+  <div class="modal" style="max-width:370px;">
+    <div class="modal-title">¿Eliminar tu cuenta?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;">
+      Esta acción eliminará de forma **permanente** tu cuenta y **todos tus datos financieros** (cuentas, transacciones, presupuestos y objetivos).
+    </p>
+    <p style="font-size:12px;color:var(--danger);font-weight:600;line-height:1.5;margin-bottom:16px;">
+      ⚠️ Esta acción no se puede deshacer.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeUserDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteUserAccount()">Eliminar cuenta</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== ACCOUNT MODAL ===== -->
 <div class="modal-overlay" id="accModalOverlay" onclick="closeAccModal(event)">
   <div class="modal" style="width:460px;">
@@ -1344,7 +1371,7 @@
 <!-- ===== GOOGLE IDENTITY SERVICES ===== -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-<script src="js/app.js?v=1.0.1"></script>
+<script src="js/app.js?v=1.0.2"></script>
 
 </body>
 </html>

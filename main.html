@@ -73,30 +73,20 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="user-card">
+      <div class="user-card" onclick="setPage(null, 'perfil')" style="cursor:pointer;" title="Ver mi perfil">
         <div class="user-avatar">JP</div>
         <div class="user-info-col">
           <div class="user-name">Juan Pérez</div>
           <div class="user-plan">Plan Free</div>
         </div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <button class="logout-btn" onclick="authLogout()" title="Cerrar sesión">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-        </button>
-        <button class="logout-btn" onclick="authConfirmDeleteAccount()" title="Eliminar cuenta" style="color:var(--danger);border-color:rgba(255,74,107,0.25);">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-        </button>
-      </div>
+      <button class="logout-btn" onclick="authLogout()" title="Cerrar sesión">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
     </div>
   </aside>
 
@@ -842,6 +832,85 @@
       </div>
     </div><!-- /insightsView -->
 
+    <!-- ===== PROFILE VIEW ===== -->
+    <div id="perfilView" style="display:none;">
+      <div style="max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- User Badge Panel -->
+        <div class="panel" style="padding: 24px; display: flex; align-items: center; gap: 20px; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--accent); opacity: 0.05; border-radius: 50%; filter: blur(20px);"></div>
+          <div id="profileAvatar" class="user-avatar" style="width: 72px; height: 72px; font-size: 28px; font-weight: 800; border-radius: 50%; background: var(--accent)18; color: var(--accent); display: flex; align-items: center; justify-content: center;">JP</div>
+          <div style="flex: 1;">
+            <h2 id="profileNameHeader" style="font-size: 20px; font-weight: 800; margin: 0 0 4px 0;">Juan Pérez</h2>
+            <div id="profileEmailHeader" style="font-size: 13px; color: var(--muted); font-family: var(--font-mono);">juan.perez@example.com</div>
+          </div>
+        </div>
+
+        <!-- Personal Info Settings -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Información Personal</span>
+          </div>
+          <div style="padding: 20px 24px;">
+            <div class="form-full">
+              <label class="field-label">Nombre Completo</label>
+              <input class="field-input" id="profileNameInput" type="text" placeholder="Tu nombre"/>
+            </div>
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="profileUpdateInfo()">Guardar Cambios</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password Settings -->
+        <div class="panel" id="profilePasswordPanel">
+          <div class="panel-head">
+            <span class="panel-title">Seguridad y Contraseña</span>
+          </div>
+          <div style="padding: 20px 24px;">
+            <div class="form-full" id="profilePasswordCurrentWrap">
+              <label class="field-label">Contraseña Actual</label>
+              <input class="field-input" id="profilePasswordCurrent" type="password" placeholder="••••••••"/>
+            </div>
+            <div class="form-row" style="margin-top: 12px;">
+              <div>
+                <label class="field-label">Nueva Contraseña</label>
+                <input class="field-input" id="profilePasswordNew" type="password" placeholder="Mínimo 6 caracteres"/>
+              </div>
+              <div>
+                <label class="field-label">Confirmar Nueva Contraseña</label>
+                <input class="field-input" id="profilePasswordNewConfirm" type="password" placeholder="Repetí tu contraseña"/>
+              </div>
+            </div>
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="profileUpdatePassword()">Actualizar Contraseña</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Actions Settings -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title" style="color:var(--danger);">Zona de Peligro</span>
+          </div>
+          <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="font-size: 13px; color: var(--muted); line-height: 1.5;">
+              Si querés cerrar tu sesión actual o borrar permanentemente tu cuenta con todos tus datos de transacciones, presupuestos y objetivos, podés hacerlo desde acá.
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 4px;">
+              <button class="btn btn-ghost" onclick="authLogout()" style="border-color: var(--border);">
+                Cerrar Sesión
+              </button>
+              <button class="btn btn-danger" onclick="authConfirmDeleteAccount()">
+                Eliminar Cuenta Permanentemente
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1371,7 +1440,7 @@
 <!-- ===== GOOGLE IDENTITY SERVICES ===== -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-<script src="js/app.js?v=1.0.2"></script>
+<script src="js/app.js?v=1.0.3"></script>
 
 </body>
 </html>

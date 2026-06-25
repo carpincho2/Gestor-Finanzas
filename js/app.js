@@ -512,7 +512,7 @@ function setPage(el, page) {
   const titles = {
     dashboard: 'Dashboard', transacciones: 'Transacciones', presupuestos: 'Presupuestos',
     cuentas: 'Cuentas', reportes: 'Reportes', objetivos: 'Objetivos', scanner: 'Escanear Ticket',
-    insights: 'IA Insights'
+    insights: 'IA Insights', perfil: 'Mi Perfil'
   };
   document.getElementById('pageTitle').textContent = titles[page] || page;
 
@@ -526,6 +526,7 @@ function setPage(el, page) {
     document.getElementById('objetivosView').style.display = 'none';
     document.getElementById('scannerView').style.display = 'none';
     document.getElementById('insightsView').style.display = 'none';
+    document.getElementById('perfilView').style.display = 'none';
     document.getElementById('pageDate').style.display = 'none';
   }
 
@@ -565,6 +566,10 @@ function setPage(el, page) {
     hideAll();
     document.getElementById('insightsView').style.display = '';
     enterInsightsView();
+  } else if (page === 'perfil') {
+    hideAll();
+    document.getElementById('perfilView').style.display = '';
+    enterPerfilView();
   } else {
     hideAll();
     document.getElementById('dashboardView').style.display = '';
@@ -4201,6 +4206,138 @@ async function doDeleteUserAccount() {
 
   // Redirigir a la página de login
   window.location.href = IS_SERVER ? './' : 'index.html';
+}
+
+/* ---- Perfil View ---- */
+function enterPerfilView() {
+  const stored = localStorage.getItem(AUTH_KEY);
+  if (!stored) return;
+
+  const user = JSON.parse(stored);
+  
+  // Rellenar cabeceras y campos
+  document.getElementById('profileNameHeader').textContent = user.name || 'Usuario';
+  document.getElementById('profileEmailHeader').textContent = user.email || '';
+  document.getElementById('profileNameInput').value = user.name || '';
+  
+  const initials = user.avatar ||
+    (user.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'JP');
+
+  const avatarEl = document.getElementById('profileAvatar');
+  if (avatarEl) {
+    if (user.picture) {
+      avatarEl.innerHTML = `<img src="${user.picture}" style="width:72px;height:72px;border-radius:50%;object-fit:cover;" alt="${initials}">`;
+    } else {
+      avatarEl.textContent = initials;
+    }
+  }
+
+  // Ocultar campo de contraseña actual si es un usuario que solo se loguea con Google
+  const currentPwWrap = document.getElementById('profilePasswordCurrentWrap');
+  if (user.picture && currentPwWrap) {
+    currentPwWrap.style.display = 'none'; // No tiene contraseña local seteada inicialmente
+  } else if (currentPwWrap) {
+    currentPwWrap.style.display = '';
+  }
+}
+
+async function profileUpdateInfo() {
+  const name = document.getElementById('profileNameInput').value.trim();
+  if (!name) {
+    showToast('⚠️ El nombre no puede estar vacío', true);
+    return;
+  }
+
+  if (IS_SERVER) {
+    try {
+      const data = await apiFetch('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({ name })
+      });
+      if (data.error) throw new Error(data.error);
+      
+      // Actualizar datos de sesión y UI
+      currentUserEmail = data.user.email;
+      localStorage.setItem(AUTH_KEY, JSON.stringify(data.user));
+      
+      // Actualizar barra lateral
+      const initials = data.user.avatar || 'JP';
+      const avatarSidebar = document.querySelector('.sidebar-footer .user-avatar');
+      const nameSidebar = document.querySelector('.sidebar-footer .user-name');
+      if (avatarSidebar) {
+        if (data.user.picture) {
+          avatarSidebar.innerHTML = `<img src="${data.user.picture}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;" alt="${initials}">`;
+        } else {
+          avatarSidebar.textContent = initials;
+        }
+      }
+      if (nameSidebar) nameSidebar.textContent = data.user.name;
+
+      showToast('✅ Información de perfil actualizada');
+      enterPerfilView();
+    } catch (e) {
+      console.error("Error al actualizar perfil:", e);
+      showToast("⚠️ " + e.message, true);
+    }
+  } else {
+    // Fallback local
+    const stored = localStorage.getItem(AUTH_KEY);
+    if (stored) {
+      const user = JSON.parse(stored);
+      user.name = name;
+      const parts = name.split(' ');
+      user.avatar = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+      
+      localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+      
+      // Actualizar barra lateral
+      const avatarSidebar = document.querySelector('.sidebar-footer .user-avatar');
+      const nameSidebar = document.querySelector('.sidebar-footer .user-name');
+      if (avatarSidebar) avatarSidebar.textContent = user.avatar;
+      if (nameSidebar) nameSidebar.textContent = user.name;
+
+      showToast('✅ Información de perfil actualizada localmente');
+      enterPerfilView();
+    }
+  }
+}
+
+async function profileUpdatePassword() {
+  const currentPw = document.getElementById('profilePasswordCurrent').value;
+  const newPw = document.getElementById('profilePasswordNew').value;
+  const newPwConfirm = document.getElementById('profilePasswordNewConfirm').value;
+
+  if (IS_SERVER) {
+    if (!newPw || newPw.length < 6) {
+      showToast('⚠️ La nueva contraseña debe tener al menos 6 caracteres', true);
+      return;
+    }
+    if (newPw !== newPwConfirm) {
+      showToast('⚠️ Las contraseñas nuevas no coinciden', true);
+      return;
+    }
+
+    try {
+      const data = await apiFetch('/auth/password', {
+        method: 'PUT',
+        body: JSON.stringify({
+          current_password: currentPw,
+          new_password: newPw
+        })
+      });
+      if (data.error) throw new Error(data.error);
+
+      showToast('✅ Contraseña actualizada correctamente');
+      document.getElementById('profilePasswordCurrent').value = '';
+      document.getElementById('profilePasswordNew').value = '';
+      document.getElementById('profilePasswordNewConfirm').value = '';
+    } catch (e) {
+      console.error("Error al cambiar contraseña:", e);
+      showToast("⚠️ " + e.message, true);
+    }
+  } else {
+    showToast('ℹ️ El cambio de contraseña no está disponible en modo local offline', true);
+  }
 }
 
 /* =====================================================

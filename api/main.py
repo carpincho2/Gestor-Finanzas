@@ -289,6 +289,13 @@ class GoalContributionCreate(BaseModel):
     date: str
     note: Optional[str] = None
 
+class ProfileUpdateRequest(BaseModel):
+    name: str
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 
 
 
@@ -357,6 +364,68 @@ async def delete_me(request: Request, db: Session = Depends(get_db)):
         
     request.session.clear()
     return {"ok": True, "message": "Cuenta eliminada correctamente"}
+
+@app.put("/api/auth/profile")
+async def update_profile(request: Request, payload: ProfileUpdateRequest, db: Session = Depends(get_db)):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse(status_code=401, content={"error": "Sin sesión activa"})
+    
+    name = payload.name.strip()
+    if not name:
+        return JSONResponse(status_code=422, content={"error": "El nombre no puede estar vacío"})
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return JSONResponse(status_code=404, content={"error": "Usuario no encontrado"})
+    
+    user.name = name
+    parts = name.split()
+    avatar = (parts[0][0] + (parts[1][0] if len(parts) > 1 else "")).upper()
+    user.avatar = avatar[:10]
+    
+    db.commit()
+    db.refresh(user)
+    
+    return {
+        "ok": True,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "avatar": user.avatar,
+            "picture": user.picture
+        }
+    }
+
+@app.put("/api/auth/password")
+async def change_password(request: Request, payload: PasswordChangeRequest, db: Session = Depends(get_db)):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JSONResponse(status_code=401, content={"error": "Sin sesión activa"})
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return JSONResponse(status_code=404, content={"error": "Usuario no encontrado"})
+    
+    if user.password_hash:
+        try:
+            is_valid = bcrypt.checkpw(payload.current_password.encode("utf-8"), user.password_hash.encode("utf-8"))
+        except Exception:
+            is_valid = False
+        
+        if not is_valid:
+            return JSONResponse(status_code=400, content={"error": "La contraseña actual es incorrecta"})
+    
+    if len(payload.new_password) < 6:
+        return JSONResponse(status_code=422, content={"error": "La nueva contraseña debe tener al menos 6 caracteres"})
+    
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(payload.new_password.encode("utf-8"), salt).decode("utf-8")
+    user.password_hash = hashed_password
+    db.commit()
+    
+    return {"ok": True, "message": "Contraseña actualizada correctamente"}
 
 @app.post("/api/auth/login")
 async def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):

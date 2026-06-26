@@ -490,7 +490,7 @@ window.addEventListener('resize', () => {
 
 function setPage(el, page) {
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
 
   // Close sidebar on mobile after navigation
   if (window.innerWidth <= 768) {
@@ -4094,18 +4094,21 @@ async function authCheckSession() {
         authFinishLogin(data.user);
         return;
       }
-    } catch (e) { /* no hay sesión activa */ }
-  }
-
-  // Fallback / client check using localStorage
-  const stored = localStorage.getItem(AUTH_KEY);
-  if (stored) {
-    try {
-      const user = JSON.parse(stored);
-      authFinishLogin(user);
-      return;
     } catch (e) {
+      // Si la sesión no es válida en el servidor, borramos la sesión local
       localStorage.removeItem(AUTH_KEY);
+    }
+  } else {
+    // Fallback localStorage (modo file://)
+    const stored = localStorage.getItem(AUTH_KEY);
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        authFinishLogin(user);
+        return;
+      } catch (e) {
+        localStorage.removeItem(AUTH_KEY);
+      }
     }
   }
 

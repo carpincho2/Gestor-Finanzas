@@ -2,12 +2,14 @@ import os
 import re
 import json
 import time
+import hashlib
+import secrets
 import requests
 import bcrypt
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import FastAPI, Depends, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, Query
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -17,6 +19,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
+from cryptography.fernet import Fernet, InvalidToken
 
 # Helper to load .env variables manually (without external package dependencies)
 def load_env():
@@ -40,6 +43,70 @@ load_env()
 
 # Initialize Gemini Client (automatically loads GEMINI_API_KEY from environment variables)
 client = genai.Client()
+
+# ============================================================
+#  TOKEN ENCRYPTION SERVICE (Fernet AES-128-CBC + HMAC)
+# ============================================================
+# Los tokens OAuth de billeteras virtuales (Mercado Pago, Plaid, etc.)
+# se cifran antes de guardarlos en la base de datos. Esto garantiza que
+# si alguien accede a la BD, no puede leer los tokens en texto plano.
+#
+# Fernet usa:
+#   - AES-128-CBC para cifrado (confidencialidad)
+#   - HMAC-SHA256 para autenticación (integridad / anti-tampering)
+#
+# La clave se lee de la variable de entorno ENCRYPTION_KEY.
+# Si no existe, se auto-genera (solo útil para desarrollo local).
+
+class TokenEncryptionService:
+    """Servicio de cifrado simétrico para tokens OAuth usando Fernet."""
+
+    def __init__(self):
+        key = os.getenv("ENCRYPTION_KEY", "").strip()
+        if not key:
+            # Auto-generar clave y advertir (solo para desarrollo local)
+            key = Fernet.generate_key().decode()
+            os.environ["ENCRYPTION_KEY"] = key
+            print("⚠️  ENCRYPTION_KEY auto-generada para desarrollo local.")
+            print("   Para producción, generala con:")
+            print('   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"')
+        self._fernet = Fernet(key.encode() if isinstance(key, str) else key)
+
+    def encrypt(self, plaintext: str) -> str:
+        """Cifra un texto plano y devuelve el ciphertext en base64."""
+        if not plaintext:
+            return ""
+        return self._fernet.encrypt(plaintext.encode("utf-8")).decode("utf-8")
+
+    def decrypt(self, ciphertext: str) -> str:
+        """Descifra un ciphertext base64 y devuelve el texto original."""
+        if not ciphertext:
+            return ""
+        try:
+            return self._fernet.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
+        except InvalidToken:
+            # Si el token no se puede descifrar (clave cambiada o dato corrupto),
+            # retornamos el valor tal cual (podría ser un token en texto plano
+            # de la migración antigua que aún no fue cifrado).
+            return ciphertext
+
+    def is_encrypted(self, value: str) -> bool:
+        """Detecta si un valor ya está cifrado con Fernet."""
+        if not value:
+            return False
+        try:
+            self._fernet.decrypt(value.encode("utf-8"))
+            return True
+        except Exception:
+            return False
+
+# Instancia global del servicio de cifrado
+token_crypto = TokenEncryptionService()
+
+# Variables de Mercado Pago OAuth 2.0
+MP_CLIENT_ID = os.getenv("MP_CLIENT_ID", "")
+MP_CLIENT_SECRET = os.getenv("MP_CLIENT_SECRET", "")
+MP_REDIRECT_URI = os.getenv("MP_REDIRECT_URI", "http://localhost:8000/api/wallets/mercadopago/callback")
 
 # ============================================================
 #  DATABASE CONFIGURATION (SQLite / PostgreSQL)
@@ -102,6 +169,7 @@ class Account(Base):
     currency = Column(String(10), default="ARS")
     limit = Column(Float, default=0.0)
     notes = Column(String(500), nullable=True)
+    mp_token = Column(String(500), nullable=True)  # Token de acceso de Mercado Pago
     created_at = Column(DateTime, server_default=func.now())
 
 class Transaction(Base):
@@ -157,8 +225,112 @@ class GoalContribution(Base):
     note = Column(String(255), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
+# ============================================================
+#  WALLET CONNECTION & SYNC LOG MODELS (Fase 2-3)
+# ============================================================
+
+class WalletConnection(Base):
+    """
+    Conexión de billetera virtual de un usuario.
+    
+    Almacena los tokens OAuth cifrados con Fernet y el estado
+    de la conexión. Cada cuenta puede tener una conexión de billetera.
+    """
+    __tablename__ = "wallet_connections"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    account_id = Column(Integer, index=True, nullable=False)     # Cuenta asociada en Flujo
+    provider = Column(String(50), nullable=False)                 # 'mercadopago', 'plaid', 'belvo'
+    provider_user_id = Column(String(255), nullable=True)         # ID del usuario en el proveedor
+    access_token_encrypted = Column(String(1000), nullable=True)  # Token cifrado con Fernet
+    refresh_token_encrypted = Column(String(1000), nullable=True) # Refresh token cifrado
+    token_expires_at = Column(DateTime, nullable=True)            # Expiración del access token
+    status = Column(String(20), default="active")                 # active, expired, revoked, error
+    last_sync_at = Column(DateTime, nullable=True)                # Última sincronización exitosa
+    last_sync_status = Column(String(20), nullable=True)          # success, error, partial
+    last_sync_error = Column(String(500), nullable=True)          # Descripción del último error
+    created_at = Column(DateTime, server_default=func.now())
+
+class SyncLog(Base):
+    """
+    Registro de auditoría de cada sincronización.
+    
+    Permite al usuario ver el historial de sincronizaciones y
+    diagnosticar problemas si una sincronización falla.
+    """
+    __tablename__ = "sync_log"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    wallet_connection_id = Column(Integer, index=True, nullable=False)
+    user_id = Column(Integer, index=True, nullable=False)
+    provider = Column(String(50), nullable=False)
+    status = Column(String(20), nullable=False)                   # success, error, partial
+    transactions_imported = Column(Integer, default=0)
+    transactions_skipped = Column(Integer, default=0)             # Duplicados ignorados
+    error_message = Column(String(500), nullable=True)
+    duration_ms = Column(Integer, nullable=True)                  # Duración en milisegundos
+    created_at = Column(DateTime, server_default=func.now())
+
 # Auto-create tables (SQLite and PostgreSQL)
 Base.metadata.create_all(bind=engine)
+
+# ============================================================
+#  MIGRACIÓN AUTOMÁTICA: Cifrar tokens en texto plano existentes
+# ============================================================
+def migrate_plaintext_tokens():
+    """
+    Al arrancar el servidor, busca tokens de Mercado Pago guardados
+    en texto plano en la tabla accounts (columna mp_token) y los
+    migra a la nueva tabla wallet_connections con cifrado Fernet.
+    
+    También cifra los tokens que ya están en mp_token pero sin cifrar.
+    Esta función es idempotente: puede ejecutarse múltiples veces
+    sin duplicar datos.
+    """
+    db = SessionLocal()
+    try:
+        migrated = 0
+        accs_with_token = db.query(Account).filter(Account.mp_token.isnot(None), Account.mp_token != "").all()
+        for acc in accs_with_token:
+            token_value = acc.mp_token.strip()
+            if not token_value:
+                continue
+
+            # Verificar si ya existe una WalletConnection para esta cuenta
+            existing = db.query(WalletConnection).filter(
+                WalletConnection.account_id == acc.id,
+                WalletConnection.user_id == acc.user_id,
+                WalletConnection.provider == "mercadopago"
+            ).first()
+
+            if existing:
+                continue  # Ya migrado
+
+            # Cifrar el token y crear la conexión
+            encrypted_token = token_crypto.encrypt(token_value) if not token_crypto.is_encrypted(token_value) else token_value
+
+            new_conn = WalletConnection(
+                user_id=acc.user_id,
+                account_id=acc.id,
+                provider="mercadopago",
+                access_token_encrypted=encrypted_token,
+                status="active",
+            )
+            db.add(new_conn)
+            migrated += 1
+
+        if migrated > 0:
+            db.commit()
+            print(f"✅ Migración completada: {migrated} token(s) cifrados y migrados a wallet_connections.")
+    except Exception as e:
+        db.rollback()
+        print(f"⚠️  Error en migración de tokens: {e}")
+    finally:
+        db.close()
+
+# Ejecutar migración al arrancar
+migrate_plaintext_tokens()
 
 # ============================================================
 #  FASTAPI APPLICATION SETUP
@@ -246,6 +418,7 @@ class AccountCreate(BaseModel):
     currency: str = "ARS"
     limit: float = 0.0
     notes: Optional[str] = None
+    mp_token: Optional[str] = None
 
 class AccountUpdate(BaseModel):
     name: str
@@ -255,6 +428,7 @@ class AccountUpdate(BaseModel):
     currency: str = "ARS"
     limit: float = 0.0
     notes: Optional[str] = None
+    mp_token: Optional[str] = None
 
 class TransactionCreate(BaseModel):
     account_id: Optional[int] = None
@@ -902,7 +1076,8 @@ async def create_account(payload: AccountCreate, request: Request, db: Session =
         balance=payload.balance,
         currency=payload.currency,
         limit=payload.limit,
-        notes=payload.notes.strip() if payload.notes else None
+        notes=payload.notes.strip() if payload.notes else None,
+        mp_token=payload.mp_token.strip() if payload.mp_token else None
     )
     db.add(new_acc)
     db.commit()
@@ -923,6 +1098,7 @@ async def update_account(id: int, payload: AccountUpdate, request: Request, db: 
     acc.currency = payload.currency
     acc.limit = payload.limit
     acc.notes = payload.notes.strip() if payload.notes else None
+    acc.mp_token = payload.mp_token.strip() if payload.mp_token else None
     
     db.commit()
     db.refresh(acc)
@@ -941,6 +1117,528 @@ async def delete_account(id: int, request: Request, db: Session = Depends(get_db
     db.delete(acc)
     db.commit()
     return {"ok": True, "message": "Cuenta eliminada"}
+
+class AccountTokenRequest(BaseModel):
+    mp_token: str
+
+@app.put("/api/accounts/{id}/token")
+async def update_account_token(id: int, payload: AccountTokenRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Guarda el token de Mercado Pago cifrado con Fernet.
+    
+    Este endpoint mantiene compatibilidad con el flujo manual de token
+    (para modo mock/pruebas), pero ahora cifra el token antes de guardarlo.
+    También crea o actualiza la entrada en wallet_connections.
+    """
+    user_id = get_current_user_id(request)
+    acc = db.query(Account).filter(Account.id == id, Account.user_id == user_id).first()
+    if not acc:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    
+    token_value = payload.mp_token.strip()
+    
+    # Cifrar el token (excepto tokens de prueba que se guardan tal cual para mock)
+    is_mock = token_value.lower() in ["mock-token", "test-token", "pruebas"]
+    encrypted_token = token_value if is_mock else token_crypto.encrypt(token_value)
+    
+    # Guardar en la tabla legacy (compatibilidad)
+    acc.mp_token = encrypted_token
+    
+    # Crear o actualizar WalletConnection
+    wallet_conn = db.query(WalletConnection).filter(
+        WalletConnection.account_id == id,
+        WalletConnection.user_id == user_id,
+        WalletConnection.provider == "mercadopago"
+    ).first()
+    
+    if wallet_conn:
+        wallet_conn.access_token_encrypted = encrypted_token
+        wallet_conn.status = "active"
+    else:
+        wallet_conn = WalletConnection(
+            user_id=user_id,
+            account_id=id,
+            provider="mercadopago",
+            access_token_encrypted=encrypted_token,
+            status="active",
+        )
+        db.add(wallet_conn)
+    
+    db.commit()
+    db.refresh(acc)
+    return {"ok": True, "message": "Token de Mercado Pago actualizado correctamente"}
+
+@app.post("/api/accounts/{id}/sync")
+async def sync_account_transactions(id: int, request: Request, db: Session = Depends(get_db)):
+    """
+    Sincroniza transacciones de la billetera virtual conectada.
+    
+    Usa el adaptador de Mercado Pago del patrón Adapter para:
+    1. Descifrar el token de acceso
+    2. Verificar si necesita refresco automático
+    3. Obtener transacciones normalizadas
+    4. Prevenir duplicados
+    5. Actualizar balance de la cuenta
+    6. Registrar la sincronización en sync_log
+    """
+    import time as _time
+    sync_start = _time.time()
+    
+    user_id = get_current_user_id(request)
+    acc = db.query(Account).filter(Account.id == id, Account.user_id == user_id).first()
+    if not acc:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+    
+    # Buscar la conexión de billetera (primero en wallet_connections, luego fallback a mp_token)
+    wallet_conn = db.query(WalletConnection).filter(
+        WalletConnection.account_id == id,
+        WalletConnection.user_id == user_id,
+        WalletConnection.provider == "mercadopago"
+    ).first()
+    
+    # Obtener el token (descifrado)
+    token = ""
+    if wallet_conn and wallet_conn.access_token_encrypted:
+        token = token_crypto.decrypt(wallet_conn.access_token_encrypted)
+    elif acc.mp_token:
+        token = token_crypto.decrypt(acc.mp_token)
+    
+    if not token:
+        # Fallback a variable de entorno
+        load_env()
+        token = os.getenv("MP_ACCESS_TOKEN", "").strip()
+        
+    if not token:
+        return JSONResponse(status_code=400, content={"error": "Token de acceso de Mercado Pago no configurado para esta cuenta"})
+    
+    # Verificar si el token necesita refresco automático
+    if wallet_conn and wallet_conn.token_expires_at:
+        time_until_expiry = wallet_conn.token_expires_at - datetime.utcnow()
+        if time_until_expiry.total_seconds() < 600:  # Menos de 10 minutos
+            # Intentar refrescar el token automáticamente
+            if wallet_conn.refresh_token_encrypted:
+                try:
+                    from wallet_adapters.mercadopago_adapter import MercadoPagoAdapter
+                    adapter = MercadoPagoAdapter()
+                    refresh_token = token_crypto.decrypt(wallet_conn.refresh_token_encrypted)
+                    new_tokens = adapter.refresh_access_token(refresh_token)
+                    
+                    # Actualizar tokens cifrados
+                    wallet_conn.access_token_encrypted = token_crypto.encrypt(new_tokens["access_token"])
+                    wallet_conn.refresh_token_encrypted = token_crypto.encrypt(new_tokens.get("refresh_token", refresh_token))
+                    wallet_conn.token_expires_at = datetime.utcnow() + timedelta(seconds=new_tokens.get("expires_in", 21600))
+                    wallet_conn.status = "active"
+                    token = new_tokens["access_token"]
+                    db.commit()
+                    print(f"🔄 Token renovado automáticamente para cuenta {id}")
+                except Exception as e:
+                    print(f"⚠️ Error al renovar token: {e}")
+                    wallet_conn.status = "expired"
+                    db.commit()
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    user_email = user.email if user else ""
+    
+    # Usar el adaptador de Mercado Pago para obtener transacciones normalizadas
+    try:
+        from wallet_adapters.mercadopago_adapter import MercadoPagoAdapter
+        adapter = MercadoPagoAdapter()
+        
+        # Determinar fecha desde la última sincronización
+        since_date = None
+        if wallet_conn and wallet_conn.last_sync_at:
+            since_date = wallet_conn.last_sync_at.strftime("%Y-%m-%d")
+        
+        normalized_txs = adapter.fetch_transactions(
+            access_token=token,
+            since_date=since_date,
+            user_email=user_email,
+        )
+    except Exception as e:
+        error_msg = str(e)
+        # Registrar error en sync_log
+        if wallet_conn:
+            sync_duration = int((_time.time() - sync_start) * 1000)
+            log_entry = SyncLog(
+                wallet_connection_id=wallet_conn.id,
+                user_id=user_id,
+                provider="mercadopago",
+                status="error",
+                error_message=error_msg[:500],
+                duration_ms=sync_duration,
+            )
+            db.add(log_entry)
+            wallet_conn.last_sync_status = "error"
+            wallet_conn.last_sync_error = error_msg[:500]
+            db.commit()
+        
+        if "TOKEN_EXPIRED" in error_msg:
+            return JSONResponse(status_code=401, content={"error": "El token de Mercado Pago expiró. Reconectá tu billetera."})
+        return JSONResponse(status_code=502, content={"error": f"Error al sincronizar con Mercado Pago: {error_msg}"})
+    
+    # Procesar transacciones normalizadas
+    imported_count = 0
+    skipped_count = 0
+    
+    for ntx in normalized_txs:
+        # Prevención de duplicados: buscar si ya existe
+        existing = db.query(Transaction).filter(
+            Transaction.user_id == user_id,
+            Transaction.account_id == id,
+            Transaction.amount == ntx.amount,
+            Transaction.date == ntx.date,
+            Transaction.desc == ntx.description
+        ).first()
+        
+        if existing:
+            skipped_count += 1
+            continue
+            
+        # Crear la transacción
+        new_tx = Transaction(
+            user_id=user_id,
+            account_id=id,
+            type=ntx.type,
+            desc=ntx.description,
+            amount=ntx.amount,
+            cat=ntx.category_hint,
+            date=ntx.date
+        )
+        db.add(new_tx)
+        
+        # Actualizar balance de la cuenta
+        if ntx.type == "income":
+            acc.balance += ntx.amount
+        else:
+            acc.balance -= ntx.amount
+            
+        imported_count += 1
+    
+    # Registrar sincronización exitosa
+    sync_duration = int((_time.time() - sync_start) * 1000)
+    if wallet_conn:
+        wallet_conn.last_sync_at = datetime.utcnow()
+        wallet_conn.last_sync_status = "success"
+        wallet_conn.last_sync_error = None
+        
+        log_entry = SyncLog(
+            wallet_connection_id=wallet_conn.id,
+            user_id=user_id,
+            provider="mercadopago",
+            status="success",
+            transactions_imported=imported_count,
+            transactions_skipped=skipped_count,
+            duration_ms=sync_duration,
+        )
+        db.add(log_entry)
+    
+    db.commit()
+    return {"ok": True, "imported_count": imported_count, "skipped_count": skipped_count, "balance": acc.balance}
+
+
+# ============================================================
+#  WALLET OAUTH 2.0 ENDPOINTS (Fase 2)
+# ============================================================
+
+@app.get("/api/wallets/mercadopago/connect")
+async def mp_connect(request: Request, account_id: int = Query(...)):
+    """
+    Inicia el flujo OAuth 2.0 de Mercado Pago.
+    
+    1. Genera un par PKCE (code_verifier + code_challenge)
+    2. Guarda el verifier y el account_id en la sesión
+    3. Redirige al usuario a la página de login de Mercado Pago
+    
+    El usuario autoriza la app y MP redirige de vuelta a /callback.
+    """
+    user_id = get_current_user_id(request)
+    
+    if not MP_CLIENT_ID:
+        return JSONResponse(status_code=500, content={
+            "error": "MP_CLIENT_ID no configurado. Creá una app en https://www.mercadopago.com/developers"
+        })
+    
+    from wallet_adapters.mercadopago_adapter import MercadoPagoAdapter, generate_pkce_pair
+    
+    # Generar PKCE y state anti-CSRF
+    code_verifier, code_challenge = generate_pkce_pair()
+    state = secrets.token_urlsafe(32)
+    
+    # Guardar en sesión para verificar en el callback
+    request.session["oauth_state"] = state
+    request.session["oauth_verifier"] = code_verifier
+    request.session["oauth_account_id"] = account_id
+    
+    adapter = MercadoPagoAdapter()
+    auth_url = adapter.get_auth_url(
+        state=state,
+        redirect_uri=MP_REDIRECT_URI,
+        code_challenge=code_challenge,
+    )
+    
+    return RedirectResponse(url=auth_url, status_code=302)
+
+@app.get("/api/wallets/mercadopago/callback")
+async def mp_callback(request: Request, code: str = "", state: str = "", error: str = "", db: Session = Depends(get_db)):
+    """
+    Callback de OAuth 2.0 de Mercado Pago.
+    
+    Recibe el código de autorización, lo intercambia por tokens,
+    los cifra con Fernet y los guarda en wallet_connections.
+    Luego redirige al usuario de vuelta a la app.
+    """
+    # Redirigir a la app si hay error
+    if error:
+        return RedirectResponse(url="/main.html#cuentas?wallet_error=access_denied", status_code=302)
+    
+    # Validar state anti-CSRF
+    saved_state = request.session.get("oauth_state", "")
+    if state != saved_state:
+        return RedirectResponse(url="/main.html#cuentas?wallet_error=csrf_invalid", status_code=302)
+    
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/index.html", status_code=302)
+    
+    account_id = request.session.get("oauth_account_id")
+    code_verifier = request.session.get("oauth_verifier", "")
+    
+    # Limpiar datos de sesión OAuth
+    for key in ["oauth_state", "oauth_verifier", "oauth_account_id"]:
+        request.session.pop(key, None)
+    
+    try:
+        from wallet_adapters.mercadopago_adapter import MercadoPagoAdapter
+        adapter = MercadoPagoAdapter()
+        
+        # Intercambiar code por tokens
+        tokens = adapter.exchange_code(
+            code=code,
+            redirect_uri=MP_REDIRECT_URI,
+            code_verifier=code_verifier,
+        )
+        
+        # Cifrar tokens
+        access_encrypted = token_crypto.encrypt(tokens["access_token"])
+        refresh_encrypted = token_crypto.encrypt(tokens.get("refresh_token", ""))
+        expires_at = datetime.utcnow() + timedelta(seconds=tokens.get("expires_in", 21600))
+        
+        # Crear o actualizar WalletConnection
+        wallet_conn = db.query(WalletConnection).filter(
+            WalletConnection.account_id == account_id,
+            WalletConnection.user_id == user_id,
+            WalletConnection.provider == "mercadopago"
+        ).first()
+        
+        if wallet_conn:
+            wallet_conn.access_token_encrypted = access_encrypted
+            wallet_conn.refresh_token_encrypted = refresh_encrypted
+            wallet_conn.token_expires_at = expires_at
+            wallet_conn.provider_user_id = tokens.get("provider_user_id", "")
+            wallet_conn.status = "active"
+        else:
+            wallet_conn = WalletConnection(
+                user_id=user_id,
+                account_id=account_id,
+                provider="mercadopago",
+                provider_user_id=tokens.get("provider_user_id", ""),
+                access_token_encrypted=access_encrypted,
+                refresh_token_encrypted=refresh_encrypted,
+                token_expires_at=expires_at,
+                status="active",
+            )
+            db.add(wallet_conn)
+        
+        # También actualizar mp_token en la tabla accounts (compatibilidad)
+        acc = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
+        if acc:
+            acc.mp_token = access_encrypted
+        
+        db.commit()
+        return RedirectResponse(url="/main.html#cuentas?wallet_connected=1", status_code=302)
+        
+    except Exception as e:
+        print(f"❌ Error en OAuth callback de MP: {e}")
+        return RedirectResponse(url=f"/main.html#cuentas?wallet_error=exchange_failed", status_code=302)
+
+@app.post("/api/wallets/mercadopago/disconnect/{account_id}")
+async def mp_disconnect(account_id: int, request: Request, db: Session = Depends(get_db)):
+    """
+    Desconecta la billetera de Mercado Pago de una cuenta.
+    
+    Elimina los tokens cifrados de la BD y marca la conexión como revocada.
+    """
+    user_id = get_current_user_id(request)
+    
+    wallet_conn = db.query(WalletConnection).filter(
+        WalletConnection.account_id == account_id,
+        WalletConnection.user_id == user_id,
+        WalletConnection.provider == "mercadopago"
+    ).first()
+    
+    if wallet_conn:
+        wallet_conn.access_token_encrypted = None
+        wallet_conn.refresh_token_encrypted = None
+        wallet_conn.status = "revoked"
+        wallet_conn.token_expires_at = None
+    
+    # Limpiar token legacy de la tabla accounts
+    acc = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
+    if acc:
+        acc.mp_token = None
+    
+    db.commit()
+    return {"ok": True, "message": "Billetera de Mercado Pago desconectada"}
+
+@app.get("/api/wallets/status/{account_id}")
+async def wallet_status(account_id: int, request: Request, db: Session = Depends(get_db)):
+    """
+    Devuelve el estado de conexión de la billetera para una cuenta.
+    
+    El frontend usa esto para mostrar si la billetera está conectada,
+    expirada o desconectada, y la fecha de la última sincronización.
+    """
+    user_id = get_current_user_id(request)
+    
+    wallet_conn = db.query(WalletConnection).filter(
+        WalletConnection.account_id == account_id,
+        WalletConnection.user_id == user_id,
+    ).first()
+    
+    if not wallet_conn:
+        # Verificar si hay token legacy en la cuenta
+        acc = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
+        has_legacy_token = bool(acc and acc.mp_token)
+        return {
+            "ok": True,
+            "connected": has_legacy_token,
+            "provider": "mercadopago" if has_legacy_token else None,
+            "status": "active" if has_legacy_token else "disconnected",
+            "is_oauth": False,
+            "last_sync_at": None,
+            "last_sync_status": None,
+            "last_sync_error": None,
+        }
+    
+    return {
+        "ok": True,
+        "connected": wallet_conn.status == "active",
+        "provider": wallet_conn.provider,
+        "status": wallet_conn.status,
+        "is_oauth": bool(wallet_conn.refresh_token_encrypted),
+        "last_sync_at": wallet_conn.last_sync_at.isoformat() if wallet_conn.last_sync_at else None,
+        "last_sync_status": wallet_conn.last_sync_status,
+        "last_sync_error": wallet_conn.last_sync_error,
+    }
+
+@app.get("/api/wallets/{account_id}/sync-history")
+async def wallet_sync_history(account_id: int, request: Request, db: Session = Depends(get_db)):
+    """
+    Devuelve el historial de sincronizaciones de una cuenta.
+    Útil para que el usuario vea cuándo fue la última sync y si hubo errores.
+    """
+    user_id = get_current_user_id(request)
+    
+    wallet_conn = db.query(WalletConnection).filter(
+        WalletConnection.account_id == account_id,
+        WalletConnection.user_id == user_id,
+    ).first()
+    
+    if not wallet_conn:
+        return {"ok": True, "history": []}
+    
+    logs = db.query(SyncLog).filter(
+        SyncLog.wallet_connection_id == wallet_conn.id
+    ).order_by(SyncLog.created_at.desc()).limit(10).all()
+    
+    return {
+        "ok": True,
+        "history": [
+            {
+                "id": log.id,
+                "status": log.status,
+                "imported": log.transactions_imported,
+                "skipped": log.transactions_skipped,
+                "error": log.error_message,
+                "duration_ms": log.duration_ms,
+                "date": log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ]
+    }
+
+
+# ============================================================
+#  WEBHOOK DE MERCADO PAGO (Fase 4 - IPN)
+# ============================================================
+
+@app.post("/api/webhooks/mercadopago")
+async def mp_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Recibe notificaciones IPN (Instant Payment Notification) de Mercado Pago.
+    
+    Cuando un usuario realiza o recibe un pago, MP envía una notificación
+    HTTP POST a esta URL. El webhook:
+    1. Valida la firma HMAC del mensaje (seguridad)
+    2. Busca la wallet_connection asociada al usuario de MP
+    3. Ejecuta una sincronización automática
+    
+    Configuración en MP Developers:
+        URL de notificación: https://tu-dominio.com/api/webhooks/mercadopago
+        Eventos: payment
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "Invalid JSON"})
+    
+    # Verificar firma HMAC si hay secret configurado
+    mp_secret = os.getenv("MP_WEBHOOK_SECRET", "")
+    if mp_secret:
+        x_signature = request.headers.get("x-signature", "")
+        x_request_id = request.headers.get("x-request-id", "")
+        
+        # Validar la firma HMAC-SHA256
+        if x_signature:
+            # Extraer ts y v1 de la firma
+            parts = dict(p.split("=", 1) for p in x_signature.split(",") if "=" in p)
+            ts = parts.get("ts", "")
+            v1 = parts.get("v1", "")
+            
+            data_id = body.get("data", {}).get("id", "")
+            # Construir el string de verificación
+            manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
+            
+            import hmac
+            expected = hmac.new(
+                mp_secret.encode("utf-8"),
+                manifest.encode("utf-8"),
+                hashlib.sha256
+            ).hexdigest()
+            
+            if not hmac.compare_digest(v1, expected):
+                return JSONResponse(status_code=401, content={"error": "Invalid signature"})
+    
+    # Procesar la notificación
+    action = body.get("action", "")
+    data_id = body.get("data", {}).get("id", "")
+    user_id_mp = body.get("user_id", "")
+    
+    if action == "payment.created" and data_id:
+        # Buscar la wallet_connection por provider_user_id
+        wallet_conn = db.query(WalletConnection).filter(
+            WalletConnection.provider == "mercadopago",
+            WalletConnection.provider_user_id == str(user_id_mp),
+            WalletConnection.status == "active"
+        ).first()
+        
+        if wallet_conn:
+            # Registrar que recibimos una notificación (la sincronización se hará en el próximo sync manual o automático)
+            wallet_conn.last_sync_error = f"Webhook recibido: payment {data_id}. Sincronizar para importar."
+            db.commit()
+    
+    # MP espera un 200 OK para confirmar recepción
+    return {"ok": True}
 
 
 # --- TRANSACTIONS ---

@@ -114,6 +114,16 @@ async function init() {
     initGoals();
   }
 
+  // Detectar redirecciones de OAuth
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('wallet_connected') === '1') {
+    setTimeout(() => showToast('Billetera conectada exitosamente (OAuth)'), 500);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  } else if (urlParams.get('wallet_error')) {
+    setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  }
+
   setDate();
   renderAll();
 }
@@ -1547,6 +1557,59 @@ function renderCvDetail() {
       </div>` : ''}
     </div>
 
+    ${a.type === 'digital' ? `
+      <div class="mp-sync-container" id="walletPanel_${a.id}" style="margin-top:16px;padding:14px;border-radius:10px;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Billetera Virtual</span>
+          <span id="walletStatusBadge_${a.id}" style="font-size:9px;padding:2px 8px;border-radius:20px;font-weight:700;letter-spacing:0.5px;"></span>
+        </div>
+
+        <!-- Panel OAuth (Recomendado) -->
+        <div id="walletOAuthPanel_${a.id}" style="margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px solid rgba(56,189,248,0.15);">
+          <button class="btn" style="width:100%;justify-content:center;background:#009ee3;color:white;font-size:12px;font-weight:600;border:none;padding:10px;" onclick="window.location.href='/api/wallets/mercadopago/connect?account_id=${a.id}'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+            Conectar con Mercado Pago
+          </button>
+          <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:6px;">Conexión segura y oficial (OAuth 2.0)</div>
+        </div>
+
+        <!-- Panel de conexión manual (token) -->
+        <div id="walletManualPanel_${a.id}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:10px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Enlace Mercado Pago</span>
+            <span style="font-size:10px;color:#38bdf8;cursor:pointer;font-weight:600;" onclick="toggleMpTokenVisibility()">Mostrar</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="password" id="cvMpToken" class="field-input" style="font-family:var(--font-mono);font-size:11px;flex:1;background:var(--surface);" placeholder="Token de acceso (o 'mock-token')" value="">
+            <button class="btn btn-ghost" style="padding:9px 12px;font-size:12px;border-color:rgba(56,189,248,0.25);color:var(--text);" onclick="saveMpToken(${a.id})" id="btnSaveMpToken">
+              Guardar
+            </button>
+          </div>
+        </div>
+
+        <!-- Botón de sincronización -->
+        <div id="walletSyncPanel_${a.id}" style="display:none;">
+          <button class="btn" style="justify-content:center;font-size:12px;width:100%;background:#38bdf8;color:#0b0e13;" onclick="syncMercadoPago(${a.id})" id="btnSyncMp_${a.id}">
+            <svg class="sync-icon-svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;transition:transform 0.5s ease;">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span id="syncMpText_${a.id}">Sincronizar Billetera</span>
+          </button>
+        </div>
+
+        <!-- Última sincronización -->
+        <div id="walletLastSync_${a.id}" style="display:none;font-size:10px;font-family:var(--font-mono);color:var(--muted);text-align:center;padding-top:4px;border-top:1px solid rgba(56,189,248,0.1);"></div>
+
+        <!-- Botón desconectar -->
+        <div id="walletDisconnectPanel_${a.id}" style="display:none;text-align:center;">
+          <button class="btn btn-ghost" style="font-size:10px;color:var(--danger);border-color:rgba(239,68,68,0.2);padding:4px 12px;" onclick="disconnectWallet(${a.id})">
+            Desconectar Billetera
+          </button>
+        </div>
+      </div>
+      <script>loadWalletStatus(${a.id});</script>
+    ` : ''}
+
     <div style="margin-top:16px;display:flex;gap:8px;">
       <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px;" onclick="openAccModal(${a.id})">
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -1560,7 +1623,175 @@ function renderCvDetail() {
   `;
 }
 
+function toggleMpTokenVisibility() {
+  const input = document.getElementById('cvMpToken');
+  const span = event ? event.target : null;
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (span) span.textContent = 'Ocultar';
+  } else {
+    input.type = 'password';
+    if (span) span.textContent = 'Mostrar';
+  }
+}
+
+async function saveMpToken(accountId) {
+  const tokenInput = document.getElementById('cvMpToken');
+  if (!tokenInput) return;
+  const tokenVal = tokenInput.value.trim();
+
+  const btn = document.getElementById('btnSaveMpToken');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+  }
+
+  try {
+    const res = await apiFetchLocal(`/accounts/${accountId}/token`, {
+      method: 'PUT',
+      body: JSON.stringify({ mp_token: tokenVal })
+    });
+
+    if (res && res.ok) {
+      showToast('Token de Mercado Pago actualizado');
+      // Actualizar localmente el token de la cuenta
+      const acc = accounts.find(x => x.id === accountId);
+      if (acc) {
+        acc.mp_token = tokenVal;
+      }
+      renderCuentasView();
+    } else {
+      showToast(res.error || 'Error al guardar el token', true);
+    }
+  } catch (err) {
+    console.error("Error al guardar token:", err);
+    showToast('Error al conectar con el servidor', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Guardar';
+    }
+  }
+}
+
+async function syncMercadoPago(accountId) {
+  const btn = document.getElementById(`btnSyncMp_${accountId}`);
+  const text = document.getElementById(`syncMpText_${accountId}`);
+  const svg = btn ? btn.querySelector('.sync-icon-svg') : null;
+
+  if (btn) btn.disabled = true;
+  if (text) text.textContent = 'Sincronizando...';
+  if (svg) svg.classList.add('spin-anim');
+
+  try {
+    const res = await apiFetchLocal(`/accounts/${accountId}/sync`, {
+      method: 'POST'
+    });
+
+    if (res && res.ok) {
+      const msg = `¡Sincronización exitosa! Importados: ${res.imported_count} movimientos` +
+                  (res.skipped_count ? ` (${res.skipped_count} ya existían)` : '');
+      showToast(msg);
+      await loadUserData();
+      renderAll();
+      renderCuentasView();
+    } else {
+      showToast(res.error || 'Error en la sincronización', true);
+    }
+  } catch (err) {
+    console.error("Error al sincronizar Mercado Pago:", err);
+    showToast('Error de red al sincronizar con Mercado Pago', true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (text) text.textContent = 'Sincronizar Billetera';
+    if (svg) svg.classList.remove('spin-anim');
+  }
+}
+
+/* ---- Wallet Connection Status ---- */
+
+async function loadWalletStatus(accountId) {
+  try {
+    const res = await apiFetchLocal(`/wallets/status/${accountId}`);
+    if (!res || !res.ok) return;
+
+    const badge = document.getElementById(`walletStatusBadge_${accountId}`);
+    const syncPanel = document.getElementById(`walletSyncPanel_${accountId}`);
+    const manualPanel = document.getElementById(`walletManualPanel_${accountId}`);
+    const lastSyncEl = document.getElementById(`walletLastSync_${accountId}`);
+    const disconnectPanel = document.getElementById(`walletDisconnectPanel_${accountId}`);
+
+    if (res.connected) {
+      // Billetera conectada
+      if (badge) {
+        badge.textContent = '🟢 CONECTADA';
+        badge.style.background = 'rgba(34,197,94,0.12)';
+        badge.style.color = '#22c55e';
+      }
+      if (syncPanel) syncPanel.style.display = 'block';
+      if (disconnectPanel) disconnectPanel.style.display = 'block';
+
+      // Mostrar última sincronización
+      if (lastSyncEl && res.last_sync_at) {
+        const timeAgo = formatTimeAgo(new Date(res.last_sync_at));
+        const statusIcon = res.last_sync_status === 'success' ? '✓' : res.last_sync_status === 'error' ? '✗' : '○';
+        lastSyncEl.innerHTML = `Última sync: ${timeAgo} ${statusIcon}`;
+        lastSyncEl.style.display = 'block';
+      }
+    } else if (res.status === 'expired') {
+      if (badge) {
+        badge.textContent = '🟡 EXPIRADA';
+        badge.style.background = 'rgba(234,179,8,0.12)';
+        badge.style.color = '#eab308';
+      }
+      if (syncPanel) syncPanel.style.display = 'block';
+    } else {
+      // No conectada
+      if (badge) {
+        badge.textContent = '🔴 DESCONECTADA';
+        badge.style.background = 'rgba(239,68,68,0.12)';
+        badge.style.color = '#ef4444';
+      }
+    }
+  } catch (err) {
+    console.error("Error al cargar estado de billetera:", err);
+  }
+}
+
+async function disconnectWallet(accountId) {
+  if (!confirm('¿Estás seguro de desconectar la billetera? Tus transacciones importadas se mantienen.')) return;
+
+  try {
+    const res = await apiFetchLocal(`/wallets/mercadopago/disconnect/${accountId}`, {
+      method: 'POST'
+    });
+
+    if (res && res.ok) {
+      showToast('Billetera desconectada');
+      const acc = accounts.find(x => x.id === accountId);
+      if (acc) acc.mp_token = null;
+      renderCuentasView();
+    } else {
+      showToast(res.error || 'Error al desconectar', true);
+    }
+  } catch (err) {
+    showToast('Error de red al desconectar', true);
+  }
+}
+
+function formatTimeAgo(date) {
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000);
+  if (diff < 60) return 'hace unos segundos';
+  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`;
+  if (diff < 604800) return `hace ${Math.floor(diff / 86400)} días`;
+  return date.toLocaleDateString('es-AR');
+}
+
 /* Tx list for selected account */
+
 function renderCvTxList() {
   const el = document.getElementById('cvTxList');
 
@@ -3507,6 +3738,7 @@ function findKeywordFuzzy(lines, keywords, maxDistance = 2) {
    SCANNER — Parser de ticket argentino (Fase 3)
    ===================================================== */
 function scParseTicketText(raw) {
+  debugLog('Parse - Entrada', { textLength: raw ? raw.length : 0 });
   const text = raw || '';
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
@@ -3729,16 +3961,8 @@ function scParseTicketText(raw) {
     if (match) { categoria = item.cat; break; }
   }
 
-  // 9. CONFIANZA POR CAMPO
-  const confidence = {
-    nombre_local: nombre_local ? Math.min(Math.max(bestNameScore + 30, 20), 98) : 0,
-    fecha: (fecha === hoy && !containsTodayDate) ? 35 : 95,
-    hora: hora ? 90 : 0,
-    total: total ? (candidates[0].score > 100 ? 98 : 65) : 0,
-    forma_pago: forma_pago !== 'No especificado' ? 95 : 0,
-    direccion: direccion ? 85 : 0,
-    categoria: categoria !== 'Otros' ? 90 : 40
-  };
+  // 9. VALIDAR CADA CAMPO E INTEGRAR SISTEMA DE CONFIANZA
+  debugLog('Datos parseados preliminares', { nombre_local, total, fecha, hora, forma_pago, categoria });
 
   // 10. APRENDIZAJE PREVIO
   const learned = scGetLearnedData(nombre_local);
@@ -3746,23 +3970,67 @@ function scParseTicketText(raw) {
     nombre_local = learned.nombre_local;
     categoria = learned.categoria;
     forma_pago = learned.forma_pago;
-    confidence.nombre_local = 99;
-    confidence.categoria = 99;
-    confidence.forma_pago = 99;
   }
 
-  let totalScore = 0, count = 0;
-  totalScore += confidence.nombre_local; count++;
-  totalScore += confidence.fecha; count++;
-  totalScore += confidence.total; count++;
-  if (hora) { totalScore += confidence.hora; count++; }
-  if (forma_pago !== 'No especificado') { totalScore += confidence.forma_pago; count++; }
-  const globalConfidence = Math.max(Math.round(totalScore / count), 10);
+  // 11. VALIDAR CADA CAMPO
+  const validations = {
+    nombre_local: validateLocalName(nombre_local, text),
+    total: validateTotal(total, candidates, text, lines),
+    fecha: validateDate(fecha, text),
+    hora: { valid: !!hora, confidence: hora ? 80 : 20 },
+    forma_pago: validatePaymentMethod(forma_pago, text),
+    categoria: { valid: !!categoria, confidence: categoria ? 75 : 30 }
+  };
+
+  debugLog('Validaciones de campo', validations);
+
+  // Sobrescribir confianzas si hay aprendizaje previo
+  if (learned) {
+    validations.nombre_local.confidence = 99;
+    validations.categoria.confidence = 99;
+    validations.forma_pago.confidence = 99;
+  }
+
+  // Si la fecha fue corregida en la validación, la adoptamos
+  if (validations.fecha.corrected) {
+    fecha = validations.fecha.corrected;
+  }
+
+  // 12. CALCULAR CONFIANZA PONDERADA
+  const confidenceData = calculateConfidencePerField({
+    nombre_local, total, fecha, hora, forma_pago, categoria, texto_crudo: raw
+  });
+
+  // Si hay aprendizaje previo, forzamos que la confianza de esos campos sea 99 en el objeto de salida
+  confidenceData.fields.nombre_local.confidence = validations.nombre_local.confidence;
+  confidenceData.fields.categoria.confidence = validations.categoria.confidence;
+  confidenceData.fields.forma_pago.confidence = validations.forma_pago.confidence;
+
+  // Recalcular globalConfidence si es necesario, o usar el general calculado
+  const finalConfidence = confidenceData.overall;
+
+  debugLog('Resultado de confianza y recomendaciones', { finalConfidence, fields: confidenceData.fields, recs: confidenceData.recommendations });
+
+  // Mapeamos fieldConfidence para compatibilidad con el resto del código
+  const fieldConfidence = {
+    nombre_local: confidenceData.fields.nombre_local.confidence,
+    fecha: confidenceData.fields.fecha.confidence,
+    hora: confidenceData.fields.hora.confidence,
+    total: confidenceData.fields.total.confidence,
+    forma_pago: confidenceData.fields.forma_pago.confidence,
+    categoria: confidenceData.fields.categoria.confidence,
+    direccion: direccion ? 85 : 0
+  };
 
   return {
     nombre_local, fecha, hora, total, forma_pago, direccion, categoria,
     descripcion: nombre_local ? 'Compra en ' + nombre_local : 'Ticket escaneado',
-    texto_crudo: raw, confianza: globalConfidence, fieldConfidence: confidence, articulos: items
+    texto_crudo: raw,
+    confianza: finalConfidence,
+    fieldConfidence: fieldConfidence,
+    validations: validations,
+    recommendations: confidenceData.recommendations,
+    articulos: items
   };
 }
 
@@ -3805,6 +4073,13 @@ function scHideLoading() {
    SCANNER — Modal de resultado (Fase 4)
    ===================================================== */
 function scShowResultModal(data) {
+  // Debug Log: Imprimir en consola de desarrollo de forma agrupada
+  console.group('📊 Resultado OCR - Debug Info');
+  console.log('Datos completos de lectura:', data);
+  console.log('Validaciones de campos individuales:', data.validations ? data.validations : 'No disponible');
+  console.log('Recomendaciones de corrección:', data.recommendations ? data.recommendations : 'No disponible');
+  console.groupEnd();
+
   scCurrentParsedData = data;
   const fName = document.getElementById('scfName');
   const fDate = document.getElementById('scfDate');
@@ -3834,12 +4109,12 @@ function scShowResultModal(data) {
     'Tarjeta Amex', 'Transferencia', 'Mercado Pago', 'Cuenta DNI', 'MODO', 'Naranja X', 'QR', 'No especificado'];
   fPayment.value = pays.includes(data.forma_pago) ? data.forma_pago : 'No especificado';
 
-  // 1. Barra de confianza global
+  // 1. Barra de confianza global (Oculta para Enfoque de Producto Premium)
   const confRow = document.getElementById('scConfidenceRow');
   const confBar = document.getElementById('scConfidenceBar');
   const confVal = document.getElementById('scConfidenceVal');
   if (confRow && confBar && confVal) {
-    confRow.style.display = 'flex';
+    confRow.style.display = 'none';
     confBar.style.width = data.confianza + '%';
     confVal.textContent = data.confianza + '%';
     if (data.confianza >= 70) {
@@ -4702,3 +4977,300 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+/* ===== VALIDACIONES MEJORADAS DE OCR (Silenciosas) ===== */
+
+const DEBUG_CONFIG = {
+  enabled: localStorage.getItem('ocr_debug_enabled') === '1',
+  level: parseInt(localStorage.getItem('ocr_debug_level') || '2'), // 0-5
+  logToConsole: true,
+  logToFile: false,
+  timestamps: true
+};
+
+function debugLog(stage, data, level = 2) {
+  if (!DEBUG_CONFIG.enabled || level > DEBUG_CONFIG.level) return;
+  
+  const timestamp = DEBUG_CONFIG.timestamps ? `[${new Date().toISOString()}]` : '';
+  const prefix = `${timestamp} [OCR] ${stage}`;
+  
+  if (DEBUG_CONFIG.logToConsole) {
+    console.group(prefix);
+    console.log(data);
+    console.groupEnd();
+  }
+}
+
+function enableDebugMode() {
+  localStorage.setItem('ocr_debug_enabled', '1');
+  localStorage.setItem('ocr_debug_level', '4');
+  console.log('✅ Debug mode activado. Nivel: 4 (INFO)');
+  location.reload();
+}
+
+function disableDebugMode() {
+  localStorage.setItem('ocr_debug_enabled', '0');
+  console.log('❌ Debug mode desactivado.');
+  location.reload();
+}
+
+function validateLocalName(name, fullText) {
+  // NIVEL 1: Filtros básicos
+  if (!name || name.length < 3) {
+    console.debug('Nombre rechazado: muy corto');
+    return { valid: false, confidence: 0, reason: 'Muy corto' };
+  }
+  
+  if (/^\d+$/.test(name)) {
+    console.debug('Nombre rechazado: solo números');
+    return { valid: false, confidence: 0, reason: 'Solo números' };
+  }
+  
+  if (!/[a-záéíóúñ]/i.test(name)) {
+    console.debug('Nombre rechazado: sin letras');
+    return { valid: false, confidence: 0, reason: 'Sin letras' };
+  }
+  
+  // NIVEL 2: Detectar corrupción de OCR
+  const corruptPatterns = [
+    /([nfwjkqb]{3,})/i,      // Secuencias como "fjwkj"
+    /(\d{2,}[a-z]{2,})/i,    // Mezcla de números y letras como "24nf"
+    /([^a-záéíóúñ&.,\-\s]{4,})/i // Caracteres especiales raros
+  ];
+  
+  for (const pattern of corruptPatterns) {
+    if (pattern.test(name)) {
+      console.debug('Nombre rechazado: OCR corrupto detectado -', pattern);
+      return { valid: false, confidence: 5, reason: 'OCR corrupto' };
+    }
+  }
+  
+  // NIVEL 3: Validación contextual
+  // Cargar diccionario de marcas conocidas (desde OCR_PATTERNS.json)
+  let knownBrands = [
+    'coto', 'disco', 'carrefour', 'jumbo', 'dia', 'walmart',
+    'farmacia', 'ypf', 'shell', 'netflix', 'spotify', 'mercado',
+    'easy', 'sodimac', 'ferreteria', 'cafe', 'restaurant'
+  ];
+  
+  if (typeof scActivePatterns !== 'undefined' && scActivePatterns && scActivePatterns.global_brands) {
+    const brands = [];
+    Object.keys(scActivePatterns.global_brands).forEach(key => {
+      scActivePatterns.global_brands[key].forEach(brand => {
+        brands.push(...brand.keywords);
+      });
+    });
+    if (brands.length > 0) knownBrands = brands.map(b => b.toLowerCase());
+  }
+  
+  const nameLower = name.toLowerCase();
+  const hasKnownWord = knownBrands.some(brand => nameLower.includes(brand));
+  
+  // Si no es marca conocida y es muy corta, dudoso
+  if (!hasKnownWord && name.length < 5) {
+    console.debug('Nombre sospechoso: corto y no es marca conocida');
+    return { valid: true, confidence: 40, reason: 'Corto, revisar' };
+  }
+  
+  // Si es marca conocida, muy confiable
+  if (hasKnownWord) {
+    return { valid: true, confidence: 95, reason: 'Marca reconocida' };
+  }
+  
+  // Default: aceptar con confianza media-alta
+  return { valid: true, confidence: 75, reason: 'Parece válido' };
+}
+
+function validateTotal(amount, candidates, fullText, lines) {
+  // Cargar rangos de montos dinámicos
+  const minAmount = 10;
+  const isHighDenom = typeof scIsHighDenomination !== 'undefined' && scIsHighDenomination;
+  const maxAmount = isHighDenom ? 5000000 : 100000;
+  
+  // NIVEL 1: Rango realista
+  if (amount < minAmount || amount > maxAmount) {
+    return { valid: false, confidence: 0, reason: `Monto fuera de rango (${minAmount}-${maxAmount})` };
+  }
+  
+  // NIVEL 2: Scoring contextual mejorado
+  let contextScore = 0;
+  
+  // Buscar si la línea contiene palabras de "TOTAL"
+  const totalPatterns = [
+    /total\s*[:\$]?\s*[\d.,]+/i,
+    /pagar\s*[:\$]?\s*[\d.,]+/i,
+    /importe\s*[:\$]?\s*[\d.,]+/i,
+    /neto\s*[:\$]?\s*[\d.,]+/i,
+    /amount\s*[:\$]?\s*[\d.,]+/i,
+  ];
+  
+  let foundInTotalLine = false;
+  for (const pattern of totalPatterns) {
+    if (pattern.test(fullText)) {
+      foundInTotalLine = true;
+      contextScore += 50;
+      break;
+    }
+  }
+  
+  // NIVEL 3: Penalizar si está en línea de "no-total"
+  const dangerPatterns = [
+    /unitario/i,
+    /precio\s+u/i,
+    /cant(?:idad)?/i,
+    /item/i,
+    /lote/i,
+    /peso/i,
+    /vuelto/i,
+    /change/i
+  ];
+  
+  let isDangerous = false;
+  for (const pattern of dangerPatterns) {
+    if (pattern.test(fullText)) {
+      contextScore -= 50;
+      isDangerous = true;
+      break;
+    }
+  }
+  
+  // NIVEL 4: Coherencia con otros candidatos
+  const confidence = foundInTotalLine ? 90 : (isDangerous ? 30 : 65);
+  
+  // NIVEL 5: Retornar validación
+  return {
+    valid: amount >= minAmount && amount <= maxAmount,
+    confidence: Math.max(0, Math.min(100, confidence)),
+    reason: foundInTotalLine ? 'En línea de total' : (isDangerous ? 'En contexto peligroso' : 'Contextualmente válido')
+  };
+}
+
+function validateDate(date, fullText) {
+  if (!date) {
+    return { valid: false, confidence: 0, reason: 'Fecha nula' };
+  }
+  
+  try {
+    const parsed = new Date(date);
+    const now = new Date();
+    
+    // ¿La fecha está en el futuro? Probablemente error de OCR
+    if (parsed > now) {
+      console.warn('Fecha en futuro detectada, intentando corregir...');
+      
+      // Intentar hace 1 o 2 años
+      const y = now.getFullYear();
+      const alternatives = [
+        date.replace(/(\d{4})/, String(y - 1)),
+        date.replace(/(\d{4})/, String(y - 2))
+      ];
+      
+      const distances = alternatives.map(d => Math.abs(new Date(d) - now));
+      const bestAlt = alternatives[distances.indexOf(Math.min(...distances))];
+      
+      return {
+        valid: true,
+        confidence: 60,
+        corrected: bestAlt,
+        reason: 'Corregida (estaba en futuro)'
+      };
+    }
+    
+    // ¿Es demasiado vieja? (más de 10 años)
+    if (now - parsed > 10 * 365 * 24 * 60 * 60 * 1000) {
+      return { valid: false, confidence: 10, reason: 'Demasiado vieja (>10 años)' };
+    }
+    
+    // Válida
+    return {
+      valid: true,
+      confidence: 95,
+      reason: 'Fecha válida'
+    };
+  } catch (err) {
+    return { valid: false, confidence: 0, reason: 'Fecha inválida (parse error)' };
+  }
+}
+
+function validatePaymentMethod(method, fullText) {
+  const validMethods = [
+    'Efectivo', 'Tarjeta de débito', 'Tarjeta de crédito', 'Tarjeta Visa', 'Tarjeta Mastercard',
+    'Tarjeta Amex', 'Transferencia', 'Mercado Pago', 'Cuenta DNI', 'MODO', 'Naranja X', 'QR', 'No especificado'
+  ];
+  
+  if (validMethods.includes(method)) {
+    // Si fue detectada por fuzzy matching (no es "No especificado"), confianza alta
+    if (method !== 'No especificado') {
+      return { valid: true, confidence: 85, reason: 'Detectada en ticket' };
+    }
+    // Si no se detectó nada, confianza baja pero válida
+    return { valid: true, confidence: 40, reason: 'No especificada en ticket' };
+  }
+  
+  return { valid: false, confidence: 0, reason: 'Método desconocido' };
+}
+
+function calculateConfidencePerField(parseResult) {
+  const fields = {
+    nombre_local: validateLocalName(parseResult.nombre_local, parseResult.texto_crudo),
+    total: validateTotal(parseResult.total, [], parseResult.texto_crudo, []),
+    fecha: validateDate(parseResult.fecha, parseResult.texto_crudo),
+    hora: { valid: !!parseResult.hora, confidence: parseResult.hora ? 80 : 20 },
+    forma_pago: validatePaymentMethod(parseResult.forma_pago, parseResult.texto_crudo),
+    categoria: { valid: !!parseResult.categoria, confidence: parseResult.categoria ? 75 : 30 }
+  };
+  
+  // Calcular promedio ponderado
+  const weights = {
+    nombre_local: 0.25,
+    total: 0.35,
+    fecha: 0.20,
+    hora: 0.05,
+    forma_pago: 0.10,
+    categoria: 0.05
+  };
+  
+  let totalConfidence = 0;
+  for (const [field, weight] of Object.entries(weights)) {
+    totalConfidence += fields[field].confidence * weight;
+  }
+  
+  return {
+    fields,
+    overall: Math.round(totalConfidence),
+    recommendations: generateRecommendations(fields)
+  };
+}
+
+function generateRecommendations(fields) {
+  const recommendations = [];
+  
+  if (fields.nombre_local.confidence < 60) {
+    recommendations.push({
+      field: 'nombre_local',
+      level: 'error',
+      message: 'Revisa el nombre del local - OCR podría haber fallado'
+    });
+  }
+  
+  if (fields.total.confidence < 70) {
+    recommendations.push({
+      field: 'total',
+      level: 'warning',
+      message: 'Verifica el monto - hay dudas sobre cuál es el total'
+    });
+  }
+  
+  if (fields.fecha.confidence < 60) {
+    recommendations.push({
+      field: 'fecha',
+      level: 'error',
+      message: 'Revisa la fecha - podría estar corrupta'
+    });
+  }
+  
+  return recommendations;
+}
+
+// Alias para compatibilidad con suites de pruebas
+const scParseTicketText_IMPROVED = scParseTicketText;

@@ -19,6 +19,14 @@ services:
         value: gemini
       - key: GEMINI_API_KEY
         sync: false  # Set manually in Render dashboard (Gemini API Key)
+      - key: ENCRYPTION_KEY
+        generateValue: true  # Clave Fernet para cifrar tokens de billeteras
+      - key: MP_CLIENT_ID
+        sync: false  # Set manually in Render dashboard
+      - key: MP_CLIENT_SECRET
+        sync: false  # Set manually in Render dashboard
+      - key: MP_REDIRECT_URI
+        sync: false  # Set manually in Render dashboard (URL de callback)
 
 databases:
   - name: flujo-db

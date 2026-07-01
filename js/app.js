@@ -115,13 +115,27 @@ async function init() {
   }
 
   // Detectar redirecciones de OAuth
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('wallet_connected') === '1') {
-    setTimeout(() => showToast('Billetera conectada exitosamente (OAuth)'), 500);
-    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-  } else if (urlParams.get('wallet_error')) {
-    setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);
-    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  let hashStr = window.location.hash;
+  if (hashStr.includes('?')) {
+    const [path, queryString] = hashStr.split('?');
+    const urlParams = new URLSearchParams(queryString);
+    if (urlParams.get('wallet_connected') === '1') {
+      setTimeout(() => showToast('Billetera conectada exitosamente (OAuth)'), 500);
+      window.history.replaceState({}, document.title, window.location.pathname + path);
+    } else if (urlParams.get('wallet_error')) {
+      setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);
+      window.history.replaceState({}, document.title, window.location.pathname + path);
+    }
+  } else {
+    // Fallback por si acaso
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('wallet_connected') === '1') {
+      setTimeout(() => showToast('Billetera conectada exitosamente (OAuth)'), 500);
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    } else if (urlParams.get('wallet_error')) {
+      setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
   }
 
   setDate();
@@ -1607,7 +1621,6 @@ function renderCvDetail() {
           </button>
         </div>
       </div>
-      <script>loadWalletStatus(${a.id});</script>
     ` : ''}
 
     <div style="margin-top:16px;display:flex;gap:8px;">
@@ -1621,6 +1634,10 @@ function renderCvDetail() {
       </button>
     </div>
   `;
+
+  if (a.type === 'digital') {
+    setTimeout(() => loadWalletStatus(a.id), 0);
+  }
 }
 
 function toggleMpTokenVisibility() {

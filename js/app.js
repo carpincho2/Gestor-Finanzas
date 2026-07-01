@@ -1721,14 +1721,17 @@ async function loadWalletStatus(accountId) {
     const manualPanel = document.getElementById(`walletManualPanel_${accountId}`);
     const lastSyncEl = document.getElementById(`walletLastSync_${accountId}`);
     const disconnectPanel = document.getElementById(`walletDisconnectPanel_${accountId}`);
+    const oauthPanel = document.getElementById(`walletOAuthPanel_${accountId}`);
 
     if (res.connected) {
-      // Billetera conectada
+      // Billetera conectada: ocultar opciones de conexión, mostrar sync/desconectar
       if (badge) {
         badge.textContent = '🟢 CONECTADA';
         badge.style.background = 'rgba(34,197,94,0.12)';
         badge.style.color = '#22c55e';
       }
+      if (oauthPanel) oauthPanel.style.display = 'none';
+      if (manualPanel) manualPanel.style.display = 'none';
       if (syncPanel) syncPanel.style.display = 'block';
       if (disconnectPanel) disconnectPanel.style.display = 'block';
 
@@ -1745,19 +1748,26 @@ async function loadWalletStatus(accountId) {
         badge.style.background = 'rgba(234,179,8,0.12)';
         badge.style.color = '#eab308';
       }
+      if (oauthPanel) oauthPanel.style.display = 'block';
+      if (manualPanel) manualPanel.style.display = 'none';
       if (syncPanel) syncPanel.style.display = 'block';
     } else {
-      // No conectada
+      // No conectada: mostrar opciones de conexión
       if (badge) {
         badge.textContent = '🔴 DESCONECTADA';
         badge.style.background = 'rgba(239,68,68,0.12)';
         badge.style.color = '#ef4444';
       }
+      if (oauthPanel) oauthPanel.style.display = 'block';
+      if (manualPanel) manualPanel.style.display = 'block';
+      if (syncPanel) syncPanel.style.display = 'none';
+      if (disconnectPanel) disconnectPanel.style.display = 'none';
     }
   } catch (err) {
     console.error("Error al cargar estado de billetera:", err);
   }
 }
+
 
 async function disconnectWallet(accountId) {
   if (!confirm('¿Estás seguro de desconectar la billetera? Tus transacciones importadas se mantienen.')) return;

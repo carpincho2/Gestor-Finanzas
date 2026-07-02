@@ -312,14 +312,19 @@ body::before {
 .stat-card.orange::after { background: var(--warn); }
 
 .stat-label {
-  font-size:11px; font-family:var(--font-mono);
-  color:var(--muted); letter-spacing:1.5px; text-transform:uppercase;
+  font-size:12px; font-family:var(--font-mono);
+  color:#94a3b8; /* Mayor contraste para accesibilidad (WCAG) */
+  letter-spacing:0.5px; text-transform:uppercase;
   margin-bottom:10px;
+  font-weight: 600;
 }
 
 .stat-value {
-  font-size: 28px; font-weight: 800; letter-spacing:-1.5px;
-  line-height:1;
+  font-size: 24px; font-weight: 600; letter-spacing:-0.5px;
+  line-height:1.2;
+  font-family: system-ui, -apple-system, sans-serif; /* Fuente de sistema más legible */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .stat-value.green  { color: var(--accent); }
@@ -328,12 +333,13 @@ body::before {
 .stat-value.orange { color: var(--warn); }
 
 .stat-change {
-  font-size: 11px; font-family: var(--font-mono);
-  color: var(--muted); margin-top:8px;
+  font-size: 12px; font-family: var(--font-mono);
+  color: #94a3b8; margin-top:8px;
+  font-weight: 500;
 }
 
-.stat-change .up   { color: var(--accent); }
-.stat-change .down { color: var(--danger); }
+.stat-change .up   { color: #10b981; /* Emerald 500 para accesibilidad */ }
+.stat-change .down { color: #f43f5e; /* Rose 500 para accesibilidad */ }
 
 /* ===== CONTENT GRID ===== */
 .content-grid {

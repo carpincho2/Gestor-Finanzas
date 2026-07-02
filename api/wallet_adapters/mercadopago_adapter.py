@@ -407,57 +407,28 @@ class MercadoPagoAdapter(BaseWalletAdapter):
 
         # Llamada real a la API de Mercado Pago
         headers = {"Authorization": f"Bearer {access_token}"}
-
-        # Primero intentar con /v1/users/me para obtener el user_id
-        response = requests.get(
-            f"{self.MP_BASE_URL}/v1/users/me",
-            headers=headers,
-            timeout=15,
-        )
-
         fallback_token = None
-        if response.status_code in (401, 403):
-            fallback_token = self._get_client_credentials_token()
-            if fallback_token and fallback_token != access_token:
-                print(f"⚠️ Recibido {response.status_code} en users/me. Reintentando con client_credentials...")
-                headers["Authorization"] = f"Bearer {fallback_token}"
-                response = requests.get(
-                    f"{self.MP_BASE_URL}/v1/users/me",
-                    headers=headers,
-                    timeout=15,
-                )
 
-        if response.status_code == 401:
-            raise Exception("TOKEN_EXPIRED")
-
-        if response.status_code != 200:
-            # Si /v1/users/me falla, intentar sin balance
-            print(f"⚠️ No se pudo obtener saldo de MP (status {response.status_code})")
-            return None
-
-        data = response.json()
-
-        # /v1/users/me no devuelve balance directamente en algunos tipos de cuentas
-        # Intentamos con /v1/account/balance (endpoint estándar para marketplace sellers)
-        # Si no está disponible, usamos la info de la respuesta anterior
-        available = None
-        user_id = data.get("id")
-
-        # Intentar obtener balance del endpoint de la cuenta
+        # 1. Intentar obtener balance del endpoint oficial de la cuenta
         try:
             balance_resp = requests.get(
                 f"{self.MP_BASE_URL}/v1/account/balance",
                 headers=headers,
                 timeout=10,
             )
-            if balance_resp.status_code in (401, 403) and fallback_token:
-                 headers["Authorization"] = f"Bearer {fallback_token}"
-                 balance_resp = requests.get(
-                    f"{self.MP_BASE_URL}/v1/account/balance",
-                    headers=headers,
-                    timeout=10,
-                 )
+            if balance_resp.status_code in (401, 403):
+                 fallback_token = self._get_client_credentials_token()
+                 if fallback_token and fallback_token != access_token:
+                     headers["Authorization"] = f"Bearer {fallback_token}"
+                     balance_resp = requests.get(
+                        f"{self.MP_BASE_URL}/v1/account/balance",
+                        headers=headers,
+                        timeout=10,
+                     )
             
+            if balance_resp.status_code == 401:
+                raise Exception("TOKEN_EXPIRED")
+                
             if balance_resp.status_code == 200:
                 balance_data = balance_resp.json()
                 available = balance_data.get("available_balance", 0.0)
@@ -469,13 +440,26 @@ class MercadoPagoAdapter(BaseWalletAdapter):
                     "currency": currency,
                 }
         except Exception as e:
+            if str(e) == "TOKEN_EXPIRED":
+                raise
             print(f"⚠️ Error al obtener balance de /v1/account/balance: {e}")
 
-        # Fallback: intentar con mercadopago_account
+        # 2. Fallback: intentar con /v1/users/me
         try:
-            mp_account = data.get("tags", {}).get("mercadopago_account", {})
-            if isinstance(mp_account, dict):
-                available = mp_account.get("available_balance")
+            me_resp = requests.get(
+                f"{self.MP_BASE_URL}/v1/users/me",
+                headers=headers,
+                timeout=15,
+            )
+            if me_resp.status_code == 200:
+                data = me_resp.json()
+                mp_account = data.get("tags", {}).get("mercadopago_account", {})
+                if isinstance(mp_account, dict) and "available_balance" in mp_account:
+                    return {
+                        "available_balance": float(mp_account["available_balance"]),
+                        "total_balance": float(mp_account.get("balance", mp_account["available_balance"])),
+                        "currency": "ARS",
+                    }
         except Exception:
             pass
 

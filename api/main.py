@@ -1241,9 +1241,11 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
         adapter = MercadoPagoAdapter()
         
         # Determinar fecha desde la última sincronización
-        since_date = None
         if wallet_conn and wallet_conn.last_sync_at:
             since_date = wallet_conn.last_sync_at.strftime("%Y-%m-%d")
+        else:
+            # Si es la primera vez que sincroniza, traer solo los últimos 30 días
+            since_date = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
         
         normalized_txs = adapter.fetch_transactions(
             access_token=token,

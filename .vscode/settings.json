@@ -1,3 +1,4 @@
 {
-    "codeQL.githubDatabase.update": "never"
+    "codeQL.githubDatabase.update": "never",
+    "python.defaultInterpreterPath": "d:\\Gestor de Finanzas\\api\\fluxo_venv\\Scripts\\python.exe"
 }

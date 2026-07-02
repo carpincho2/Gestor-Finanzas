@@ -1601,13 +1601,19 @@ function renderCvDetail() {
           </div>
         </div>
 
-        <!-- Botón de sincronización -->
-        <div id="walletSyncPanel_${a.id}" style="display:none;">
+        <!-- Botones de sincronización y saldo -->
+        <div id="walletSyncPanel_${a.id}" style="display:none;flex-direction:column;gap:6px;">
           <button class="btn" style="justify-content:center;font-size:12px;width:100%;background:#38bdf8;color:#0b0e13;" onclick="syncMercadoPago(${a.id})" id="btnSyncMp_${a.id}">
             <svg class="sync-icon-svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;transition:transform 0.5s ease;">
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
             </svg>
             <span id="syncMpText_${a.id}">Sincronizar Billetera</span>
+          </button>
+          <button class="btn btn-ghost" style="justify-content:center;font-size:11px;width:100%;border-color:rgba(56,189,248,0.2);color:#38bdf8;" onclick="refreshMpBalance(${a.id})" id="btnRefreshBalance_${a.id}">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            <span id="refreshBalanceText_${a.id}">Actualizar Saldo</span>
           </button>
         </div>
 
@@ -1707,8 +1713,15 @@ async function syncMercadoPago(accountId) {
     });
 
     if (res && res.ok) {
+      // Actualizar el balance local con el saldo real devuelto por el servidor
+      const acc = accounts.find(x => x.id === accountId);
+      if (acc && res.balance !== undefined) {
+        acc.balance = res.balance;
+      }
+
       const msg = `¡Sincronización exitosa! Importados: ${res.imported_count} movimientos` +
-                  (res.skipped_count ? ` (${res.skipped_count} ya existían)` : '');
+                  (res.skipped_count ? ` (${res.skipped_count} ya existían)` : '') +
+                  `\nSaldo actual: $${res.balance?.toLocaleString('es-AR') || '—'}`;
       showToast(msg);
       await loadUserData();
       renderAll();
@@ -1723,6 +1736,37 @@ async function syncMercadoPago(accountId) {
     if (btn) btn.disabled = false;
     if (text) text.textContent = 'Sincronizar Billetera';
     if (svg) svg.classList.remove('spin-anim');
+  }
+}
+
+async function refreshMpBalance(accountId) {
+  const btn = document.getElementById(`btnRefreshBalance_${accountId}`);
+  const text = document.getElementById(`refreshBalanceText_${accountId}`);
+
+  if (btn) btn.disabled = true;
+  if (text) text.textContent = 'Consultando...';
+
+  try {
+    const res = await apiFetchLocal(`/wallets/mercadopago/balance/${accountId}`);
+
+    if (res && res.ok) {
+      // Actualizar el balance local con el saldo real de MP
+      const acc = accounts.find(x => x.id === accountId);
+      if (acc) {
+        acc.balance = res.balance;
+      }
+
+      showToast(`Saldo actualizado: $${res.balance?.toLocaleString('es-AR') || '0'}`);
+      renderCuentasView();
+    } else {
+      showToast(res.error || 'No se pudo obtener el saldo', true);
+    }
+  } catch (err) {
+    console.error("Error al obtener saldo de MP:", err);
+    showToast('Error de red al consultar saldo de Mercado Pago', true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (text) text.textContent = 'Actualizar Saldo';
   }
 }
 
@@ -1749,7 +1793,7 @@ async function loadWalletStatus(accountId) {
       }
       if (oauthPanel) oauthPanel.style.display = 'none';
       if (manualPanel) manualPanel.style.display = 'none';
-      if (syncPanel) syncPanel.style.display = 'block';
+      if (syncPanel) syncPanel.style.display = 'flex';
       if (disconnectPanel) disconnectPanel.style.display = 'block';
 
       // Mostrar última sincronización
@@ -1767,7 +1811,7 @@ async function loadWalletStatus(accountId) {
       }
       if (oauthPanel) oauthPanel.style.display = 'block';
       if (manualPanel) manualPanel.style.display = 'none';
-      if (syncPanel) syncPanel.style.display = 'block';
+      if (syncPanel) syncPanel.style.display = 'flex';
     } else {
       // No conectada: mostrar opciones de conexión
       if (badge) {

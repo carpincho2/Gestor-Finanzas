@@ -143,6 +143,15 @@ def _generate_mock_payments(user_email: str) -> list:
         },
     ]
 
+def _generate_mock_balance() -> dict:
+    """Genera un saldo ficticio para pruebas locales sin credenciales."""
+    return {
+        "available_balance": 67500.00,
+        "unavailable_balance": 0.0,
+        "total_balance": 67500.00,
+        "currency": "ARS",
+    }
+
 
 @register_adapter
 class MercadoPagoAdapter(BaseWalletAdapter):
@@ -346,6 +355,85 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             ))
 
         return normalized
+
+    def fetch_balance(self, access_token: str) -> dict:
+        """
+        Obtiene el saldo real de la cuenta de Mercado Pago del usuario.
+
+        Llama a GET /v1/users/me que incluye la información de la cuenta
+        con available_balance (saldo disponible para operar).
+
+        En modo mock devuelve un saldo ficticio para pruebas.
+
+        Returns:
+            dict con: available_balance, total_balance, currency
+        """
+        # Modo mock para desarrollo local
+        if access_token.lower() in ["mock-token", "test-token", "pruebas"]:
+            return _generate_mock_balance()
+
+        # Llamada real a la API de Mercado Pago
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        # Primero intentar con /v1/users/me para obtener el user_id
+        response = requests.get(
+            f"{self.MP_BASE_URL}/v1/users/me",
+            headers=headers,
+            timeout=15,
+        )
+
+        if response.status_code == 401:
+            raise Exception("TOKEN_EXPIRED")
+
+        if response.status_code != 200:
+            # Si /v1/users/me falla, intentar sin balance
+            print(f"⚠️ No se pudo obtener saldo de MP (status {response.status_code})")
+            return None
+
+        data = response.json()
+
+        # /v1/users/me no devuelve balance directamente en algunos tipos de cuentas
+        # Intentamos con /v1/account/balance (endpoint estándar para marketplace sellers)
+        # Si no está disponible, usamos la info de la respuesta anterior
+        available = None
+        user_id = data.get("id")
+
+        # Intentar obtener balance del endpoint de la cuenta
+        try:
+            balance_resp = requests.get(
+                f"{self.MP_BASE_URL}/v1/account/balance",
+                headers=headers,
+                timeout=10,
+            )
+            if balance_resp.status_code == 200:
+                balance_data = balance_resp.json()
+                available = balance_data.get("available_balance", 0.0)
+                total = balance_data.get("total_amount", available)
+                currency = balance_data.get("currency_id", "ARS")
+                return {
+                    "available_balance": float(available),
+                    "total_balance": float(total),
+                    "currency": currency,
+                }
+        except Exception as e:
+            print(f"⚠️ Error al obtener balance de /v1/account/balance: {e}")
+
+        # Fallback: intentar con mercadopago_account
+        try:
+            mp_account = data.get("tags", {}).get("mercadopago_account", {})
+            if isinstance(mp_account, dict):
+                available = mp_account.get("available_balance")
+        except Exception:
+            pass
+
+        if available is not None:
+            return {
+                "available_balance": float(available),
+                "total_balance": float(available),
+                "currency": data.get("site_id", "ARS")[-3:] if data.get("site_id") else "ARS",
+            }
+
+        return None
 
     def revoke_access(self, access_token: str) -> bool:
         """

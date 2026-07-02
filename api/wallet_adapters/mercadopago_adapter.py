@@ -452,7 +452,7 @@ class MercadoPagoAdapter(BaseWalletAdapter):
         try:
             me_resp = requests.get(
                 f"{self.MP_BASE_URL}/v1/users/me",
-                headers=headers,
+                headers={"Authorization": f"Bearer {access_token}"},
                 timeout=15,
             )
             if me_resp.status_code == 200:

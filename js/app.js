@@ -184,7 +184,10 @@ function renderStats() {
 
   const allIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const allExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const balance = allIncome - allExpenses;
+  
+  // El saldo total real es la suma de los saldos actuales de todas las cuentas,
+  // no la resta histórica de ingresos - gastos (ya que el historial puede ser parcial).
+  const balance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
 
   const fmt = n => '$' + n.toLocaleString('es-AR');
 

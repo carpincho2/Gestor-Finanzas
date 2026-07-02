@@ -1308,11 +1308,40 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
         db.add(new_tx)
         imported_count += 1
     
-    # ── SALDO ──
-    # No modificamos acc.balance durante la sincronización.
-    # La API de MP para cuentas personales devuelve datos poco confiables
-    # (incluye inversiones, o bloquea el acceso), por lo que el saldo
-    # lo gestiona el usuario manualmente desde "Editar cuenta".
+    # ── ACTUALIZAR SALDO ──
+    # Estrategia: intentar obtener el saldo real de la API de MP.
+    # Si la API falla (común en cuentas personales), ajustamos el saldo
+    # sumando/restando SOLO las transacciones nuevas importadas en ESTE sync
+    # (las que no existían antes en la BD = no fueron skipped).
+    balance_updated = False
+    try:
+        balance_info = adapter.fetch_balance(access_token=token)
+        if balance_info and "available_balance" in balance_info:
+            acc.balance = balance_info["available_balance"]
+            balance_updated = True
+            print(f"✅ Saldo real de MP obtenido: ${acc.balance:,.2f}")
+    except Exception as balance_err:
+        print(f"⚠️ No se pudo obtener saldo de MP vía API: {balance_err}")
+    
+    if not balance_updated and imported_count > 0:
+        # Ajuste incremental: solo sumar/restar las transacciones NUEVAS
+        for ntx in normalized_txs:
+            existing = db.query(Transaction).filter(
+                Transaction.user_id == user_id,
+                Transaction.account_id == id,
+                Transaction.amount == ntx.amount,
+                Transaction.date == ntx.date,
+                Transaction.desc == ntx.description
+            ).count()
+            # Si existe más de 1, significa que ya estaba antes + la que acabamos de crear
+            # Si existe exactamente 1, es la que acabamos de crear (nueva)
+            if existing > 1:
+                continue
+            if ntx.type == "income":
+                acc.balance += ntx.amount
+            else:
+                acc.balance -= ntx.amount
+        print(f"📊 Saldo ajustado incrementalmente: ${acc.balance:,.2f} ({imported_count} tx nuevas)")
     
     # Registrar sincronización exitosa
     sync_duration = int((_time.time() - sync_start) * 1000)
@@ -1343,23 +1372,51 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
 @app.get("/api/wallets/mercadopago/balance/{account_id}")
 async def mp_get_balance(account_id: int, request: Request, db: Session = Depends(get_db)):
     """
-    Devuelve el saldo actual de la cuenta desde la base de datos.
-    
-    No consulta la API de MP porque para cuentas personales devuelve
-    datos poco confiables (incluye inversiones) o directamente bloquea
-    la petición. El saldo lo gestiona el usuario manualmente.
+    Intenta obtener el saldo real de MP vía API.
+    Si la API falla (común en cuentas personales), devuelve el saldo de la BD.
     """
     user_id = get_current_user_id(request)
     acc = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
     if not acc:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     
-    return {
-        "ok": True,
-        "balance": acc.balance,
-        "total_balance": acc.balance,
-        "currency": acc.currency or "ARS",
-    }
+    # Buscar token
+    wallet_conn = db.query(WalletConnection).filter(
+        WalletConnection.account_id == account_id,
+        WalletConnection.user_id == user_id,
+        WalletConnection.provider == "mercadopago"
+    ).first()
+    
+    token = ""
+    if wallet_conn and wallet_conn.access_token_encrypted:
+        token = token_crypto.decrypt(wallet_conn.access_token_encrypted)
+    elif acc.mp_token:
+        token = token_crypto.decrypt(acc.mp_token)
+    
+    if not token:
+        # Sin token: devolver saldo de la BD directamente
+        return {"ok": True, "balance": acc.balance, "total_balance": acc.balance, "currency": acc.currency or "ARS"}
+    
+    try:
+        from wallet_adapters.mercadopago_adapter import MercadoPagoAdapter
+        adapter = MercadoPagoAdapter()
+        balance_info = adapter.fetch_balance(access_token=token)
+        
+        if balance_info and "available_balance" in balance_info:
+            acc.balance = balance_info["available_balance"]
+            db.commit()
+            print(f"✅ Saldo real de MP obtenido vía API: ${acc.balance:,.2f}")
+            return {
+                "ok": True,
+                "balance": acc.balance,
+                "total_balance": balance_info.get("total_balance", acc.balance),
+                "currency": balance_info.get("currency", "ARS"),
+            }
+    except Exception as e:
+        print(f"⚠️ fetch_balance falló: {e}")
+    
+    # Fallback: devolver el saldo actual de la BD sin error
+    return {"ok": True, "balance": acc.balance, "total_balance": acc.balance, "currency": acc.currency or "ARS"}
 
 
 # ============================================================

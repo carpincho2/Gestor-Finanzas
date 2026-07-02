@@ -1322,23 +1322,10 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
     except Exception as balance_err:
         print(f"⚠️ No se pudo obtener saldo real de MP: {balance_err}")
     
-    # Si no se pudo obtener el saldo real, usar el cálculo incremental como fallback
+    # Si no se pudo obtener el saldo real, simplemente conservamos el saldo
+    # actual que tiene la cuenta (el usuario puede editarlo manualmente si MP falla).
     if not balance_updated:
-        for ntx in normalized_txs:
-            # Solo contar las transacciones nuevas (no las duplicadas)
-            existing = db.query(Transaction).filter(
-                Transaction.user_id == user_id,
-                Transaction.account_id == id,
-                Transaction.amount == ntx.amount,
-                Transaction.date == ntx.date,
-                Transaction.desc == ntx.description
-            ).first()
-            if existing:
-                continue
-            if ntx.type == "income":
-                acc.balance += ntx.amount
-            else:
-                acc.balance -= ntx.amount
+        print("⚠️ Se conservará el saldo actual de la cuenta, ya que falló la consulta a MP.")
     
     # Registrar sincronización exitosa
     sync_duration = int((_time.time() - sync_start) * 1000)

@@ -361,11 +361,12 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             date_str = payment.get("date_approved") or datetime.utcnow().isoformat()
             date = date_str[:10]  # YYYY-MM-DD
 
-            # Determinar tipo: si el pagador es el usuario → gasto, sino → ingreso
+            # Determinar tipo: por defecto los pagos en este endpoint suelen ser cobros (ingresos)
             payer_email = payment.get("payer", {}).get("email", "")
-            tx_type = "expense"
-            if payer_email and user_email and payer_email.lower() != user_email.lower():
-                tx_type = "income"
+            tx_type = "income"
+            # Si el pagador está identificado y coincide exactamente con el email del usuario, es un gasto
+            if payer_email and user_email and payer_email.lower() == user_email.lower():
+                tx_type = "expense"
 
             # Categorización heurística
             category = _categorize_description(desc)

@@ -280,6 +280,30 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             "expires_in": data.get("expires_in", 21600),
         }
 
+    def _get_client_credentials_token(self) -> Optional[str]:
+        """Obtiene un token usando client_credentials para la cuenta dueña de la app (fallback)."""
+        import os
+        client_id = os.getenv("MP_CLIENT_ID")
+        client_secret = os.getenv("MP_CLIENT_SECRET")
+        if not client_id or not client_secret:
+            return None
+        
+        try:
+            response = requests.post(
+                f"{self.MP_BASE_URL}/oauth/token",
+                json={
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "grant_type": "client_credentials"
+                },
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json().get("access_token")
+        except Exception as e:
+            print(f"⚠️ Error obteniendo client_credentials: {e}")
+        return None
+
     def fetch_transactions(
         self,
         access_token: str,
@@ -312,11 +336,19 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             headers = {"Authorization": f"Bearer {access_token}"}
             response = requests.get(url, headers=headers, timeout=15)
 
+            # Fallback a client_credentials si da 403 (falta de permisos en el token OAuth)
+            if response.status_code in (401, 403):
+                fallback_token = self._get_client_credentials_token()
+                if fallback_token and fallback_token != access_token:
+                    print(f"⚠️ Recibido {response.status_code} en MP. Reintentando con client_credentials...")
+                    headers["Authorization"] = f"Bearer {fallback_token}"
+                    response = requests.get(url, headers=headers, timeout=15)
+
             if response.status_code == 401:
                 raise Exception("TOKEN_EXPIRED")
             if response.status_code != 200:
                 err = response.json() if "application/json" in response.headers.get("content-type", "") else {}
-                raise Exception(f"Error de MP: {err.get('message', response.status_code)}")
+                raise Exception(f"Error de MP: {response.status_code} - {err.get('message', '')}")
 
             raw_payments = response.json().get("results", [])
 
@@ -382,6 +414,18 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             timeout=15,
         )
 
+        fallback_token = None
+        if response.status_code in (401, 403):
+            fallback_token = self._get_client_credentials_token()
+            if fallback_token and fallback_token != access_token:
+                print(f"⚠️ Recibido {response.status_code} en users/me. Reintentando con client_credentials...")
+                headers["Authorization"] = f"Bearer {fallback_token}"
+                response = requests.get(
+                    f"{self.MP_BASE_URL}/v1/users/me",
+                    headers=headers,
+                    timeout=15,
+                )
+
         if response.status_code == 401:
             raise Exception("TOKEN_EXPIRED")
 
@@ -405,6 +449,14 @@ class MercadoPagoAdapter(BaseWalletAdapter):
                 headers=headers,
                 timeout=10,
             )
+            if balance_resp.status_code in (401, 403) and fallback_token:
+                 headers["Authorization"] = f"Bearer {fallback_token}"
+                 balance_resp = requests.get(
+                    f"{self.MP_BASE_URL}/v1/account/balance",
+                    headers=headers,
+                    timeout=10,
+                 )
+            
             if balance_resp.status_code == 200:
                 balance_data = balance_resp.json()
                 available = balance_data.get("available_balance", 0.0)

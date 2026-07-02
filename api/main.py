@@ -1308,24 +1308,11 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
         db.add(new_tx)
         imported_count += 1
     
-    # ── OBTENER SALDO REAL DE MERCADO PAGO ──
-    # En vez de calcular el balance sumando/restando transacciones (que arrancaba
-    # de 0 y nunca reflejaba el saldo real), consultamos directamente a la API
-    # de MP para obtener el saldo disponible actual de la cuenta del usuario.
-    balance_updated = False
-    try:
-        balance_info = adapter.fetch_balance(access_token=token)
-        if balance_info and "available_balance" in balance_info:
-            acc.balance = balance_info["available_balance"]
-            balance_updated = True
-            print(f"✅ Saldo real de MP obtenido: ${acc.balance:,.2f} {balance_info.get('currency', 'ARS')}")
-    except Exception as balance_err:
-        print(f"⚠️ No se pudo obtener saldo real de MP: {balance_err}")
-    
-    # Si no se pudo obtener el saldo real, simplemente conservamos el saldo
-    # actual que tiene la cuenta (el usuario puede editarlo manualmente si MP falla).
-    if not balance_updated:
-        print("⚠️ Se conservará el saldo actual de la cuenta, ya que falló la consulta a MP.")
+    # ── SALDO ──
+    # No modificamos acc.balance durante la sincronización.
+    # La API de MP para cuentas personales devuelve datos poco confiables
+    # (incluye inversiones, o bloquea el acceso), por lo que el saldo
+    # lo gestiona el usuario manualmente desde "Editar cuenta".
     
     # Registrar sincronización exitosa
     sync_duration = int((_time.time() - sync_start) * 1000)
@@ -1356,65 +1343,23 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
 @app.get("/api/wallets/mercadopago/balance/{account_id}")
 async def mp_get_balance(account_id: int, request: Request, db: Session = Depends(get_db)):
     """
-    Obtiene el saldo real de Mercado Pago y actualiza la cuenta.
+    Devuelve el saldo actual de la cuenta desde la base de datos.
     
-    Este endpoint consulta directamente a la API de MP para obtener
-    el saldo disponible, sin necesidad de hacer un sync completo
-    de transacciones. Útil para refrescar el balance rápidamente.
+    No consulta la API de MP porque para cuentas personales devuelve
+    datos poco confiables (incluye inversiones) o directamente bloquea
+    la petición. El saldo lo gestiona el usuario manualmente.
     """
     user_id = get_current_user_id(request)
     acc = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
     if not acc:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     
-    # Buscar token (mismo flujo que sync)
-    wallet_conn = db.query(WalletConnection).filter(
-        WalletConnection.account_id == account_id,
-        WalletConnection.user_id == user_id,
-        WalletConnection.provider == "mercadopago"
-    ).first()
-    
-    token = ""
-    if wallet_conn and wallet_conn.access_token_encrypted:
-        token = token_crypto.decrypt(wallet_conn.access_token_encrypted)
-    elif acc.mp_token:
-        token = token_crypto.decrypt(acc.mp_token)
-    
-    if not token:
-        token = os.getenv("MP_ACCESS_TOKEN", "").strip()
-        
-    if not token:
-        return JSONResponse(status_code=400, content={"error": "Token de acceso de Mercado Pago no configurado"})
-    
-    try:
-        from wallet_adapters.mercadopago_adapter import MercadoPagoAdapter
-        adapter = MercadoPagoAdapter()
-        balance_info = adapter.fetch_balance(access_token=token)
-        
-        if balance_info and "available_balance" in balance_info:
-            acc.balance = balance_info["available_balance"]
-            db.commit()
-            return {
-                "ok": True,
-                "balance": acc.balance,
-                "total_balance": balance_info.get("total_balance", acc.balance),
-                "currency": balance_info.get("currency", "ARS"),
-            }
-        else:
-            # Si MP no nos devuelve el saldo (bloqueado por la API), 
-            # simplemente devolvemos el saldo manual actual de la BD para no tirar error 502.
-            return {
-                "ok": True,
-                "balance": acc.balance,
-                "total_balance": acc.balance,
-                "currency": "ARS",
-                "warning": "Saldo devuelto desde la BD local."
-            }
-    except Exception as e:
-        error_msg = str(e)
-        if "TOKEN_EXPIRED" in error_msg:
-            return JSONResponse(status_code=401, content={"error": "El token de Mercado Pago expiró. Reconectá tu billetera."})
-        return JSONResponse(status_code=502, content={"error": f"Error al obtener saldo: {error_msg}"})
+    return {
+        "ok": True,
+        "balance": acc.balance,
+        "total_balance": acc.balance,
+        "currency": acc.currency or "ARS",
+    }
 
 
 # ============================================================

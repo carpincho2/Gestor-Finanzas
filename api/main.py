@@ -790,7 +790,6 @@ def get_current_user_id(request: Request):
 @app.post("/api/ocr/parse")
 async def ocr_parse(request: Request, payload: OCRParseRequest):
     user_id = get_current_user_id(request)
-    load_env()
     provider = os.getenv("AI_PROVIDER", "none").strip().lower()
     text = payload.text
     
@@ -954,7 +953,6 @@ def _call_gemini_sdk_with_retry(prompt: str, model_name: str = "gemini-2.5-flash
 @app.post("/api/ai/chat")
 async def ai_chat(payload: AIChatRequest, request: Request):
     user_id = get_current_user_id(request)
-    load_env()
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return {"error": "Gemini API Key missing"}
@@ -998,7 +996,6 @@ Usás emojis con moderación para hacer la respuesta más clara. Respondés de f
 @app.post("/api/ai/insights")
 async def ai_insights(payload: AIInsightsRequest, request: Request):
     user_id = get_current_user_id(request)
-    load_env()
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return {"error": "Gemini API Key missing"}
@@ -1205,7 +1202,6 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
     
     if not token:
         # Fallback a variable de entorno
-        load_env()
         token = os.getenv("MP_ACCESS_TOKEN", "").strip()
         
     if not token:
@@ -1598,26 +1594,28 @@ async def mp_webhook(request: Request, db: Session = Depends(get_db)):
         x_signature = request.headers.get("x-signature", "")
         x_request_id = request.headers.get("x-request-id", "")
         
+        if not x_signature:
+            return JSONResponse(status_code=401, content={"error": "Missing signature"})
+            
         # Validar la firma HMAC-SHA256
-        if x_signature:
-            # Extraer ts y v1 de la firma
-            parts = dict(p.split("=", 1) for p in x_signature.split(",") if "=" in p)
-            ts = parts.get("ts", "")
-            v1 = parts.get("v1", "")
-            
-            data_id = body.get("data", {}).get("id", "")
-            # Construir el string de verificación
-            manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
-            
-            import hmac
-            expected = hmac.new(
-                mp_secret.encode("utf-8"),
-                manifest.encode("utf-8"),
-                hashlib.sha256
-            ).hexdigest()
-            
-            if not hmac.compare_digest(v1, expected):
-                return JSONResponse(status_code=401, content={"error": "Invalid signature"})
+        # Extraer ts y v1 de la firma
+        parts = dict(p.split("=", 1) for p in x_signature.split(",") if "=" in p)
+        ts = parts.get("ts", "")
+        v1 = parts.get("v1", "")
+        
+        data_id = body.get("data", {}).get("id", "")
+        # Construir el string de verificación
+        manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
+        
+        import hmac
+        expected = hmac.new(
+            mp_secret.encode("utf-8"),
+            manifest.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(v1, expected):
+            return JSONResponse(status_code=401, content={"error": "Invalid signature"})
     
     # Procesar la notificación
     action = body.get("action", "")

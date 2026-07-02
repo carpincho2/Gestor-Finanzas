@@ -1591,7 +1591,7 @@ function renderCvDetail() {
         <div id="walletManualPanel_${a.id}">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <span style="font-size:10px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Enlace Mercado Pago</span>
-            <span style="font-size:10px;color:#38bdf8;cursor:pointer;font-weight:600;" onclick="toggleMpTokenVisibility()">Mostrar</span>
+            <span style="font-size:10px;color:#38bdf8;cursor:pointer;font-weight:600;" onclick="toggleMpTokenVisibility(event)">Mostrar</span>
           </div>
           <div style="display:flex;gap:8px;">
             <input type="password" id="cvMpToken" class="field-input" style="font-family:var(--font-mono);font-size:11px;flex:1;background:var(--surface);" placeholder="Token de acceso (o 'mock-token')" value="">
@@ -1640,9 +1640,9 @@ function renderCvDetail() {
   }
 }
 
-function toggleMpTokenVisibility() {
+function toggleMpTokenVisibility(e) {
   const input = document.getElementById('cvMpToken');
-  const span = event ? event.target : null;
+  const span = e ? e.target : (typeof event !== 'undefined' ? event.target : null);
   if (!input) return;
   if (input.type === 'password') {
     input.type = 'text';

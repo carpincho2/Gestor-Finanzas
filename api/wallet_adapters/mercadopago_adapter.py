@@ -410,13 +410,16 @@ class MercadoPagoAdapter(BaseWalletAdapter):
         fallback_token = None
 
         # 1. Intentar obtener balance del endpoint oficial de la cuenta
+        original_status = None
         try:
             balance_resp = requests.get(
                 f"{self.MP_BASE_URL}/v1/account/balance",
                 headers=headers,
                 timeout=10,
             )
-            if balance_resp.status_code in (401, 403):
+            original_status = balance_resp.status_code
+            
+            if original_status in (401, 403):
                  fallback_token = self._get_client_credentials_token()
                  if fallback_token and fallback_token != access_token:
                      headers["Authorization"] = f"Bearer {fallback_token}"
@@ -426,7 +429,8 @@ class MercadoPagoAdapter(BaseWalletAdapter):
                         timeout=10,
                      )
             
-            if balance_resp.status_code == 401:
+            # Si el token original expiró (401) y el fallback tampoco funcionó, avisar expiración
+            if original_status == 401 and balance_resp.status_code != 200:
                 raise Exception("TOKEN_EXPIRED")
                 
             if balance_resp.status_code == 200:
@@ -462,13 +466,6 @@ class MercadoPagoAdapter(BaseWalletAdapter):
                     }
         except Exception:
             pass
-
-        if available is not None:
-            return {
-                "available_balance": float(available),
-                "total_balance": float(available),
-                "currency": data.get("site_id", "ARS")[-3:] if data.get("site_id") else "ARS",
-            }
 
         return None
 

@@ -1401,9 +1401,15 @@ async def mp_get_balance(account_id: int, request: Request, db: Session = Depend
                 "currency": balance_info.get("currency", "ARS"),
             }
         else:
-            return JSONResponse(status_code=502, content={
-                "error": "No se pudo obtener el saldo de Mercado Pago. Probá sincronizar transacciones."
-            })
+            # Si MP no nos devuelve el saldo (bloqueado por la API), 
+            # simplemente devolvemos el saldo manual actual de la BD para no tirar error 502.
+            return {
+                "ok": True,
+                "balance": acc.balance,
+                "total_balance": acc.balance,
+                "currency": "ARS",
+                "warning": "Saldo devuelto desde la BD local."
+            }
     except Exception as e:
         error_msg = str(e)
         if "TOKEN_EXPIRED" in error_msg:

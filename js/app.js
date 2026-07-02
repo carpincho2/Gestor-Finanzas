@@ -774,17 +774,53 @@ function clearTxFilters() {
   renderTxView();
 }
 
-function exportCSV() {
+async function exportExcel() {
+  if (typeof ExcelJS === 'undefined') {
+    showToast('⚠️ Librería de Excel no cargada aún', true);
+    return;
+  }
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Transacciones');
+
+  sheet.columns = [
+    { header: 'ID', key: 'id', width: 10 },
+    { header: 'Descripción', key: 'desc', width: 40 },
+    { header: 'Categoría', key: 'cat', width: 25 },
+    { header: 'Tipo', key: 'type', width: 15 },
+    { header: 'Fecha', key: 'date', width: 15 },
+    { header: 'Monto', key: 'amount', width: 20 }
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF121212' } };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
   const list = getFilteredTx();
-  const rows = [['ID', 'Descripción', 'Categoría', 'Tipo', 'Fecha', 'Monto']];
-  list.forEach(t => rows.push([t.id, t.desc, t.cat, t.type === 'income' ? 'Ingreso' : 'Gasto', t.date, t.amount]));
-  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  list.forEach(t => {
+    const row = sheet.addRow({
+      id: t.id,
+      desc: t.desc,
+      cat: t.cat,
+      type: t.type === 'income' ? 'Ingreso' : 'Gasto',
+      date: t.date,
+      amount: t.amount
+    });
+    row.getCell('amount').numFmt = '"$"#,##0.00';
+    if (t.type === 'income') {
+      row.getCell('type').font = { color: { argb: 'FF4CAF50' }, bold: true };
+    } else {
+      row.getCell('type').font = { color: { argb: 'FFF44336' }, bold: true };
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'flujo_transacciones.csv';
+  a.download = 'flujo_transacciones.xlsx';
   a.click();
-  showToast('📥 CSV exportado');
+  showToast('📥 Excel exportado');
 }
 
 /* Edit */
@@ -2521,17 +2557,53 @@ function renderRvMonthTable() {
 }
 
 /* ---- CSV export ---- */
-function exportReportCSV() {
+async function exportReportExcel() {
+  if (typeof ExcelJS === 'undefined') {
+    showToast('⚠️ Librería de Excel no cargada aún', true);
+    return;
+  }
   const { from, to } = getRvDateRange();
   const tx = getRvTx();
-  const rows = [['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Monto']];
-  tx.sort((a, b) => new Date(a.date) - new Date(b.date))
-    .forEach(t => rows.push([t.date, t.desc, t.cat, t.type === 'income' ? 'Ingreso' : 'Gasto', t.amount]));
-  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = `flujo_reporte_${from}_${to}.csv`; a.click();
-  showToast('📥 Reporte exportado');
+  
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Reporte');
+
+  sheet.columns = [
+    { header: 'Fecha', key: 'date', width: 15 },
+    { header: 'Descripción', key: 'desc', width: 40 },
+    { header: 'Categoría', key: 'cat', width: 25 },
+    { header: 'Tipo', key: 'type', width: 15 },
+    { header: 'Monto', key: 'amount', width: 20 }
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF121212' } };
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+  tx.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(t => {
+    const row = sheet.addRow({
+      date: t.date,
+      desc: t.desc,
+      cat: t.cat,
+      type: t.type === 'income' ? 'Ingreso' : 'Gasto',
+      amount: t.amount
+    });
+    row.getCell('amount').numFmt = '"$"#,##0.00';
+    if (t.type === 'income') {
+      row.getCell('type').font = { color: { argb: 'FF4CAF50' }, bold: true };
+    } else {
+      row.getCell('type').font = { color: { argb: 'FFF44336' }, bold: true };
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `flujo_reporte_${from}_${to}.xlsx`;
+  a.click();
+  showToast('📥 Reporte exportado en Excel');
 }
 
 /* =====================================================

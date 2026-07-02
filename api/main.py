@@ -1108,14 +1108,7 @@ async def delete_account(id: int, request: Request, db: Session = Depends(get_db
     if not acc:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     
-    # Eliminar transacciones que fueron sincronizadas automáticamente (tienen external_id)
-    db.query(Transaction).filter(
-        Transaction.account_id == id, 
-        Transaction.user_id == user_id,
-        Transaction.external_id.isnot(None)
-    ).delete(synchronize_session=False)
-
-    # Desasociar transacciones manuales vinculadas a esta cuenta (poner account_id en null)
+    # Desasociar transacciones vinculadas a esta cuenta (poner account_id en null)
     db.query(Transaction).filter(
         Transaction.account_id == id, 
         Transaction.user_id == user_id

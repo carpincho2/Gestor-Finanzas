@@ -2159,6 +2159,10 @@ app.mount("/data", StaticFiles(directory=os.path.join(BASE_DIR, "data")), name="
 app.mount("/tests", StaticFiles(directory=os.path.join(BASE_DIR, "tests")), name="tests")
 
 # Rutas para servir las páginas principales del frontend
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return Response(content="", media_type="image/x-icon")
+
 @app.get("/", response_class=FileResponse)
 async def serve_index():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))

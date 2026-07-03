@@ -177,6 +177,10 @@ function initCustomSelects(container = document) {
         li.classList.add('selected');
         wrapper.classList.remove('open');
         
+        // Reset parent z-index
+        const parentContainer = wrapper.closest('.panel, .modal-content');
+        if (parentContainer) parentContainer.style.zIndex = '';
+        
         // Disparar evento de cambio original para que el resto de la app reaccione (filtros, modales, etc)
         const event = new Event('change', { bubbles: true });
         select.dispatchEvent(event);
@@ -188,9 +192,17 @@ function initCustomSelects(container = document) {
       e.stopPropagation();
       // Cerrar otros abiertos
       document.querySelectorAll('.custom-select-wrapper').forEach(w => {
-        if (w !== wrapper) w.classList.remove('open');
+        if (w !== wrapper) {
+          w.classList.remove('open');
+          const p = w.closest('.panel, .modal-content');
+          if (p) p.style.zIndex = '';
+        }
       });
-      wrapper.classList.toggle('open');
+      const isOpen = wrapper.classList.toggle('open');
+      const parentContainer = wrapper.closest('.panel, .modal-content');
+      if (parentContainer) {
+        parentContainer.style.zIndex = isOpen ? '100' : '';
+      }
     });
     
     wrapper.appendChild(btn);
@@ -221,7 +233,11 @@ function updateCustomSelectDisplay(select) {
 
 // Cerrar select al hacer click fuera
 document.addEventListener('click', () => {
-  document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+  document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+    w.classList.remove('open');
+    const p = w.closest('.panel, .modal-content');
+    if (p) p.style.zIndex = '';
+  });
 });
 
 // Inicializar al cargar

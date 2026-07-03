@@ -634,7 +634,9 @@ canvas#mainChart {
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
 .modal {
-  background:var(--surface);
+  background: rgba(10, 14, 23, 0.95); /* Fondo oscuro casi opaco */
+  backdrop-filter: blur(24px); /* Fuerte desenfoque por si pasa algo de luz */
+  -webkit-backdrop-filter: blur(24px);
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
   width:440px; max-width:95vw;

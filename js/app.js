@@ -1886,7 +1886,25 @@ async function disconnectWallet(accountId) {
       showToast(res.error || 'Error al desconectar', true);
     }
   } catch (err) {
-    showToast('Error de red al desconectar', true);
+    showToast(err.message, "error");
+  }
+}
+
+// ==========================================
+//  LIMPIEZA DE DUPLICADOS
+// ==========================================
+async function cleanupDuplicates() {
+  if (!confirm("¿Seguro que querés limpiar los duplicados exactos? Esto dejará solo la transacción original y borrará las copias repetidas.")) {
+    return;
+  }
+  
+  try {
+    const res = await apiFetch("/api/transactions/cleanup-duplicates", { method: "POST" });
+    showToast(res.message || "Duplicados eliminados.", "success");
+    await fetchTransactions(); // Recargar la lista
+    await fetchAccounts();     // Recargar saldos (por si cambiaron, aunque no deberían si eran solo duplicados visuales)
+  } catch (err) {
+    showToast("Error al limpiar duplicados: " + err.message, "error");
   }
 }
 

@@ -1795,6 +1795,36 @@ async def get_transactions(request: Request, db: Session = Depends(get_db)):
     txs = db.query(Transaction).filter(Transaction.user_id == user_id).order_by(Transaction.date.desc(), Transaction.id.desc()).all()
     return {"ok": True, "transactions": txs}
 
+@app.post("/api/transactions/cleanup-duplicates")
+async def cleanup_duplicates(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    
+    # 1. Encontrar todos los duplicados agrupando por cuenta, monto, fecha y descripción
+    # Como SQLite y Postgres tienen distinta sintaxis para subqueries de borrado con límite,
+    # vamos a hacerlo de manera segura en Python
+    
+    txs = db.query(Transaction).filter(Transaction.user_id == user_id).order_by(Transaction.id.asc()).all()
+    
+    seen = set()
+    to_delete = []
+    
+    for tx in txs:
+        # Clave única para identificar un duplicado exacto
+        key = (tx.account_id, tx.amount, tx.date, tx.desc)
+        if key in seen:
+            to_delete.append(tx)
+        else:
+            seen.add(key)
+            
+    deleted_count = len(to_delete)
+    
+    for tx in to_delete:
+        db.delete(tx)
+        
+    db.commit()
+    
+    return {"ok": True, "deleted_count": deleted_count, "message": f"Se eliminaron {deleted_count} transacciones duplicadas."}
+
 @app.post("/api/transactions", status_code=201)
 async def create_transaction(payload: TransactionCreate, request: Request, db: Session = Depends(get_db)):
     user_id = get_current_user_id(request)

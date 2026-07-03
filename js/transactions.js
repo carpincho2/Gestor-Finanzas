@@ -88,8 +88,8 @@ function setType(type) {
   const catSelect = document.getElementById('qCat');
 
   if (type === 'expense') {
-    expBtn.classList.add('active');
-    incBtn.classList.remove('active');
+    expBtn.classList.add('active-expense');
+    incBtn.classList.remove('active-income');
     catSelect.innerHTML = `
       <option value="Alimentación">🍔 Alimentación</option>
       <option value="Transporte">🚗 Transporte</option>
@@ -101,8 +101,8 @@ function setType(type) {
       <option value="Otros">📦 Otros</option>
     `;
   } else {
-    incBtn.classList.add('active');
-    expBtn.classList.remove('active');
+    incBtn.classList.add('active-income');
+    expBtn.classList.remove('active-expense');
     catSelect.innerHTML = `
       <option value="Sueldo">💼 Sueldo</option>
       <option value="Freelance">💻 Freelance</option>
@@ -148,8 +148,8 @@ function setModalType(type) {
   const catSelect = document.getElementById('mCat');
   
   if (type === 'expense') {
-    expBtn.classList.add('active');
-    incBtn.classList.remove('active');
+    expBtn.classList.add('active-expense');
+    incBtn.classList.remove('active-income');
     catSelect.innerHTML = `
       <option value="Alimentación">🍔 Alimentación</option>
       <option value="Transporte">🚗 Transporte</option>
@@ -161,8 +161,8 @@ function setModalType(type) {
       <option value="Otros">📦 Otros</option>
     `;
   } else {
-    incBtn.classList.add('active');
-    expBtn.classList.remove('active');
+    incBtn.classList.add('active-income');
+    expBtn.classList.remove('active-expense');
     catSelect.innerHTML = `
       <option value="Sueldo">💼 Sueldo</option>
       <option value="Freelance">💻 Freelance</option>

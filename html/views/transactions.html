@@ -1,0 +1,95 @@
+<!-- Summary Strip -->
+      <div class="txsum-strip">
+        <div class="txsum-item">
+          <span class="txsum-label">Resultados</span>
+          <span class="txsum-val" id="txSumTotal">0 transacciones</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Ingresos</span>
+          <span class="txsum-val green" id="txSumIncome">$0</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Gastos</span>
+          <span class="txsum-val red" id="txSumExpense">$0</span>
+        </div>
+        <div class="txsum-sep"></div>
+        <div class="txsum-item">
+          <span class="txsum-label">Neto</span>
+          <span class="txsum-val green" id="txSumNet">$0</span>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="exportExcel()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar Excel
+          </button>
+          <button class="btn btn-ghost" onclick="cleanupDuplicates()" style="font-size:12px;padding:7px 14px; color: var(--text-muted);" title="Elimina transacciones repetidas idénticas">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Limpiar Duplicados
+          </button>
+          <button class="btn btn-primary" onclick="openModal()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width.5 viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nueva
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <div class="filter-search-wrap">
+          <svg class="filter-search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="field-input filter-search" id="txSearch" type="text" placeholder="Buscar transacciones…" oninput="applyTxFilter()"/>
+        </div>
+
+        <select class="field-select" id="txFilterType" onchange="applyTxFilter()" style="width:auto;min-width:130px;">
+          <option value="all">Todos los tipos</option>
+          <option value="income">Ingresos</option>
+          <option value="expense">Gastos</option>
+        </select>
+
+        <select class="field-select" id="txFilterCat" onchange="applyTxFilter()" style="width:auto;min-width:160px;">
+          <option value="all">Todas las categorías</option>
+          <option value="Alimentación">🍔 Alimentación</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Entretenimiento">🎬 Entretenimiento</option>
+          <option value="Salud">💊 Salud</option>
+          <option value="Hogar">🏠 Hogar</option>
+          <option value="Ropa">👕 Ropa</option>
+          <option value="Sueldo">💼 Sueldo</option>
+          <option value="Freelance">💻 Freelance</option>
+          <option value="Inversión">📈 Inversión</option>
+          <option value="Otros">📦 Otros</option>
+        </select>
+
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input class="field-input" id="txFilterFrom" type="date" onchange="applyTxFilter()" style="width:auto;" title="Desde"/>
+          <span style="color:var(--muted);font-size:12px;">—</span>
+          <input class="field-input" id="txFilterTo" type="date" onchange="applyTxFilter()" style="width:auto;" title="Hasta"/>
+        </div>
+
+        <button class="btn btn-ghost" onclick="clearTxFilters()" style="font-size:12px;padding:7px 12px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Limpiar
+        </button>
+      </div>
+
+      <!-- Table -->
+      <div class="panel" style="overflow:visible;">
+        <div class="tx-table-wrap" style="overflow-x:auto;">
+          <table class="tx-table">
+            <thead>
+              <tr>
+                <th class="th-sort" data-field="desc" onclick="sortTx('desc')">Descripción <span class="sort-arrow">↕</span></th>
+                <th>Categoría</th>
+                <th>Tipo</th>
+                <th class="th-sort" data-field="date" onclick="sortTx('date')">Fecha <span class="sort-arrow">↓</span></th>
+                <th class="th-sort" data-field="amount" onclick="sortTx('amount')" style="text-align:right;">Monto <span class="sort-arrow">↕</span></th>
+                <th style="text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="txTableBody"></tbody>
+          </table>
+        </div>
+        <div class="tx-pagination" id="txPagination"></div>
+      </div>

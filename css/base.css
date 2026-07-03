@@ -1,0 +1,83 @@
+/* ===== NOISE OVERLAY ===== */
+body::before {
+  content:'';
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: .35;
+}
+
+/* ===== LAYOUT ===== */
+.app { display:flex; min-height:100vh; position:relative; z-index:1; }
+
+/* ===== MAIN ===== */
+.main {
+  flex: 1;
+  padding: 36px 40px;
+  overflow-y: auto;
+}
+
+/* ===== TOAST ===== */
+#toast {
+  position:fixed; bottom:28px; right:28px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:3px solid var(--accent);
+  border-radius:10px;
+  padding:13px 18px;
+  font-size:13px; font-weight:500;
+  z-index:200;
+  transform:translateY(20px); opacity:0;
+  transition:all .25s cubic-bezier(.34,1.2,.64,1);
+  pointer-events:none;
+  max-width:280px;
+}
+
+#toast.show { transform:translateY(0); opacity:1; }
+#toast.error { border-left-color:var(--danger); }
+
+/* ===== LOADING OVERLAY ===== */
+.sc-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(11,14,19,.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sc-loading-box {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: fadeInUp .3s ease;
+}
+
+.sc-loading-spinner {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.sc-loading-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text);
+}
+
+.sc-loading-sub {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+
+

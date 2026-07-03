@@ -1,0 +1,44 @@
+<!-- Summary stats -->
+      <div class="ov-summary" id="ovSummary"></div>
+
+      <!-- Main grid: cards + right panel -->
+      <div class="ov-main-grid">
+
+        <!-- Goal cards -->
+        <div style="display:flex;flex-direction:column;gap:14px;" id="ovCards"></div>
+
+        <!-- Right panel -->
+        <div class="ov-right">
+
+          <!-- Progress overview donut -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Progreso Global</span>
+              <span class="panel-badge" id="ovDonutBadge">0 objetivos</span>
+            </div>
+            <div style="padding:16px 24px 6px;display:flex;justify-content:center;position:relative;">
+              <canvas id="ovDonutChart" style="max-width:180px;max-height:180px;"></canvas>
+              <div style="position:absolute;inset:16px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;">
+                <div style="font-size:22px;font-weight:800;letter-spacing:-1px;" id="ovDonutPct">0%</div>
+                <div style="font-size:9px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;">completado</div>
+              </div>
+            </div>
+            <div style="padding:8px 20px 16px;" id="ovDonutLegend"></div>
+          </div>
+
+          <!-- Timeline / milestones -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Próximos Vencimientos</span>
+            </div>
+            <div class="ov-timeline" id="ovTimeline"></div>
+          </div>
+
+          <!-- Tip -->
+          <div class="panel" style="padding:20px 24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Consejo</div>
+            <div id="ovTip" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
+          </div>
+
+        </div>
+      </div>

@@ -1,0 +1,400 @@
+/* ===== AUTH SCREEN ===== */
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.auth-screen.hidden {
+  animation: authFadeOut .4s ease forwards;
+  pointer-events: none;
+}
+
+@keyframes authFadeOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.03); }
+}
+
+/* Animated background orbs */
+.auth-bg-orbs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.18;
+  animation: authOrbFloat 8s ease-in-out infinite alternate;
+}
+
+.auth-orb-1 {
+  width: 500px; height: 500px;
+  background: var(--accent);
+  top: -150px; left: -150px;
+  animation-duration: 9s;
+}
+
+.auth-orb-2 {
+  width: 400px; height: 400px;
+  background: var(--accent3);
+  bottom: -100px; right: -80px;
+  animation-duration: 11s;
+  animation-delay: -3s;
+}
+
+.auth-orb-3 {
+  width: 300px; height: 300px;
+  background: var(--accent2);
+  top: 50%; left: 55%;
+  transform: translate(-50%, -50%);
+  animation-duration: 7s;
+  animation-delay: -5s;
+  opacity: 0.1;
+}
+
+@keyframes authOrbFloat {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.08); }
+}
+
+/* Container */
+.auth-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Brand */
+.auth-brand {
+  text-align: center;
+}
+
+.auth-logo {
+  font-size: 36px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.auth-logo-sub {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Card */
+.auth-card {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03);
+  animation: authCardIn .5s cubic-bezier(.34,1.2,.64,1);
+}
+
+@keyframes authCardIn {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Tabs */
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+
+.auth-tab {
+  padding: 9px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.auth-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+
+/* Fields */
+.auth-field {
+  margin-bottom: 14px;
+}
+
+.auth-label {
+  display: block;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.auth-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+}
+
+.auth-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,229,160,.12);
+}
+
+.auth-input::placeholder { color: var(--muted); opacity: .6; }
+
+/* Password field */
+.auth-pw-wrap {
+  position: relative;
+}
+
+.auth-pw-wrap .auth-input {
+  padding-right: 44px;
+}
+
+.auth-pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  transition: color .15s;
+}
+
+.auth-pw-toggle:hover { color: var(--text); }
+
+/* Forgot */
+.auth-forgot {
+  text-align: right;
+  margin-top: -6px;
+  margin-bottom: 18px;
+}
+
+.auth-forgot a {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .15s;
+}
+
+.auth-forgot a:hover { color: var(--accent); }
+
+/* Primary button */
+.auth-btn-primary {
+  width: 100%;
+  padding: 13px;
+  background: var(--accent);
+  color: #0b0e13;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
+  pointer-events: none;
+}
+
+.auth-btn-primary:hover {
+  background: #00ffb3;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,229,160,.3);
+}
+
+.auth-btn-primary:active { transform: translateY(0); }
+
+/* Divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Google button wrapper & overlay */
+.auth-google-wrapper {
+  position: relative;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.auth-btn-google {
+  width: 100%;
+  padding: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Hover simulado y real */
+.auth-btn-google.hover,
+.auth-btn-google:hover {
+  border-color: rgba(255, 255, 255, .2);
+  background: rgba(255, 255, 255, .05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+}
+
+/* Overlay invisible que contiene el botón real de Google SDK.
+   Google SDK inyecta estilos inline en sus hijos (divs, iframes),
+   por eso usamos !important y el selector * para forzar invisibilidad
+   en TODOS los elementos hijos sin importar lo que Google haga. */
+.auth-google-container-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0 !important;
+  z-index: 10;
+  overflow: hidden !important;
+  cursor: pointer;
+}
+
+/* Forzar invisibilidad en TODOS los hijos que Google genera */
+.auth-google-container-overlay *,
+.auth-google-container-overlay div,
+.auth-google-container-overlay iframe {
+  opacity: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  cursor: pointer !important;
+}
+
+/* Error */
+.auth-error {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(255,74,107,.1);
+  border: 1px solid rgba(255,74,107,.25);
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  line-height: 1.5;
+  animation: fadeIn .2s;
+}
+
+/* Footer */
+.auth-footer {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.auth-footer a {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color .15s;
+}
+
+.auth-footer a:hover { color: var(--text); }
+
+/* Button loading state */
+.auth-btn-primary.loading,
+.auth-btn-google.loading {
+  opacity: .7;
+  pointer-events: none;
+}
+
+.auth-btn-primary.loading::before {
+  content: '';
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(0,0,0,.3);
+  border-top-color: #0b0e13;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.sc-field-status {
+  font-size: 11px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+

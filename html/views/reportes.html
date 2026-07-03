@@ -1,0 +1,95 @@
+<!-- Period selector -->
+      <div class="rv-period-bar">
+        <div class="rv-period-tabs">
+          <button class="rv-tab active" onclick="setRvPeriod(this,'mes')">Este mes</button>
+          <button class="rv-tab" onclick="setRvPeriod(this,'trimestre')">Trimestre</button>
+          <button class="rv-tab" onclick="setRvPeriod(this,'anio')">Este año</button>
+          <button class="rv-tab" onclick="setRvPeriod(this,'custom')">Personalizado</button>
+        </div>
+        <div class="rv-custom-range" id="rvCustomRange" style="display:none;">
+          <input class="field-input" id="rvFrom" type="date" onchange="renderReportesView()" style="width:auto;"/>
+          <span style="color:var(--muted);">—</span>
+          <input class="field-input" id="rvTo"   type="date" onchange="renderReportesView()" style="width:auto;"/>
+        </div>
+        <div class="rv-export-row">
+          <button class="btn btn-ghost" onclick="exportReportExcel()" style="font-size:12px;padding:7px 14px;">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="rv-kpi-row" id="rvKpis"></div>
+
+      <!-- Charts grid -->
+      <div class="rv-charts-grid">
+
+        <!-- Ingresos vs Gastos (línea, full width) -->
+        <div class="panel rv-chart-full">
+          <div class="panel-head">
+            <span class="panel-title">Ingresos vs Gastos</span>
+            <span class="panel-badge" id="rvLineLabel">—</span>
+          </div>
+          <div style="padding:20px 24px;">
+            <canvas id="rvLineChart" class="rv-canvas" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Gastos por categoría (dona) -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Gastos por Categoría</span>
+            <span class="panel-badge" id="rvDonutLabel">—</span>
+          </div>
+          <div style="padding:16px 24px 0; display:flex; justify-content:center;">
+            <canvas id="rvDonutChart" style="max-width:220px;max-height:220px;"></canvas>
+          </div>
+          <div style="padding:8px 20px 16px;" id="rvDonutLegend"></div>
+        </div>
+
+        <!-- Desglose por categoría (tabla) -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Desglose por Categoría</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="rv-cat-table">
+              <thead>
+                <tr>
+                  <th>Categoría</th>
+                  <th>Transacciones</th>
+                  <th style="text-align:right;">Total</th>
+                  <th style="text-align:right;">% del gasto</th>
+                </tr>
+              </thead>
+              <tbody id="rvCatTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Comparativa mensual (tabla) -->
+        <div class="panel rv-chart-full">
+          <div class="panel-head">
+            <span class="panel-title">Comparativa Mensual</span>
+            <span class="panel-badge">Últimos 6 meses</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="rv-month-table" id="rvMonthTable">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th>Ingresos</th>
+                  <th>Gastos</th>
+                  <th>Ahorro neto</th>
+                  <th>Tasa de ahorro</th>
+                  <th>Transacciones</th>
+                  <th>vs. mes anterior</th>
+                </tr>
+              </thead>
+              <tbody id="rvMonthTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>

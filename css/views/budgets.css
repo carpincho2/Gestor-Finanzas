@@ -1,0 +1,203 @@
+/* ===== PRESUPUESTOS VIEW ===== */
+#budgetView { display:flex; flex-direction:column; gap:20px; }
+
+.budget-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Header strip */
+.bv-header-strip {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 24px;
+}
+
+.bv-month-nav {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.bv-month-btn {
+  width: 30px; height: 30px;
+  border-radius: 7px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: all .15s;
+}
+
+.bv-month-btn:hover { border-color: var(--text); color: var(--text); }
+.bv-month-label { font-size: 15px; font-weight: 700; min-width: 140px; text-align: center; }
+
+.bv-summary-nums {
+  display: flex; gap: 24px;
+}
+
+.bv-num-item { text-align: right; }
+.bv-num-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+.bv-num-val { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; margin-top: 2px; }
+
+/* Budget cards list */
+.bv-cards { display: flex; flex-direction: column; gap: 12px; }
+
+.bv-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  transition: transform .18s, box-shadow .18s;
+  position: relative;
+  overflow: hidden;
+}
+
+.bv-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+.bv-card-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.bv-card-left { display: flex; align-items: center; gap: 12px; }
+
+.bv-card-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+
+.bv-card-name { font-size: 15px; font-weight: 700; }
+.bv-card-sub  { font-size: 11px; font-family: var(--font-mono); color: var(--muted); margin-top: 2px; }
+
+.bv-card-right { display: flex; align-items: center; gap: 8px; }
+
+.bv-card-pct {
+  font-size: 22px; font-weight: 600; letter-spacing: -0.3px; min-width: 60px; text-align: right;
+}
+
+.bv-card-actions { display: flex; gap: 4px; }
+
+/* Bar */
+.bv-bar-wrap { margin-bottom: 12px; }
+
+.bv-bar-bg {
+  height: 8px; border-radius: 99px;
+  background: var(--surface2); overflow: hidden;
+}
+
+.bv-bar-fill {
+  height: 100%; border-radius: 99px;
+  transition: width .7s cubic-bezier(.25,.46,.45,.94);
+}
+
+.bv-bar-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px; font-family: var(--font-mono);
+  color: var(--muted); margin-top: 6px;
+}
+
+.bv-bar-labels .spent { font-weight: 600; }
+
+/* Status badge */
+.bv-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-family: var(--font-mono);
+  padding: 3px 9px; border-radius: 20px;
+}
+
+.bv-status.ok      { background: rgba(0,229,160,.12); color: var(--accent); }
+.bv-status.warn    { background: rgba(255,184,74,.12); color: var(--warn); }
+.bv-status.danger  { background: rgba(255,74,107,.12); color: var(--danger); }
+.bv-status.empty   { background: var(--surface2); color: var(--muted); }
+
+/* Dot indicator */
+.bv-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+}
+
+/* Tx breakdown inside card */
+.bv-tx-list {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 10px;
+  display: none;
+}
+
+.bv-card.expanded .bv-tx-list { display: block; }
+
+.bv-tx-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.bv-tx-item:last-child { border-bottom: none; }
+.bv-tx-desc { color: var(--text); font-weight: 500; }
+.bv-tx-date { font-family: var(--font-mono); color: var(--muted); font-size: 10px; margin-top: 1px; }
+
+.bv-tx-amt  { font-family: var(--font-mono); font-weight: 700; color: var(--danger); }
+
+.bv-expand-btn {
+  width: 100%; background: none; border: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+  padding: 6px 0 0; letter-spacing: 1px; text-transform: uppercase;
+  transition: color .15s; text-align: center; display: flex;
+  align-items: center; justify-content: center; gap: 5px;
+}
+
+.bv-expand-btn:hover { color: var(--text); }
+
+/* Right panel */
+.bv-right { display: flex; flex-direction: column; gap: 16px; }
+
+.bv-donut-wrap {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  padding: 20px 0 10px;
+}
+
+.bv-donut-center {
+  position: absolute;
+  text-align: center; pointer-events: none;
+}
+
+.bv-donut-total { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+.bv-donut-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+canvas#budgetDonut { max-width: 200px; max-height: 200px; }
+
+/* Legend */
+.bv-legend { padding: 0 20px 16px; }
+
+.bv-legend-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.bv-legend-item:last-child { border-bottom: none; }
+.bv-legend-left { display: flex; align-items: center; gap: 8px; }
+.bv-legend-dot  { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.bv-legend-name { font-weight: 600; }
+.bv-legend-val  { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+
+/* Add budget modal */
+.bv-color-grid {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
+  margin-top: 6px;
+}
+
+.bv-color-swatch {
+  width: 28px; height: 28px; border-radius: 6px;
+  cursor: pointer; border: 2px solid transparent;
+  transition: all .15s;
+}
+
+.bv-color-swatch:hover { transform: scale(1.15); }
+.bv-color-swatch.selected { border-color: var(--text); transform: scale(1.1); }
+
+

@@ -1,0 +1,199 @@
+/* ===== CUENTAS VIEW ===== */
+#cuentasView { display:flex; flex-direction:column; gap:20px; }
+
+.cv-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* Account card */
+.acc-card {
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  border: 1px solid transparent;
+}
+
+.acc-card:hover { transform: translateY(-3px); box-shadow: 0 8px 40px rgba(0,0,0,.5); }
+.acc-card.selected { border-color: rgba(255,255,255,.25); }
+
+.acc-card-shine {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.acc-card-type {
+  font-size: 10px; font-family: var(--font-mono);
+  letter-spacing: 2px; text-transform: uppercase;
+  opacity: .7; margin-bottom: 16px;
+}
+
+.acc-card-name { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; margin-bottom: 4px; }
+.acc-card-bank { font-size: 12px; opacity: .6; font-family: var(--font-mono); }
+
+.acc-card-balance {
+  font-size: 26px; font-weight: 600; letter-spacing: -0.3px;
+  margin-top: 20px; line-height: 1;
+}
+
+.acc-card-change {
+  font-size: 11px; font-family: var(--font-mono);
+  opacity: .6; margin-top: 6px;
+}
+
+.acc-card-actions {
+  position: absolute; top: 16px; right: 16px;
+  display: flex; gap: 4px; opacity: 0;
+  transition: opacity .15s;
+}
+
+.acc-card:hover .acc-card-actions { opacity: 1; }
+
+.acc-action-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.8); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+
+.acc-action-btn:hover { background: rgba(0,0,0,.5); color: #fff; }
+
+/* Add account card */
+.acc-add-card {
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border);
+  padding: 24px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; cursor: pointer;
+  color: var(--muted);
+  transition: all .2s; min-height: 160px;
+}
+
+.acc-add-card:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,.04); }
+
+.acc-add-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  border: 2px dashed currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; transition: transform .2s;
+}
+
+.acc-add-card:hover .acc-add-icon { transform: scale(1.1); }
+
+/* Main content grid */
+.cv-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Transfer panel */
+.cv-transfer {
+  background: var(--surface2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+
+.cv-transfer-title {
+  font-size: 12px; font-family: var(--font-mono);
+  color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cv-transfer-row {
+  display: grid; grid-template-columns: 1fr 36px 1fr;
+  gap: 8px; align-items: end; margin-bottom: 10px;
+}
+
+.cv-arrow-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--border); border: none; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; transition: all .15s;
+  margin-bottom: 0;
+}
+
+.cv-arrow-btn:hover { background: var(--accent); color: #0b0e13; }
+
+/* Account detail panel (right) */
+.cv-detail { display: flex; flex-direction: column; gap: 16px; }
+
+.cv-detail-stat {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+
+.cv-detail-stat:last-child { border-bottom: none; }
+.cv-detail-stat-label { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+.cv-detail-stat-val   { font-size: 13px; font-weight: 700; font-family: var(--font-mono); }
+
+/* Mini tx list for account */
+.cv-tx-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+
+.cv-tx-item:last-child { border-bottom: none; }
+
+/* Account type colors */
+.acc-efectivo  { background: linear-gradient(135deg, #1a2a1a, #0f3d2a); }
+.acc-banco     { background: linear-gradient(135deg, #1a1f35, #0f1d4d); }
+.acc-ahorro    { background: linear-gradient(135deg, #2a1f10, #4d3200); }
+.acc-inversion { background: linear-gradient(135deg, #1e1035, #2d1060); }
+.acc-tarjeta   { background: linear-gradient(135deg, #2a1010, #4d0f0f); }
+.acc-digital   { background: linear-gradient(135deg, #0f2a2a, #0f3d3a); }
+.acc-custom    { background: linear-gradient(135deg, #1a1a2a, #2a1a3a); }
+
+/* Accent lines per type */
+.acc-efectivo  .acc-card-balance { color: #00e5a0; }
+.acc-banco     .acc-card-balance { color: #5b8cff; }
+.acc-ahorro    .acc-card-balance { color: #ffb84a; }
+.acc-inversion .acc-card-balance { color: #a78bfa; }
+.acc-tarjeta   .acc-card-balance { color: #ff4a6b; }
+.acc-digital   .acc-card-balance { color: #22d3ee; }
+.acc-custom    .acc-card-balance { color: #e8edf5; }
+
+/* Net worth bar */
+.cv-worth-bar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+}
+
+.cv-worth-label {
+  font-size: 10px; font-family: var(--font-mono);
+  color: var(--muted); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.cv-worth-total {
+  font-size: 32px; font-weight: 600; letter-spacing: -0.3px;
+  color: var(--accent); margin-bottom: 16px;
+}
+
+.cv-worth-breakdown {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+
+.cv-worth-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 5px 10px;
+  font-size: 11px; font-family: var(--font-mono);
+}
+
+.cv-worth-chip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+
+

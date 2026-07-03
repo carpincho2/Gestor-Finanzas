@@ -1,0 +1,116 @@
+<!-- Main scanner grid -->
+      <div class="sc-main-grid">
+
+        <!-- Left: camera + upload -->
+        <div class="sc-left">
+
+          <!-- Tabs: Cámara / Subir archivo -->
+          <div class="sc-tabs">
+            <button class="sc-tab active" id="scTabCamera" onclick="scSwitchTab('camera')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              Usar Cámara
+            </button>
+            <button class="sc-tab" id="scTabUpload" onclick="scSwitchTab('upload')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Subir Foto
+            </button>
+          </div>
+
+          <!-- Camera panel -->
+          <div id="scCameraPanel" class="panel sc-camera-panel">
+            <div class="sc-video-wrap" id="scVideoWrap">
+              <video id="scVideo" autoplay muted playsinline></video>
+              <div class="sc-cam-overlay">
+                <div class="sc-cam-corner tl"></div>
+                <div class="sc-cam-corner tr"></div>
+                <div class="sc-cam-corner bl"></div>
+                <div class="sc-cam-corner br"></div>
+                <div class="sc-cam-scan-line" id="scScanLine"></div>
+              </div>
+              <canvas id="scCanvas" style="display:none;"></canvas>
+            </div>
+            <div class="sc-cam-controls">
+              <button class="btn btn-ghost" id="scBtnToggleCam" onclick="scToggleCamera()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span id="scCamBtnLabel">Activar Cámara</span>
+              </button>
+              <button class="btn btn-primary sc-capture-btn" id="scBtnCapture" onclick="scCapturePhoto()" disabled>
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                Capturar y Escanear
+              </button>
+            </div>
+          </div>
+
+          <!-- Upload panel -->
+          <div id="scUploadPanel" class="panel sc-upload-panel" style="display:none;">
+            <div class="sc-dropzone" id="scDropzone" onclick="document.getElementById('scFileInput').click()" ondragover="scDragOver(event)" ondragleave="scDragLeave(event)" ondrop="scDrop(event)">
+              <div class="sc-drop-icon">
+                <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="sc-drop-text">Arrastrá tu foto aquí</div>
+              <div class="sc-drop-sub">o hacé click para seleccionar</div>
+              <div class="sc-drop-formats">JPG, PNG, WEBP, HEIC — máx. 10MB</div>
+            </div>
+            <input type="file" id="scFileInput" accept="image/*" style="display:none;" onchange="scFileSelected(event)">
+          </div>
+
+          <!-- Preview de imagen capturada/subida -->
+          <div id="scPreviewSection" style="display:none;">
+            <div class="panel sc-preview-panel">
+              <div class="panel-head">
+                <span class="panel-title">Vista previa del ticket</span>
+                <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="scResetCapture()">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Nueva foto
+                </button>
+              </div>
+              <div style="padding:20px;">
+                <img id="scPreviewImg" style="width:100%;border-radius:12px;max-height:400px;object-fit:contain;background:#0b0e13;" alt="Ticket preview"/>
+              </div>
+              <div style="padding:0 20px 20px;">
+                <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:14px;padding:12px;" onclick="scScanTicket()" id="scScanBtn">
+                  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+                  Escanear Ticket
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right: tips + history -->
+        <div class="sc-right">
+
+          <!-- Tips -->
+          <div class="panel" style="padding:24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">📸 Tips para mejor resultado</div>
+            <div class="sc-tips-list">
+              <div class="sc-tip">
+                <div class="sc-tip-num">01</div>
+                <div class="sc-tip-text">Asegurate de que el ticket esté bien iluminado y sin sombras</div>
+              </div>
+              <div class="sc-tip">
+                <div class="sc-tip-num">02</div>
+                <div class="sc-tip-text">Encuadrá todo el ticket en la foto, incluyendo bordes</div>
+              </div>
+              <div class="sc-tip">
+                <div class="sc-tip-num">03</div>
+                <div class="sc-tip-text">Mantené la cámara estable y el ticket plano para evitar distorsión</div>
+              </div>
+              <div class="sc-tip">
+                <div class="sc-tip-num">04</div>
+                <div class="sc-tip-text">Si el texto no se lee bien, podés editarlo manualmente antes de guardar</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scanner stats -->
+          <div class="panel" style="padding:24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">📊 Historial de escaneos</div>
+            <div id="scHistoryList">
+              <div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:16px 0;">Aún no escaneaste ningún ticket.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>

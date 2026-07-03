@@ -1,0 +1,68 @@
+<!-- Patrimonio neto -->
+      <div class="cv-worth-bar">
+        <div class="cv-worth-label">Patrimonio Neto</div>
+        <div class="cv-worth-total" id="cvNetWorth">$0</div>
+        <div class="cv-worth-breakdown" id="cvWorthBreakdown"></div>
+      </div>
+
+      <!-- Cards de cuentas -->
+      <div class="cv-top-grid" id="cvCards"></div>
+
+      <!-- Grid: movimientos + detalle -->
+      <div class="cv-main-grid">
+
+        <!-- Izquierda: transferencia + movimientos de la cuenta -->
+        <div>
+          <!-- Transferencia entre cuentas -->
+          <div class="cv-transfer">
+            <div class="cv-transfer-title">↔ Transferencia entre cuentas</div>
+            <div class="cv-transfer-row">
+              <div>
+                <label class="field-label">Desde</label>
+                <select class="field-select" id="cvTransferFrom"></select>
+              </div>
+              <button class="cv-arrow-btn" onclick="swapTransfer()">⇄</button>
+              <div>
+                <label class="field-label">Hacia</label>
+                <select class="field-select" id="cvTransferTo"></select>
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom:10px;">
+              <div>
+                <label class="field-label">Monto ($)</label>
+                <input class="field-input" id="cvTransferAmount" type="number" min="1" placeholder="0"/>
+              </div>
+              <div>
+                <label class="field-label">Descripción</label>
+                <input class="field-input" id="cvTransferDesc" type="text" placeholder="Ej: Paso a ahorro"/>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doTransfer()">
+              Transferir
+            </button>
+          </div>
+
+          <!-- Movimientos de la cuenta seleccionada -->
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title" id="cvTxPanelTitle">Movimientos</span>
+              <span class="panel-badge" id="cvTxCount">—</span>
+            </div>
+            <div id="cvTxList" style="padding:0 8px 12px;"></div>
+          </div>
+        </div>
+
+        <!-- Derecha: detalle de la cuenta seleccionada -->
+        <div class="cv-detail">
+          <div class="panel" id="cvDetailPanel">
+            <div class="panel-head">
+              <span class="panel-title">Detalle de cuenta</span>
+            </div>
+            <div style="padding:20px 24px;" id="cvDetailBody">
+              <div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;padding:20px 0;">
+                Seleccioná una cuenta para ver el detalle.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

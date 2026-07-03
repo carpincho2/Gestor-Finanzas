@@ -1,0 +1,84 @@
+<div class="ai-insights-layout">
+
+        <!-- Left col: chat + quick prompts -->
+        <div class="ai-left">
+
+          <!-- Header card -->
+          <div class="ai-hero-card">
+            <div class="ai-hero-glow"></div>
+            <div class="ai-hero-content">
+              <div class="ai-hero-icon">✦</div>
+              <div>
+                <div class="ai-hero-title">Asistente Financiero IA</div>
+                <div class="ai-hero-sub">Analizá tus finanzas con inteligencia artificial. Hacé preguntas, pedí consejos o generá un análisis completo.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick prompts -->
+          <div class="ai-quick-grid" id="aiQuickGrid">
+            <button class="ai-quick-btn" onclick="aiQuickPrompt(this,'resumen')">
+              <span class="ai-quick-icon">📊</span>
+              <span class="ai-quick-label">Resumen del mes</span>
+            </button>
+            <button class="ai-quick-btn" onclick="aiQuickPrompt(this,'gastos')">
+              <span class="ai-quick-icon">💸</span>
+              <span class="ai-quick-label">¿En qué gasto más?</span>
+            </button>
+            <button class="ai-quick-btn" onclick="aiQuickPrompt(this,'ahorro')">
+              <span class="ai-quick-icon">🎯</span>
+              <span class="ai-quick-label">Consejos de ahorro</span>
+            </button>
+            <button class="ai-quick-btn" onclick="aiQuickPrompt(this,'presupuesto')">
+              <span class="ai-quick-icon">📋</span>
+              <span class="ai-quick-label">Revisar presupuesto</span>
+            </button>
+            <button class="ai-quick-btn" onclick="aiQuickPrompt(this,'tendencias')">
+              <span class="ai-quick-icon">📈</span>
+              <span class="ai-quick-label">Tendencias</span>
+            </button>
+            <button class="ai-quick-btn" onclick="aiQuickPrompt(this,'alerta')">
+              <span class="ai-quick-icon">🚨</span>
+              <span class="ai-quick-label">Alertas y riesgos</span>
+            </button>
+          </div>
+
+          <!-- Chat area -->
+          <div class="ai-chat-panel panel">
+            <div class="ai-chat-messages" id="aiChatMessages">
+              <div class="ai-msg ai-msg-bot">
+                <div class="ai-msg-avatar">✦</div>
+                <div class="ai-msg-bubble">
+                  ¡Hola! Soy tu asistente financiero. Puedo analizar tus transacciones, presupuestos y objetivos para darte insights personalizados.<br><br>
+                  Podés preguntarme cualquier cosa sobre tus finanzas o usar los accesos rápidos de arriba. ¿En qué te ayudo hoy?
+                </div>
+              </div>
+            </div>
+            <div class="ai-chat-input-wrap">
+              <input class="ai-chat-input" id="aiChatInput" type="text" placeholder="Preguntame sobre tus finanzas…" onkeydown="if(event.key==='Enter')aiSendMessage()"/>
+              <button class="ai-send-btn" id="aiSendBtn" onclick="aiSendMessage()">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right col: auto-generated insight cards -->
+        <div class="ai-right">
+          <div class="ai-right-header">
+            <div class="ai-right-title">Análisis Automático</div>
+            <button class="btn btn-ghost ai-refresh-btn" id="aiRefreshBtn" onclick="aiGenerateCards()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Actualizar
+            </button>
+          </div>
+          <div class="ai-cards-list" id="aiCardsList">
+            <div class="ai-cards-empty">
+              <div style="font-size:32px;margin-bottom:12px;">✦</div>
+              <div style="font-size:13px;color:var(--muted);font-family:var(--font-mono);">Presioná "Actualizar" para<br>generar análisis con IA</div>
+            </div>
+          </div>
+        </div>
+
+      </div>

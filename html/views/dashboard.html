@@ -1,0 +1,115 @@
+<!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card green fade-in">
+        <div class="stat-label">Saldo Total</div>
+        <div class="stat-value green" id="statBalance">$0</div>
+        <div class="stat-change"><span class="up" id="balanceChange">—</span></div>
+      </div>
+      <div class="stat-card green fade-in">
+        <div class="stat-label">Ingresos del Mes</div>
+        <div class="stat-value green" id="statIncome">$0</div>
+        <div class="stat-change"><span class="up" id="incomeChange">este mes</span></div>
+      </div>
+      <div class="stat-card red fade-in">
+        <div class="stat-label">Gastos del Mes</div>
+        <div class="stat-value red" id="statExpenses">$0</div>
+        <div class="stat-change"><span class="down" id="expensesChange">este mes</span></div>
+      </div>
+      <div class="stat-card blue fade-in">
+        <div class="stat-label">Ahorro Neto</div>
+        <div class="stat-value blue" id="statSavings">$0</div>
+        <div class="stat-change"><span id="savingsChange" class="up">—</span></div>
+      </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="content-grid">
+
+      <!-- Left: Chart + Transactions -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <!-- Chart Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Flujo de Caja</span>
+            <div class="chart-tabs">
+              <button class="chart-tab active" onclick="setChartPeriod(this,'semana')">7D</button>
+              <button class="chart-tab" onclick="setChartPeriod(this,'mes')">30D</button>
+              <button class="chart-tab" onclick="setChartPeriod(this,'año')">12M</button>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Transactions Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Últimas Transacciones</span>
+            <span class="panel-badge" id="txCount">0 registros</span>
+          </div>
+          <div class="tx-list" id="txList">
+            <div style="padding:32px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+              Sin transacciones aún.<br/>Agregá una usando el botón de arriba.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-col">
+
+        <!-- Quick Add -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Agregar Rápido</span>
+          </div>
+          <div class="quick-add">
+            <div class="type-toggle">
+              <button class="type-btn active-expense" id="typeExpBtn" onclick="setType('expense')">— Gasto</button>
+              <button class="type-btn" id="typeIncBtn" onclick="setType('income')">+ Ingreso</button>
+            </div>
+            <div class="form-full">
+              <label class="field-label">Descripción</label>
+              <input class="field-input" id="qDesc" type="text" placeholder="Ej: Almuerzo, Sueldo…"/>
+            </div>
+            <div class="form-row">
+              <div>
+                <label class="field-label">Monto ($)</label>
+                <input class="field-input" id="qAmount" type="number" min="0" placeholder="0.00"/>
+              </div>
+              <div>
+                <label class="field-label">Categoría</label>
+                <select class="field-select" id="qCat">
+                  <option value="Alimentación">🍔 Alimentación</option>
+                  <option value="Transporte">🚗 Transporte</option>
+                  <option value="Entretenimiento">🎬 Entretenimiento</option>
+                  <option value="Salud">💊 Salud</option>
+                  <option value="Hogar">🏠 Hogar</option>
+                  <option value="Ropa">👕 Ropa</option>
+                  <option value="Sueldo">💼 Sueldo</option>
+                  <option value="Freelance">💻 Freelance</option>
+                  <option value="Inversión">📈 Inversión</option>
+                  <option value="Otros">📦 Otros</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="quickAdd()">
+              Registrar Transacción
+            </button>
+          </div>
+        </div>
+
+        <!-- Budgets Panel -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Presupuestos</span>
+            <span class="panel-badge">Este mes</span>
+          </div>
+          <div class="budget-list" id="budgetList"></div>
+        </div>
+
+      </div>
+    </div><!-- /content-grid -->

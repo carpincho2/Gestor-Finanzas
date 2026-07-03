@@ -1,0 +1,62 @@
+<!-- Header strip: navegación de mes + resumen -->
+      <div class="bv-header-strip">
+        <div class="bv-month-nav">
+          <button class="bv-month-btn" onclick="changeBudgetMonth(-1)">‹</button>
+          <div class="bv-month-label" id="bvMonthLabel">—</div>
+          <button class="bv-month-btn" onclick="changeBudgetMonth(1)">›</button>
+        </div>
+        <div class="bv-summary-nums">
+          <div class="bv-num-item">
+            <div class="bv-num-label">Presupuestado</div>
+            <div class="bv-num-val" id="bvTotalLimit" style="color:var(--accent3)">$0</div>
+          </div>
+          <div class="bv-num-item">
+            <div class="bv-num-label">Gastado</div>
+            <div class="bv-num-val" id="bvTotalSpent" style="color:var(--danger)">$0</div>
+          </div>
+          <div class="bv-num-item">
+            <div class="bv-num-label">Disponible</div>
+            <div class="bv-num-val" id="bvTotalLeft">$0</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="openBudgetModal()" style="font-size:12px;padding:8px 16px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nuevo Presupuesto
+        </button>
+      </div>
+
+      <!-- Grid: tarjetas + panel lateral -->
+      <div class="budget-view-grid">
+
+        <!-- Cards -->
+        <div class="bv-cards" id="bvCards">
+          <div style="padding:40px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+            Cargando presupuestos…
+          </div>
+        </div>
+
+        <!-- Right panel: dona + leyenda -->
+        <div class="bv-right">
+          <div class="panel">
+            <div class="panel-head">
+              <span class="panel-title">Distribución</span>
+              <span class="panel-badge" id="bvDonutMonth">—</span>
+            </div>
+            <div class="bv-donut-wrap">
+              <canvas id="budgetDonut"></canvas>
+              <div class="bv-donut-center">
+                <div class="bv-donut-total" id="bvDonutTotal">$0</div>
+                <div class="bv-donut-label">gastado</div>
+              </div>
+            </div>
+            <div class="bv-legend" id="bvLegend"></div>
+          </div>
+
+          <!-- Tip card -->
+          <div class="panel" style="padding:20px 24px;">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Consejo</div>
+            <div id="bvTip" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
+          </div>
+        </div>
+
+      </div>

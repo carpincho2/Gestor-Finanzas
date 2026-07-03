@@ -1,0 +1,212 @@
+/* ===== PERFIL VIEW ===== */
+
+.perfil-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 900px;
+  margin: 0 auto;
+  animation: fadeUp 0.4s ease forwards;
+}
+
+/* Hero / Banner Superior */
+.perfil-hero {
+  position: relative;
+  border-radius: var(--radius-xl);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.perfil-hero-glow {
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: var(--accent);
+  opacity: 0.15;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  animation: pulseGlow 6s infinite alternate ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(1) translate(0, 0); opacity: 0.15; }
+  100% { transform: scale(1.2) translate(-20px, 20px); opacity: 0.25; }
+}
+
+.perfil-avatar-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.perfil-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(0, 240, 168, 0.1);
+  color: var(--accent);
+  font-size: 36px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  border: 2px solid rgba(0, 240, 168, 0.2);
+}
+
+.perfil-avatar-ring {
+  position: absolute;
+  top: -8px; left: -8px; right: -8px; bottom: -8px;
+  border-radius: 50%;
+  border: 2px dashed rgba(0, 240, 168, 0.3);
+  animation: rotateRing 15s linear infinite;
+}
+
+@keyframes rotateRing {
+  100% { transform: rotate(360deg); }
+}
+
+.perfil-info-main {
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.perfil-name {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.perfil-email {
+  font-size: 15px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.perfil-badge-pro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  width: fit-content;
+}
+
+/* Grid Principal */
+.perfil-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .perfil-grid {
+    grid-template-columns: 1fr;
+  }
+  .perfil-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 20px;
+  }
+  .perfil-info-main {
+    align-items: center;
+  }
+}
+
+.perfil-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Paneles del Perfil */
+.perfil-panel {
+  background: rgba(13, 14, 21, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.perfil-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  border-color: rgba(255,255,255,0.08);
+}
+
+.perfil-panel-body {
+  padding: 24px;
+}
+
+/* Input Fields - Modernized */
+.perfil-input, .perfil-select {
+  background: rgba(0,0,0,0.2) !important;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.perfil-input:focus, .perfil-select:focus {
+  border-color: var(--accent) !important;
+  background: rgba(0, 240, 168, 0.02) !important;
+}
+
+/* Danger Zone */
+.perfil-danger-zone {
+  border-color: rgba(255, 60, 100, 0.2);
+  background: rgba(255, 60, 100, 0.02);
+}
+
+.perfil-danger-zone:hover {
+  border-color: rgba(255, 60, 100, 0.4);
+}
+
+.perfil-danger-text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.perfil-danger-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Security Shield */
+.perfil-security-shield {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(0, 240, 168, 0.05);
+  border: 1px solid rgba(0, 240, 168, 0.1);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+}
+
+.perfil-shield-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}

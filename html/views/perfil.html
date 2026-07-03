@@ -1,0 +1,110 @@
+<div class="perfil-layout">
+  
+  <!-- Encabezado / Banner Superior -->
+  <div class="perfil-hero">
+    <div class="perfil-hero-glow"></div>
+    <div class="perfil-hero-content">
+      <div class="perfil-avatar-wrap">
+        <div id="profileAvatar" class="perfil-avatar">JP</div>
+        <div class="perfil-avatar-ring"></div>
+      </div>
+      <div class="perfil-info-main">
+        <h2 id="profileNameHeader" class="perfil-name">Cargando...</h2>
+        <div id="profileEmailHeader" class="perfil-email">cargando@email.com</div>
+        <div class="perfil-badge-pro">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Plan Gratuito
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal (Grid) -->
+  <div class="perfil-grid">
+    
+    <!-- Columna Izquierda: Información Personal -->
+    <div class="perfil-col">
+      <div class="panel perfil-panel">
+        <div class="panel-head">
+          <span class="panel-title">Información Personal</span>
+        </div>
+        <div class="perfil-panel-body">
+          <div class="form-full">
+            <label class="field-label">Nombre Completo</label>
+            <input class="field-input perfil-input" id="profileNameInput" type="text" placeholder="Tu nombre"/>
+          </div>
+          <div class="form-full" style="margin-top: 14px;">
+            <label class="field-label">Moneda Principal</label>
+            <select class="field-select perfil-select">
+              <option value="ARS">🇦🇷 ARS - Pesos Argentinos</option>
+              <option value="USD">🇺🇸 USD - Dólares</option>
+              <option value="EUR">🇪🇺 EUR - Euros</option>
+            </select>
+          </div>
+          <div style="margin-top: 24px;">
+            <button class="btn btn-primary" onclick="profileUpdateInfo()" style="width:100%;justify-content:center;">
+              Guardar Cambios
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zona de Peligro -->
+      <div class="panel perfil-panel perfil-danger-zone">
+        <div class="panel-head">
+          <span class="panel-title" style="color:var(--danger);">Zona de Peligro</span>
+        </div>
+        <div class="perfil-panel-body">
+          <p class="perfil-danger-text">
+            Si querés cerrar tu sesión actual o borrar permanentemente tu cuenta con todos tus datos de transacciones, presupuestos y objetivos, podés hacerlo desde acá. Esta acción no se puede deshacer.
+          </p>
+          <div class="perfil-danger-actions">
+            <button class="btn btn-ghost" onclick="authLogout()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Cerrar Sesión
+            </button>
+            <button class="btn btn-danger" onclick="authConfirmDeleteAccount()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Eliminar Cuenta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna Derecha: Seguridad -->
+    <div class="perfil-col">
+      <div class="panel perfil-panel" id="profilePasswordPanel">
+        <div class="panel-head">
+          <span class="panel-title">Seguridad y Contraseña</span>
+        </div>
+        <div class="perfil-panel-body">
+          <div class="perfil-security-shield">
+            <svg width="40" height="40" fill="none" stroke="var(--accent)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div class="perfil-shield-text">Tu cuenta está protegida.<br/>Actualizá tu clave periódicamente.</div>
+          </div>
+
+          <div class="form-full" id="profilePasswordCurrentWrap" style="margin-top:20px;">
+            <label class="field-label">Contraseña Actual</label>
+            <input class="field-input perfil-input" id="profilePasswordCurrent" type="password" placeholder="••••••••"/>
+          </div>
+          <div class="form-full" style="margin-top: 14px;">
+            <label class="field-label">Nueva Contraseña</label>
+            <input class="field-input perfil-input" id="profilePasswordNew" type="password" placeholder="Mínimo 6 caracteres"/>
+          </div>
+          <div class="form-full" style="margin-top: 14px;">
+            <label class="field-label">Confirmar Nueva Contraseña</label>
+            <input class="field-input perfil-input" id="profilePasswordNewConfirm" type="password" placeholder="Repetí tu contraseña"/>
+          </div>
+          
+          <div style="margin-top: 24px;">
+            <button class="btn btn-ghost" onclick="profileUpdatePassword()" style="width:100%;justify-content:center;border-color:var(--border);">
+              Actualizar Contraseña
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -362,7 +362,7 @@ body::before {
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 10px 40px rgba(0,0,0,0.2);
 }
 

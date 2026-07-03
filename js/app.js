@@ -393,8 +393,33 @@ function setType(type) {
   currentType = type;
   const expBtn = document.getElementById('typeExpBtn');
   const incBtn = document.getElementById('typeIncBtn');
-  expBtn.className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
-  incBtn.className = 'type-btn' + (type === 'income' ? ' active-income' : '');
+  const catSelect = document.getElementById('qCat');
+
+  if (type === 'expense') {
+    expBtn.classList.add('active');
+    incBtn.classList.remove('active');
+    catSelect.innerHTML = `
+      <option value="Alimentación">🍔 Alimentación</option>
+      <option value="Transporte">🚗 Transporte</option>
+      <option value="Entretenimiento">🎬 Entretenimiento</option>
+      <option value="Salud">💊 Salud</option>
+      <option value="Hogar">🏠 Hogar</option>
+      <option value="Ropa">👕 Ropa</option>
+      <option value="Inversión">📈 Inversión</option>
+      <option value="Otros">📦 Otros</option>
+    `;
+  } else {
+    incBtn.classList.add('active');
+    expBtn.classList.remove('active');
+    catSelect.innerHTML = `
+      <option value="Sueldo">💼 Sueldo</option>
+      <option value="Freelance">💻 Freelance</option>
+      <option value="Ventas">🛒 Ventas</option>
+      <option value="Inversión">📈 Inversión</option>
+      <option value="Otros">📦 Otros</option>
+    `;
+  }
+  initCustomSelects(catSelect.parentNode);
 }
 
 function quickAdd() {

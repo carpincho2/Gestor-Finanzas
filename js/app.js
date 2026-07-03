@@ -5497,6 +5497,14 @@ function initCustomSelects(container = document) {
     const wrapper = document.createElement('div');
     wrapper.className = 'custom-select-wrapper';
     
+    // Heredar anchos y márgenes para que no rompa flexbox
+    if (select.style.width) wrapper.style.width = select.style.width;
+    else wrapper.style.width = '100%'; // Default behavior for modals
+    
+    if (select.style.minWidth) wrapper.style.minWidth = select.style.minWidth;
+    if (select.style.flex) wrapper.style.flex = select.style.flex;
+    if (select.style.margin) wrapper.style.margin = select.style.margin;
+    
     // Crear botón visual
     const btn = document.createElement('div');
     btn.className = 'custom-select-button';

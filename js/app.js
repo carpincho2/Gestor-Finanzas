@@ -406,8 +406,8 @@ function quickAdd() {
   if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
 
   addTransaction({ type: currentType, desc, amount, cat, date: new Date().toISOString().split('T')[0] });
-  document.getElementById('qDesc').value = '';
   document.getElementById('qAmount').value = '';
+  updateCustomSelectDisplay(document.getElementById('qCat'));
   showToast('✅ Transacción registrada');
 }
 
@@ -428,8 +428,33 @@ function setModalType(type) {
   mCurrentType = type;
   const expBtn = document.getElementById('mTypeExpBtn');
   const incBtn = document.getElementById('mTypeIncBtn');
-  expBtn.className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
-  incBtn.className = 'type-btn' + (type === 'income' ? ' active-income' : '');
+  const catSelect = document.getElementById('mCat');
+  
+  if (type === 'expense') {
+    expBtn.classList.add('active');
+    incBtn.classList.remove('active');
+    catSelect.innerHTML = `
+      <option value="Alimentación">🍔 Alimentación</option>
+      <option value="Transporte">🚗 Transporte</option>
+      <option value="Entretenimiento">🎬 Entretenimiento</option>
+      <option value="Salud">💊 Salud</option>
+      <option value="Hogar">🏠 Hogar</option>
+      <option value="Ropa">👕 Ropa</option>
+      <option value="Inversión">📈 Inversión</option>
+      <option value="Otros">📦 Otros</option>
+    `;
+  } else {
+    incBtn.classList.add('active');
+    expBtn.classList.remove('active');
+    catSelect.innerHTML = `
+      <option value="Sueldo">💼 Sueldo</option>
+      <option value="Freelance">💻 Freelance</option>
+      <option value="Ventas">🛒 Ventas</option>
+      <option value="Inversión">📈 Inversión</option>
+      <option value="Otros">📦 Otros</option>
+    `;
+  }
+  initCustomSelects(catSelect.parentNode);
 }
 
 function addFromModal() {
@@ -836,6 +861,7 @@ function openEditModal(id) {
   document.getElementById('eDesc').value = t.desc;
   document.getElementById('eAmount').value = t.amount;
   document.getElementById('eCat').value = t.cat;
+  updateCustomSelectDisplay(document.getElementById('eCat'));
   document.getElementById('eDate').value = t.date;
   setEditType(t.type);
 
@@ -1249,7 +1275,8 @@ function openBudgetModal(id) {
     document.getElementById('budgetModalTitle').textContent = 'Editar Presupuesto';
     document.getElementById('bmSaveBtn').textContent = 'Guardar cambios';
     const hasCat = ['Alimentación', 'Transporte', 'Entretenimiento', 'Salud', 'Hogar', 'Ropa', 'Otros'].includes(b.cat);
-    document.getElementById('bmCat').value = hasCat ? b.cat : 'custom';
+    document.getElementById('bmCat').value = b.cat;
+    updateCustomSelectDisplay(document.getElementById('bmCat'));
     if (!hasCat) {
       document.getElementById('bmCustomWrap').style.display = '';
       document.getElementById('bmCustomName').value = b.name;
@@ -1268,6 +1295,7 @@ function openBudgetModal(id) {
     document.getElementById('budgetModalTitle').textContent = 'Nuevo Presupuesto';
     document.getElementById('bmSaveBtn').textContent = 'Crear Presupuesto';
     document.getElementById('bmCat').value = 'Alimentación';
+    updateCustomSelectDisplay(document.getElementById('bmCat'));
     document.getElementById('bmCustomWrap').style.display = 'none';
     document.getElementById('bmCustomName').value = '';
     document.getElementById('bmLimit').value = '';
@@ -1968,12 +1996,16 @@ function renderCvTransferSelects() {
   fromEl.innerHTML = opts;
   toEl.innerHTML = opts;
   if (accounts.length > 1) toEl.selectedIndex = 1;
+  initCustomSelects(document.getElementById('cvTransferFrom').parentNode);
+  initCustomSelects(document.getElementById('cvTransferTo').parentNode);
 }
 
 function swapTransfer() {
   const f = document.getElementById('cvTransferFrom');
   const t = document.getElementById('cvTransferTo');
   [f.value, t.value] = [t.value, f.value];
+  updateCustomSelectDisplay(f);
+  updateCustomSelectDisplay(t);
 }
 
 async function doTransfer() {
@@ -2068,6 +2100,7 @@ function openAccModal(id) {
     document.getElementById('amSaveBtn').textContent = 'Guardar cambios';
     document.getElementById('amName').value = a.name;
     document.getElementById('amType').value = a.type;
+    updateCustomSelectDisplay(document.getElementById('amType'));
     document.getElementById('amBank').value = a.bank || '';
     document.getElementById('amBalance').value = a.balance;
     document.getElementById('amCurrency').value = a.currency || 'ARS';
@@ -2081,6 +2114,7 @@ function openAccModal(id) {
     document.getElementById('amSaveBtn').textContent = 'Crear Cuenta';
     document.getElementById('amName').value = '';
     document.getElementById('amType').value = 'banco';
+    updateCustomSelectDisplay(document.getElementById('amType'));
     document.getElementById('amBank').value = '';
     document.getElementById('amBalance').value = '';
     document.getElementById('amCurrency').value = 'ARS';
@@ -2989,6 +3023,7 @@ function openGoalModal(id) {
     document.getElementById('gmCurrent').value = g.current;
     document.getElementById('gmDeadline').value = g.deadline || '';
     document.getElementById('gmCat').value = g.cat;
+    updateCustomSelectDisplay(document.getElementById('gmCat'));
     document.getElementById('gmNotes').value = g.notes || '';
     gmSelectedColor = g.color;
     gmSelectedEmoji = g.emoji || '🎯';
@@ -3007,6 +3042,7 @@ function openGoalModal(id) {
     document.getElementById('gmCurrent').value = '0';
     document.getElementById('gmDeadline').value = '';
     document.getElementById('gmCat').value = 'Viaje';
+    updateCustomSelectDisplay(document.getElementById('gmCat'));
     document.getElementById('gmNotes').value = '';
   }
   document.getElementById('goalModalOverlay').classList.add('open');
@@ -4268,10 +4304,12 @@ function scShowResultModal(data) {
     'Ingresos (Sueldo/Freelance)', 'Ahorro / Inversiones', 'Otros'
   ];
   fCat.value = cats.includes(data.categoria) ? data.categoria : 'Otros';
+  updateCustomSelectDisplay(fCat);
 
   const pays = ['Efectivo', 'Tarjeta de débito', 'Tarjeta de crédito', 'Tarjeta Visa', 'Tarjeta Mastercard',
     'Tarjeta Amex', 'Transferencia', 'Mercado Pago', 'Cuenta DNI', 'MODO', 'Naranja X', 'QR', 'No especificado'];
   fPayment.value = pays.includes(data.forma_pago) ? data.forma_pago : 'No especificado';
+  updateCustomSelectDisplay(fPayment);
 
   // 1. Barra de confianza global (Oculta para Enfoque de Producto Premium)
   const confRow = document.getElementById('scConfidenceRow');
@@ -4317,6 +4355,7 @@ function scShowResultModal(data) {
     if (confVal < 35) {
       if (inputEl.tagName === 'SELECT') {
         inputEl.selectedIndex = 0; // Default option
+        updateCustomSelectDisplay(inputEl);
       } else {
         inputEl.value = '';
       }
@@ -5438,3 +5477,101 @@ function generateRecommendations(fields) {
 
 // Alias para compatibilidad con suites de pruebas
 const scParseTicketText_IMPROVED = scParseTicketText;
+
+/* =====================================================
+   CUSTOM SELECT UI (GLASSMORPHISM)
+   ===================================================== */
+
+function initCustomSelects(container = document) {
+  const selects = container.querySelectorAll('.field-select');
+  selects.forEach(select => {
+    // Si ya está inicializado, lo eliminamos para reconstruirlo fresco (útil si cambiaron los options)
+    if (select.nextElementSibling && select.nextElementSibling.classList.contains('custom-select-wrapper')) {
+      select.nextElementSibling.remove();
+    }
+    
+    // Ocultar select original
+    select.style.display = 'none';
+    
+    // Crear contenedor wrapper
+    const wrapper = document.createElement('div');
+    wrapper.className = 'custom-select-wrapper';
+    
+    // Crear botón visual
+    const btn = document.createElement('div');
+    btn.className = 'custom-select-button';
+    const selectedOption = select.options[select.selectedIndex];
+    btn.innerHTML = `<span>${selectedOption ? selectedOption.text : ''}</span>`;
+    
+    // Crear lista desplegable
+    const list = document.createElement('ul');
+    list.className = 'custom-select-list';
+    
+    // Llenar lista de opciones
+    Array.from(select.options).forEach((opt, idx) => {
+      const li = document.createElement('li');
+      li.className = 'custom-select-option';
+      if (idx === select.selectedIndex) li.classList.add('selected');
+      li.innerHTML = opt.text;
+      
+      li.addEventListener('click', (e) => {
+        e.stopPropagation();
+        select.selectedIndex = idx;
+        btn.querySelector('span').innerHTML = opt.text;
+        
+        // Actualizar UI
+        list.querySelectorAll('li').forEach(item => item.classList.remove('selected'));
+        li.classList.add('selected');
+        wrapper.classList.remove('open');
+        
+        // Disparar evento de cambio original para que el resto de la app reaccione (filtros, modales, etc)
+        const event = new Event('change', { bubbles: true });
+        select.dispatchEvent(event);
+      });
+      list.appendChild(li);
+    });
+    
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Cerrar otros abiertos
+      document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+        if (w !== wrapper) w.classList.remove('open');
+      });
+      wrapper.classList.toggle('open');
+    });
+    
+    wrapper.appendChild(btn);
+    wrapper.appendChild(list);
+    
+    select.parentNode.insertBefore(wrapper, select.nextSibling);
+    
+    // Guardar referencia
+    select._customSelectBtn = btn;
+    select._customSelectList = list;
+    select._customSelectWrapper = wrapper;
+  });
+}
+
+
+function updateCustomSelectDisplay(select) {
+  if (!select._customSelectBtn) return;
+  const selectedOption = select.options[select.selectedIndex];
+  if (selectedOption) {
+    select._customSelectBtn.querySelector('span').innerHTML = selectedOption.text;
+    const lis = select._customSelectList.querySelectorAll('li');
+    lis.forEach((li, idx) => {
+      if (idx === select.selectedIndex) li.classList.add('selected');
+      else li.classList.remove('selected');
+    });
+  }
+}
+
+// Cerrar select al hacer click fuera
+document.addEventListener('click', () => {
+  document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+});
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => initCustomSelects(), 100);
+});

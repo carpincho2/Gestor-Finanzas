@@ -359,6 +359,16 @@ app.add_middleware(
     https_only=IS_PRODUCTION  # True in Render (HTTPS), False in dev (HTTP)
 )
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    if IS_PRODUCTION:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
 # ============================================================
 #  DEPENDENCIES
 # ============================================================
@@ -591,8 +601,14 @@ async def change_password(request: Request, payload: PasswordChangeRequest, db: 
         if not is_valid:
             return JSONResponse(status_code=400, content={"error": "La contraseña actual es incorrecta"})
     
-    if len(payload.new_password) < 6:
-        return JSONResponse(status_code=422, content={"error": "La nueva contraseña debe tener al menos 6 caracteres"})
+    def is_strong_password(p: str) -> bool:
+        if len(p) < 8: return False
+        if not re.search(r"[A-Za-z]", p): return False
+        if not re.search(r"[0-9]", p): return False
+        return True
+        
+    if not is_strong_password(payload.new_password):
+        return JSONResponse(status_code=422, content={"error": "La contraseña debe tener al menos 8 caracteres y contener letras y números"})
     
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(payload.new_password.encode("utf-8"), salt).decode("utf-8")
@@ -601,8 +617,31 @@ async def change_password(request: Request, payload: PasswordChangeRequest, db: 
     
     return {"ok": True, "message": "Contraseña actualizada correctamente"}
 
+# ============================================================
+#  SECURITY: Rate Limiting & Anti-Timing Attacks para Login
+# ============================================================
+import time
+
+_login_attempts = {}
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_TIME_SECS = 300  # 5 minutos
+
+# Dummy hash generado con bcrypt para igualar tiempos (aprox 100ms)
+DUMMY_PASSWORD_HASH = bcrypt.hashpw(b"dummy_password_for_timing_attack_prevention", bcrypt.gensalt())
+
 @app.post("/api/auth/login")
 async def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    current_time = time.time()
+    
+    # 1. Check Rate Limiting
+    if client_ip in _login_attempts:
+        attempts, first_attempt_time = _login_attempts[client_ip]
+        if current_time - first_attempt_time > LOCKOUT_TIME_SECS:
+            _login_attempts[client_ip] = (0, current_time)
+        elif attempts >= MAX_LOGIN_ATTEMPTS:
+            return JSONResponse(status_code=429, content={"error": "Demasiados intentos. Por favor, esperá 5 minutos."})
+    
     email = payload.email.strip()
     password = payload.password
     
@@ -610,17 +649,33 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
         return JSONResponse(status_code=422, content={"error": "Email y contraseña son requeridos"})
         
     user = db.query(User).filter(User.email == email).first()
-    if not user or not user.password_hash:
-        return JSONResponse(status_code=401, content={"error": "Email o contraseña incorrectos"})
-        
-    # Verify password against bcrypt hash
+    
+    # 2. Anti-Timing Attack: Siempre verificar un hash, exista o no el usuario.
+    # Si el usuario existe y tiene hash, usamos ese. Si no, usamos el dummy.
+    hash_to_check = user.password_hash.encode("utf-8") if user and user.password_hash else DUMMY_PASSWORD_HASH
+    
     try:
-        is_valid = bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8"))
+        is_valid = bcrypt.checkpw(password.encode("utf-8"), hash_to_check)
     except Exception:
         is_valid = False
         
-    if not is_valid:
+    # Validamos si es un usuario válido real
+    if not user or not user.password_hash or not is_valid:
+        # Registrar intento fallido
+        if client_ip in _login_attempts:
+            attempts, first_time = _login_attempts[client_ip]
+            if current_time - first_time > LOCKOUT_TIME_SECS:
+                _login_attempts[client_ip] = (1, current_time)
+            else:
+                _login_attempts[client_ip] = (attempts + 1, first_time)
+        else:
+            _login_attempts[client_ip] = (1, current_time)
+            
         return JSONResponse(status_code=401, content={"error": "Email o contraseña incorrectos"})
+        
+    # Éxito: Limpiar intentos
+    if client_ip in _login_attempts:
+        del _login_attempts[client_ip]
         
     request.session["user_id"] = user.id
     request.session["email"] = user.email
@@ -646,8 +701,15 @@ async def register(request: Request, payload: RegisterRequest, db: Session = Dep
         return JSONResponse(status_code=422, content={"error": "El nombre es requerido"})
     if not email or not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
         return JSONResponse(status_code=422, content={"error": "El email no es válido"})
-    if len(password) < 6:
-        return JSONResponse(status_code=422, content={"error": "La contraseña debe tener al menos 6 caracteres"})
+        
+    def is_strong_password(p: str) -> bool:
+        if len(p) < 8: return False
+        if not re.search(r"[A-Za-z]", p): return False
+        if not re.search(r"[0-9]", p): return False
+        return True
+        
+    if not is_strong_password(password):
+        return JSONResponse(status_code=422, content={"error": "La contraseña debe tener al menos 8 caracteres y contener letras y números"})
         
     # Check if email already exists
     existing_user = db.query(User).filter(User.email == email).first()

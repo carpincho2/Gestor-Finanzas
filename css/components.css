@@ -110,6 +110,10 @@ canvas#mainChart {
   user-select: none;
 }
 
+.custom-select-wrapper.open {
+  z-index: 9999;
+}
+
 .custom-select-button {
   width: 100%;
   background: var(--surface2);

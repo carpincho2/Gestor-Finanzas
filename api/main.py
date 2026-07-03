@@ -2154,6 +2154,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Montar directorios de archivos estáticos
 app.mount("/js", StaticFiles(directory=os.path.join(BASE_DIR, "js")), name="js")
 app.mount("/css", StaticFiles(directory=os.path.join(BASE_DIR, "css")), name="css")
+app.mount("/html", StaticFiles(directory=os.path.join(BASE_DIR, "html")), name="html")
 app.mount("/mds", StaticFiles(directory=os.path.join(BASE_DIR, "mds")), name="mds")
 app.mount("/data", StaticFiles(directory=os.path.join(BASE_DIR, "data")), name="data")
 app.mount("/tests", StaticFiles(directory=os.path.join(BASE_DIR, "tests")), name="tests")

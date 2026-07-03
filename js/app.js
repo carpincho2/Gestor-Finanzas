@@ -1901,8 +1901,8 @@ async function cleanupDuplicates() {
   try {
     const res = await apiFetch("/transactions/cleanup-duplicates", { method: "POST" });
     showToast(res.message || "Duplicados eliminados.", "success");
-    await fetchTransactions(); // Recargar la lista
-    await fetchAccounts();     // Recargar saldos (por si cambiaron, aunque no deberían si eran solo duplicados visuales)
+    await loadUserData(); // Recargar la lista y cuentas
+    if (typeof applyTxFilter === "function") applyTxFilter(); // Refrescar la tabla actual
   } catch (err) {
     showToast("Error al limpiar duplicados: " + err.message, "error");
   }

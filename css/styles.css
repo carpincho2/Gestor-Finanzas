@@ -475,7 +475,10 @@ canvas#mainChart {
 }
 
 .field-input:focus, .field-select:focus { border-color: var(--accent); }
-.field-select option { background:var(--surface2); }
+.field-select option { 
+  background-color: var(--surface); 
+  color: var(--text); 
+}
 
 .type-toggle {
   display:grid; grid-template-columns:1fr 1fr;

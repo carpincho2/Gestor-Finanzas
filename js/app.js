@@ -1899,7 +1899,7 @@ async function cleanupDuplicates() {
   }
   
   try {
-    const res = await apiFetch("/api/transactions/cleanup-duplicates", { method: "POST" });
+    const res = await apiFetch("/transactions/cleanup-duplicates", { method: "POST" });
     showToast(res.message || "Duplicados eliminados.", "success");
     await fetchTransactions(); // Recargar la lista
     await fetchAccounts();     // Recargar saldos (por si cambiaron, aunque no deberían si eran solo duplicados visuales)

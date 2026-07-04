@@ -18,7 +18,7 @@ async function loadViews() {
     try {
       const el = document.getElementById(id);
       if (el) {
-        const res = await fetch(`html/views/${file}.html`);
+        const res = await fetch(`html/views/${file}.html?v=${Date.now()}`);
         el.innerHTML = await res.text();
       }
     } catch (e) {

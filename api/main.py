@@ -736,8 +736,16 @@ async def register(request: Request, payload: RegisterRequest, db: Session = Dep
     db.commit()
     db.refresh(new_user)
     
-    # Los usuarios nuevos inician con cuentas y balances en cero.
-    # (El código de datos semilla fue removido)
+    # Los usuarios nuevos inician con una cuenta de efectivo por defecto.
+    default_account = Account(
+        user_id=new_user.id,
+        name="Efectivo",
+        type="efectivo",
+        balance=0.0,
+        currency="ARS"
+    )
+    db.add(default_account)
+    db.commit()
     
     request.session["user_id"] = new_user.id
     request.session["email"] = new_user.email
@@ -819,8 +827,16 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
         db.commit()
         db.refresh(user)
         
-        # Los usuarios nuevos inician en cero.
-        
+        # Los usuarios nuevos inician con una cuenta de efectivo por defecto.
+        default_account = Account(
+            user_id=user.id,
+            name="Efectivo",
+            type="efectivo",
+            balance=0.0,
+            currency="ARS"
+        )
+        db.add(default_account)
+        db.commit()
     request.session["user_id"] = user.id
     request.session["email"] = user.email
     

@@ -374,21 +374,30 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             date_str = payment.get("date_approved") or datetime.utcnow().isoformat()
             date = date_str[:10]  # YYYY-MM-DD
 
-            # Determinar tipo: por defecto los pagos en este endpoint suelen ser cobros (ingresos)
-            payer_email = payment.get("payer", {}).get("email", "")
-            payer_id = str(payment.get("payer", {}).get("id", ""))
-            collector_id = str(payment.get("collector_id", ""))
+            # Determinar tipo: extraer IDs de diferentes lugares posibles
+            payer_email = payment.get("payer", {}).get("email") or ""
+            payer_id = str(payment.get("payer_id") or payment.get("payer", {}).get("id") or "")
+            collector_id = str(payment.get("collector_id") or payment.get("collector", {}).get("id") or "")
+            op_type = payment.get("operation_type", "")
             
             tx_type = "income"
             is_expense = False
             
-            # Si tenemos el ID del usuario, chequeamos explícitamente ambos lados
-            if provider_user_id:
+            # Si el usuario es tanto el emisor como el receptor (fondos, inversiones, etc)
+            if provider_user_id and payer_id == provider_user_id and collector_id == provider_user_id:
+                if op_type == "account_fund": # Ingreso de dinero
+                    is_expense = False
+                elif op_type in ("investment", "partition_transfer"): # Inversiones o Reservas (sale de saldo disponible)
+                    is_expense = True
+                else:
+                    is_expense = False # Por defecto, otros autotransferencias asumimos que son movimientos neutros, pero para evitar bugs lo dejamos como ingreso
+            elif provider_user_id:
+                # Si no es auto-transferencia, chequeamos de qué lado estamos
                 if payer_id == provider_user_id:
                     is_expense = True
                 elif collector_id == provider_user_id:
-                    is_expense = False # Es un ingreso
-            # Fallback al email
+                    is_expense = False
+            # Fallback al email si falla todo
             elif payer_email and user_email and payer_email.lower() == user_email.lower():
                 is_expense = True
                 

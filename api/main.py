@@ -1372,11 +1372,14 @@ async def debug_mp(request: Request, db: Session = Depends(get_db)):
         WalletConnection.provider == "mercadopago"
     ).first()
     
-    if not wallet_conn or not wallet_conn.access_token:
+    if not wallet_conn or not wallet_conn.access_token_encrypted:
         return {"error": "No hay cuenta de MercadoPago conectada"}
         
-    access_token = wallet_conn.access_token
-    
+    try:
+        access_token = token_crypto.decrypt(wallet_conn.access_token_encrypted)
+    except Exception as e:
+        return {"error": f"Error desencriptando token: {e}"}
+        
     # Hacer peticion manual cruda a MP
     import requests
     headers = {"Authorization": f"Bearer {access_token}"}

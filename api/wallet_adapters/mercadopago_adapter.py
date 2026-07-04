@@ -308,7 +308,7 @@ class MercadoPagoAdapter(BaseWalletAdapter):
         self,
         access_token: str,
         since_date: Optional[str] = None,
-        user_email: str = "",
+        **kwargs,
     ) -> List[NormalizedTransaction]:
         """
         Obtiene transacciones de Mercado Pago y las normaliza.
@@ -352,6 +352,10 @@ class MercadoPagoAdapter(BaseWalletAdapter):
 
             raw_payments = response.json().get("results", [])
 
+        # Extraer variables de kwargs
+        user_email = kwargs.get("user_email", "")
+        provider_user_id = str(kwargs.get("provider_user_id", ""))
+
         # Normalizar cada pago al formato común
         normalized = []
         for payment in raw_payments:
@@ -363,9 +367,18 @@ class MercadoPagoAdapter(BaseWalletAdapter):
 
             # Determinar tipo: por defecto los pagos en este endpoint suelen ser cobros (ingresos)
             payer_email = payment.get("payer", {}).get("email", "")
+            payer_id = str(payment.get("payer", {}).get("id", ""))
+            
             tx_type = "income"
-            # Si el pagador está identificado y coincide exactamente con el email del usuario, es un gasto
-            if payer_email and user_email and payer_email.lower() == user_email.lower():
+            is_expense = False
+            
+            # Si el pagador coincide con el ID del usuario en Mercado Pago o su email, es un gasto
+            if provider_user_id and payer_id == provider_user_id:
+                is_expense = True
+            elif payer_email and user_email and payer_email.lower() == user_email.lower():
+                is_expense = True
+                
+            if is_expense:
                 tx_type = "expense"
 
             # Categorización heurística

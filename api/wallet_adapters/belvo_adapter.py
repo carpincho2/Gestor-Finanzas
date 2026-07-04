@@ -55,7 +55,7 @@ class BelvoAdapter(BaseWalletAdapter):
             "Los links pueden requerir re-autenticación periódica."
         )
 
-    def fetch_transactions(self, access_token: str, since_date: Optional[str] = None) -> List[NormalizedTransaction]:
+    def fetch_transactions(self, access_token: str, since_date: Optional[str] = None, **kwargs) -> List[NormalizedTransaction]:
         raise NotImplementedError(
             "Implementar GET /api/transactions/ para obtener transacciones de Belvo."
         )

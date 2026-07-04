@@ -114,7 +114,7 @@ class BaseWalletAdapter(ABC):
         ...
 
     @abstractmethod
-    def fetch_transactions(self, access_token: str, since_date: Optional[str] = None) -> List[NormalizedTransaction]:
+    def fetch_transactions(self, access_token: str, since_date: Optional[str] = None, **kwargs) -> List[NormalizedTransaction]:
         """
         Obtiene transacciones normalizadas del proveedor.
         

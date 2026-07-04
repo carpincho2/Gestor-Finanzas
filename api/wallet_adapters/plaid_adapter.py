@@ -55,7 +55,7 @@ class PlaidAdapter(BaseWalletAdapter):
             "pero pueden ser invalidados por el usuario o el banco."
         )
 
-    def fetch_transactions(self, access_token: str, since_date: Optional[str] = None) -> List[NormalizedTransaction]:
+    def fetch_transactions(self, access_token: str, since_date: Optional[str] = None, **kwargs) -> List[NormalizedTransaction]:
         raise NotImplementedError(
             "Implementar POST /transactions/get para obtener transacciones de Plaid."
         )

@@ -1316,6 +1316,7 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
             access_token=token,
             since_date=since_date,
             user_email=user_email,
+            provider_user_id=wallet_conn.provider_user_id if wallet_conn else ""
         )
     except Exception as e:
         error_msg = str(e)

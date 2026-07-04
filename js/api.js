@@ -19,10 +19,18 @@ async function apiFetch(path, options = {}) {
   }
 
   let data = null;
+  let rawText = null;
+  
+  try {
+    rawText = await r.text();
+  } catch (e) {
+    // Error reading body
+  }
+
   const contentType = r.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
+  if (rawText && contentType.includes('application/json')) {
     try {
-      data = await r.json();
+      data = JSON.parse(rawText);
     } catch (e) {
       console.warn('Error al decodificar la respuesta JSON del servidor:', e);
     }
@@ -36,12 +44,12 @@ async function apiFetch(path, options = {}) {
   }
 
   if (data === null) {
-    const text = await r.text();
-    throw new Error(`Respuesta inválida del servidor (HTTP ${r.status}). Contenido: ${text.slice(0, 150)}...`);
+    throw new Error(`Respuesta inválida del servidor (HTTP ${r.status}). Contenido: ${rawText ? rawText.slice(0, 150) : ''}...`);
   }
 
   return data;
 }
+
 
 /* ---- Check session on main.html load ---- */
 async function authCheckSession() {

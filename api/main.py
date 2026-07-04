@@ -1361,52 +1361,7 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
         if "TOKEN_EXPIRED" in error_msg:
             return JSONResponse(status_code=401, content={"error": "El token de Mercado Pago expiró. Reconectá tu billetera."})
         return JSONResponse(status_code=502, content={"error": f"Error al sincronizar con Mercado Pago: {error_msg}"})
-        
-@app.get("/api/debug/mp")
-async def debug_mp(request: Request, db: Session = Depends(get_db)):
-    user_id = get_current_user_id(request)
-    
-    # Buscar conexión MP
-    wallet_conn = db.query(WalletConnection).filter(
-        WalletConnection.user_id == user_id, 
-        WalletConnection.provider == "mercadopago"
-    ).first()
-    
-    if not wallet_conn or not wallet_conn.access_token_encrypted:
-        return {"error": "No hay cuenta de MercadoPago conectada"}
-        
-    try:
-        access_token = token_crypto.decrypt(wallet_conn.access_token_encrypted)
-    except Exception as e:
-        return {"error": f"Error desencriptando token: {e}"}
-        
-    # Hacer peticion manual cruda a MP
-    import requests
-    headers = {"Authorization": f"Bearer {access_token}"}
-    
-    # Traer info del usuario
-    me_data = {}
-    try:
-        me_resp = requests.get("https://api.mercadopago.com/v1/users/me", headers=headers, timeout=5)
-        me_data = {"status": me_resp.status_code, "text": me_resp.text}
-    except Exception as e:
-        me_data = {"error": str(e)}
-        
-    # Traer ultimos 10 pagos
-    payments_data = {}
-    try:
-        url = "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10"
-        pay_resp = requests.get(url, headers=headers, timeout=5)
-        payments_data = {"status": pay_resp.status_code, "text": pay_resp.text}
-    except Exception as e:
-        payments_data = {"error": str(e)}
-        
-    return {
-        "user_id_en_db": wallet_conn.provider_user_id,
-        "me_api": me_data,
-        "last_10_payments": payments_data
-    }
-    
+
     # Procesar transacciones normalizadas
     imported_count = 0
     skipped_count = 0
@@ -1993,6 +1948,50 @@ async def delete_transaction(id: int, request: Request, db: Session = Depends(ge
     db.commit()
     return {"ok": True, "message": "Transacción eliminada"}
 
+@app.get("/api/debug/mp")
+async def debug_mp(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    
+    # Buscar conexión MP
+    wallet_conn = db.query(WalletConnection).filter(
+        WalletConnection.user_id == user_id, 
+        WalletConnection.provider == "mercadopago"
+    ).first()
+    
+    if not wallet_conn or not wallet_conn.access_token_encrypted:
+        return {"error": "No hay cuenta de MercadoPago conectada"}
+        
+    try:
+        access_token = token_crypto.decrypt(wallet_conn.access_token_encrypted)
+    except Exception as e:
+        return {"error": f"Error desencriptando token: {e}"}
+        
+    # Hacer peticion manual cruda a MP
+    import requests
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    # Traer info del usuario
+    me_data = {}
+    try:
+        me_resp = requests.get("https://api.mercadopago.com/v1/users/me", headers=headers, timeout=5)
+        me_data = {"status": me_resp.status_code, "text": me_resp.text}
+    except Exception as e:
+        me_data = {"error": str(e)}
+        
+    # Traer ultimos 10 pagos
+    payments_data = {}
+    try:
+        url = "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10"
+        pay_resp = requests.get(url, headers=headers, timeout=5)
+        payments_data = {"status": pay_resp.status_code, "text": pay_resp.text}
+    except Exception as e:
+        payments_data = {"error": str(e)}
+        
+    return {
+        "user_id_en_db": wallet_conn.provider_user_id,
+        "me_api": me_data,
+        "last_10_payments": payments_data
+    }
 
 
 # --- BUDGETS ---

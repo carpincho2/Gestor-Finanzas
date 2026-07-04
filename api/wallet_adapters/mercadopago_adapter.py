@@ -356,6 +356,14 @@ class MercadoPagoAdapter(BaseWalletAdapter):
         user_email = kwargs.get("user_email", "")
         provider_user_id = str(kwargs.get("provider_user_id", ""))
 
+        if not provider_user_id and access_token.lower() not in ["mock-token", "test-token", "pruebas"]:
+            try:
+                me_resp = requests.get(f"{self.MP_BASE_URL}/v1/users/me", headers={"Authorization": f"Bearer {access_token}"}, timeout=5)
+                if me_resp.status_code == 200:
+                    provider_user_id = str(me_resp.json().get("id", ""))
+            except Exception:
+                pass
+
         # Normalizar cada pago al formato común
         normalized = []
         for payment in raw_payments:
@@ -368,13 +376,18 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             # Determinar tipo: por defecto los pagos en este endpoint suelen ser cobros (ingresos)
             payer_email = payment.get("payer", {}).get("email", "")
             payer_id = str(payment.get("payer", {}).get("id", ""))
+            collector_id = str(payment.get("collector_id", ""))
             
             tx_type = "income"
             is_expense = False
             
-            # Si el pagador coincide con el ID del usuario en Mercado Pago o su email, es un gasto
-            if provider_user_id and payer_id == provider_user_id:
-                is_expense = True
+            # Si tenemos el ID del usuario, chequeamos explícitamente ambos lados
+            if provider_user_id:
+                if payer_id == provider_user_id:
+                    is_expense = True
+                elif collector_id == provider_user_id:
+                    is_expense = False # Es un ingreso
+            # Fallback al email
             elif payer_email and user_email and payer_email.lower() == user_email.lower():
                 is_expense = True
                 

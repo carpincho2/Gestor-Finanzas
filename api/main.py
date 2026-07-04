@@ -1170,11 +1170,17 @@ async def delete_account(id: int, request: Request, db: Session = Depends(get_db
     if not acc:
         raise HTTPException(status_code=404, detail="Cuenta no encontrada")
     
-    # Desasociar transacciones vinculadas a esta cuenta (poner account_id en null)
+    # Eliminar transacciones vinculadas a esta cuenta
     db.query(Transaction).filter(
         Transaction.account_id == id, 
         Transaction.user_id == user_id
-    ).update({Transaction.account_id: None})
+    ).delete()
+
+    # Eliminar la conexión de billetera (OAuth) si existía
+    db.query(WalletConnection).filter(
+        WalletConnection.account_id == id,
+        WalletConnection.user_id == user_id
+    ).delete()
     
     db.delete(acc)
     db.commit()

@@ -1388,7 +1388,7 @@ async def debug_mp(request: Request, db: Session = Depends(get_db)):
     me_data = {}
     try:
         me_resp = requests.get("https://api.mercadopago.com/v1/users/me", headers=headers, timeout=5)
-        me_data = me_resp.json()
+        me_data = {"status": me_resp.status_code, "text": me_resp.text}
     except Exception as e:
         me_data = {"error": str(e)}
         
@@ -1397,7 +1397,7 @@ async def debug_mp(request: Request, db: Session = Depends(get_db)):
     try:
         url = "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10"
         pay_resp = requests.get(url, headers=headers, timeout=5)
-        payments_data = pay_resp.json().get("results", [])
+        payments_data = {"status": pay_resp.status_code, "text": pay_resp.text}
     except Exception as e:
         payments_data = {"error": str(e)}
         

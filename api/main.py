@@ -1915,6 +1915,19 @@ async def update_transaction(id: int, payload: TransactionCreate, request: Reque
     db.refresh(tx)
     return {"ok": True, "transaction": tx}
 
+@app.delete("/api/transactions/all")
+async def delete_all_transactions(request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    
+    # Eliminar todas las transacciones del usuario
+    db.query(Transaction).filter(Transaction.user_id == user_id).delete()
+    
+    # Poner el balance de todas las cuentas en 0 para empezar desde cero
+    db.query(Account).filter(Account.user_id == user_id).update({Account.balance: 0.0})
+    
+    db.commit()
+    return {"ok": True, "message": "Todas las transacciones eliminadas y saldos reiniciados"}
+
 @app.delete("/api/transactions/{id}")
 async def delete_transaction(id: int, request: Request, db: Session = Depends(get_db)):
     user_id = get_current_user_id(request)
@@ -1934,6 +1947,7 @@ async def delete_transaction(id: int, request: Request, db: Session = Depends(ge
     db.delete(tx)
     db.commit()
     return {"ok": True, "message": "Transacción eliminada"}
+
 
 
 # --- BUDGETS ---

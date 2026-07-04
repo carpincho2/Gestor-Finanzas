@@ -301,3 +301,38 @@ async function profileUpdatePassword() {
   }
 }
 
+/* ---- Reset Data ---- */
+function confirmResetData() {
+  if (confirm("¿Estás seguro de que querés vaciar TODAS tus transacciones y volver los saldos a cero? Esta acción NO se puede deshacer.")) {
+    doResetData();
+  }
+}
+
+async function doResetData() {
+  if (IS_SERVER) {
+    try {
+      const res = await apiFetch('/transactions/all', { method: 'DELETE' });
+      if (res.error) throw new Error(res.error);
+    } catch (e) {
+      console.error("Error al vaciar transacciones:", e);
+      showToast("⚠️ " + e.message, true);
+      return;
+    }
+  } else {
+    // Modo local (localStorage)
+    const txKey = userKey('flujo_tx');
+    const accKey = userKey('flujo_accounts');
+    localStorage.setItem(txKey, JSON.stringify([]));
+    if (localStorage.getItem(accKey)) {
+      const accs = JSON.parse(localStorage.getItem(accKey));
+      accs.forEach(a => a.balance = 0);
+      localStorage.setItem(accKey, JSON.stringify(accs));
+    }
+  }
+  
+  if (typeof loadUserData === 'function') {
+    await loadUserData();
+    if (typeof renderAll === 'function') renderAll();
+  }
+  showToast("✅ Transacciones eliminadas y saldos en 0");
+}

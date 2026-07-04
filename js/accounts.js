@@ -786,15 +786,13 @@ async function doDeleteAccount() {
         method: 'DELETE'
       });
       if (res && res.ok) {
-        transactions.forEach(t => {
-          if (t.account_id === editingAccountId || t.accountId === editingAccountId) {
-            t.account_id = null;
-            t.accountId = null;
-          }
-        });
-        accounts = accounts.filter(x => x.id !== editingAccountId);
+        // En lugar de mutar localmente, recargamos la data real del servidor
+        // para que desaparezcan las transacciones que el backend eliminó en cascada
+        await loadUserData();
+        
         if (selectedAccountId === editingAccountId) selectedAccountId = accounts[0]?.id || null;
         renderCuentasView();
+        renderAll();
         showToast('🗑️ Cuenta eliminada');
       }
     } catch (err) {

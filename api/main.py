@@ -1970,10 +1970,29 @@ async def debug_mp(request: Request, db: Session = Depends(get_db)):
     import requests
     headers = {"Authorization": f"Bearer {access_token}"}
     
+    # Fallback a client_credentials (mismo que fetch_transactions)
+    fallback_token = None
+    import os
+    client_id = os.getenv("MP_CLIENT_ID")
+    client_secret = os.getenv("MP_CLIENT_SECRET")
+    if client_id and client_secret:
+        try:
+            r_fb = requests.post(
+                "https://api.mercadopago.com/oauth/token",
+                json={"client_id": client_id, "client_secret": client_secret, "grant_type": "client_credentials"},
+                timeout=10
+            )
+            if r_fb.status_code == 200:
+                fallback_token = r_fb.json().get("access_token")
+        except Exception:
+            pass
+
     # Traer info del usuario
     me_data = {}
     try:
         me_resp = requests.get("https://api.mercadopago.com/v1/users/me", headers=headers, timeout=5)
+        if me_resp.status_code in (401, 403) and fallback_token:
+            me_resp = requests.get("https://api.mercadopago.com/v1/users/me", headers={"Authorization": f"Bearer {fallback_token}"}, timeout=5)
         me_data = {"status": me_resp.status_code, "text": me_resp.text}
     except Exception as e:
         me_data = {"error": str(e)}
@@ -1983,6 +2002,8 @@ async def debug_mp(request: Request, db: Session = Depends(get_db)):
     try:
         url = "https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=10"
         pay_resp = requests.get(url, headers=headers, timeout=5)
+        if pay_resp.status_code in (401, 403) and fallback_token:
+            pay_resp = requests.get(url, headers={"Authorization": f"Bearer {fallback_token}"}, timeout=5)
         payments_data = {"status": pay_resp.status_code, "text": pay_resp.text}
     except Exception as e:
         payments_data = {"error": str(e)}
@@ -1992,6 +2013,7 @@ async def debug_mp(request: Request, db: Session = Depends(get_db)):
         "me_api": me_data,
         "last_10_payments": payments_data
     }
+
 
 
 # --- BUDGETS ---

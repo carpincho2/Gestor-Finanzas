@@ -353,8 +353,9 @@ class MercadoPagoAdapter(BaseWalletAdapter):
             raw_payments = response.json().get("results", [])
 
         # Extraer variables de kwargs
-        user_email = kwargs.get("user_email", "")
-        provider_user_id = str(kwargs.get("provider_user_id", ""))
+        user_email = kwargs.get("user_email") or ""
+        provider_user_id = kwargs.get("provider_user_id") or ""
+        provider_user_id = str(provider_user_id) if provider_user_id else ""
 
         if not provider_user_id and access_token.lower() not in ["mock-token", "test-token", "pruebas"]:
             try:

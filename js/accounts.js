@@ -389,7 +389,7 @@ function promptInitialBalance(accountId) {
             <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;">Saldo actual</div>
             <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
               <span style="font-size:24px;color:var(--text);font-weight:600;">$</span>
-              <input type="text" inputmode="decimal" id="mpBalanceInput" placeholder="0,00" style="background:transparent;border:none;color:var(--text);font-size:32px;font-weight:700;width:150px;text-align:center;outline:none;" onfocus="this.select()" oninput="formatMpBalanceInput(this)">
+              <input type="text" inputmode="decimal" id="mpBalanceInput" placeholder="0,00" style="background:transparent;border:none;color:var(--text);font-size:32px;font-weight:700;width:150px;text-align:center;outline:none;" onfocus="this.select()" oninput="formatMpBalanceInput(this)" onkeydown="if(event.key === 'Enter') saveMpBalance()">
             </div>
           </div>
           <button class="btn btn-primary" onclick="saveMpBalance()" id="mpBalanceSaveBtn" style="width:100%;justify-content:center;padding:14px;font-size:15px;font-weight:600;">

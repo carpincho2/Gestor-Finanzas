@@ -239,12 +239,6 @@ function renderCvDetail() {
             </svg>
             <span id="syncMpText_${a.id}">Sincronizar Billetera</span>
           </button>
-          <button class="btn btn-ghost" style="justify-content:center;font-size:11px;width:100%;border-color:rgba(56,189,248,0.2);color:#38bdf8;" onclick="refreshMpBalance(${a.id})" id="btnRefreshBalance_${a.id}">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-            </svg>
-            <span id="refreshBalanceText_${a.id}">Actualizar Saldo</span>
-          </button>
         </div>
 
         <!-- Última sincronización -->
@@ -369,36 +363,7 @@ async function syncMercadoPago(accountId) {
   }
 }
 
-async function refreshMpBalance(accountId) {
-  const btn = document.getElementById(`btnRefreshBalance_${accountId}`);
-  const text = document.getElementById(`refreshBalanceText_${accountId}`);
 
-  if (btn) btn.disabled = true;
-  if (text) text.textContent = 'Consultando...';
-
-  try {
-    const res = await apiFetchLocal(`/wallets/mercadopago/balance/${accountId}`);
-
-    if (res && res.ok) {
-      // Actualizar el balance local con el saldo real de MP
-      const acc = accounts.find(x => x.id === accountId);
-      if (acc) {
-        acc.balance = res.balance;
-      }
-
-      showToast(`Saldo actualizado: $${res.balance?.toLocaleString('es-AR') || '0'}`);
-      renderCuentasView();
-    } else {
-      showToast(res.error || 'No se pudo obtener el saldo', true);
-    }
-  } catch (err) {
-    console.error("Error al obtener saldo de MP:", err);
-    showToast('⚠️ ' + err.message, true);
-  } finally {
-    text.textContent = 'Actualizar Saldo';
-    btn.disabled = false;
-  }
-}
 
 // Prompt para saldo inicial cuando se conecta Mercado Pago por primera vez
 function promptInitialBalance(accountId) {

@@ -1459,60 +1459,8 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
 
 
 # ============================================================
-#  WALLET BALANCE ENDPOINT (Consultar saldo real de MP)
-# ============================================================
+    
 
-@app.get("/api/wallets/mercadopago/balance/{account_id}")
-async def mp_get_balance(account_id: int, request: Request, db: Session = Depends(get_db)):
-    """
-    Intenta obtener el saldo real de MP vía API.
-    Si la API falla (común en cuentas personales), devuelve el saldo de la BD.
-    """
-    user_id = get_current_user_id(request)
-    acc = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
-    if not acc:
-        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
-    
-    # Buscar token
-    wallet_conn = db.query(WalletConnection).filter(
-        WalletConnection.account_id == account_id,
-        WalletConnection.user_id == user_id,
-        WalletConnection.provider == "mercadopago"
-    ).first()
-    
-    token = ""
-    if wallet_conn and wallet_conn.access_token_encrypted:
-        token = token_crypto.decrypt(wallet_conn.access_token_encrypted)
-    elif acc.mp_token:
-        token = token_crypto.decrypt(acc.mp_token)
-    
-    if not token:
-        # Sin token: devolver saldo de la BD directamente
-        return {"ok": True, "balance": acc.balance, "total_balance": acc.balance, "currency": acc.currency or "ARS"}
-    
-    try:
-        from wallet_adapters.mercadopago_adapter import MercadoPagoAdapter
-        adapter = MercadoPagoAdapter()
-        balance_info = adapter.fetch_balance(access_token=token)
-        
-        if balance_info and "available_balance" in balance_info:
-            acc.balance = balance_info["available_balance"]
-            db.commit()
-            print(f"✅ Saldo real de MP obtenido vía API: ${acc.balance:,.2f}")
-            return {
-                "ok": True,
-                "balance": acc.balance,
-                "total_balance": balance_info.get("total_balance", acc.balance),
-                "currency": balance_info.get("currency", "ARS"),
-            }
-    except Exception as e:
-        print(f"⚠️ fetch_balance falló: {e}")
-    
-    # Fallback: devolver el saldo actual de la BD sin error
-    return {"ok": True, "balance": acc.balance, "total_balance": acc.balance, "currency": acc.currency or "ARS"}
-
-
-# ============================================================
 #  WALLET OAUTH 2.0 ENDPOINTS (Fase 2)
 # ============================================================
 

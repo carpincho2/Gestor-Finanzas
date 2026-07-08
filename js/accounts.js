@@ -370,6 +370,37 @@ function promptInitialBalance(accountId) {
   const acc = accounts.find(a => a.id === parseInt(accountId));
   if (!acc) return;
   
+  // Inject modal into DOM if it doesn't exist (due to cached main.html)
+  if (!document.getElementById('mpBalanceModalOverlay')) {
+    const modalHtml = `
+      <div class="modal-overlay" id="mpBalanceModalOverlay">
+        <div class="modal" style="max-width:420px; text-align:center; padding:32px 24px;">
+          <div style="width:56px;height:56px;background:rgba(56,189,248,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <svg width="28" height="28" fill="none" stroke="#38bdf8" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+          </div>
+          <div class="modal-title" style="color:var(--text);font-size:20px;margin-bottom:8px;">¡Conexión Exitosa!</div>
+          <div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.5;">
+            Por seguridad, Mercado Pago no nos permite leer tu saldo. Por favor ingresá tu <strong>saldo inicial</strong> para la cuenta <span id="mpBalanceAccName" style="color:var(--text);font-weight:600;"></span>.
+          </div>
+          <input type="hidden" id="mpBalanceAccId">
+          <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;">
+            <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;">Saldo actual</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+              <span style="font-size:24px;color:var(--text);font-weight:600;">$</span>
+              <input type="number" step="0.01" id="mpBalanceInput" placeholder="0.00" style="background:transparent;border:none;color:var(--text);font-size:32px;font-weight:700;width:150px;text-align:center;outline:none;" onfocus="this.select()">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveMpBalance()" id="mpBalanceSaveBtn" style="width:100%;justify-content:center;padding:14px;font-size:15px;font-weight:600;">
+            Guardar Saldo Inicial
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
   setTimeout(() => {
     document.getElementById('mpBalanceAccName').textContent = acc.name;
     document.getElementById('mpBalanceAccId').value = acc.id;

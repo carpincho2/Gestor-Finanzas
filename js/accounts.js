@@ -393,13 +393,44 @@ async function refreshMpBalance(accountId) {
     }
   } catch (err) {
     console.error("Error al obtener saldo de MP:", err);
-    showToast('Error de red al consultar saldo de Mercado Pago', true);
+    showToast('⚠️ ' + err.message, true);
   } finally {
-    if (btn) btn.disabled = false;
-    if (text) text.textContent = 'Actualizar Saldo';
+    text.textContent = 'Actualizar Saldo';
+    btn.disabled = false;
   }
 }
 
+// Prompt para saldo inicial cuando se conecta Mercado Pago por primera vez
+function promptInitialBalance(accountId) {
+  const acc = accounts.find(a => a.id === parseInt(accountId));
+  if (!acc) return;
+  
+  setTimeout(() => {
+    const balanceStr = prompt(`¡Billetera conectada exitosamente!\n\nComo Mercado Pago no permite leer el saldo actual automáticamente por seguridad, por favor ingresá manualmente tu saldo actual para la cuenta "${acc.name}":\n(Podés usar comas o puntos para los decimales)`, acc.balance || 0);
+    
+    if (balanceStr !== null && balanceStr.trim() !== '') {
+      const newBalance = parseFloat(balanceStr.replace(',', '.'));
+      if (!isNaN(newBalance)) {
+        acc.balance = newBalance;
+        if (IS_SERVER) {
+          apiFetch(`/accounts/${acc.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(acc)
+          }).then(() => {
+            renderAll();
+            showToast('Saldo inicial guardado correctamente');
+          }).catch(e => showToast('Error al guardar el saldo: ' + e.message, true));
+        } else {
+          save();
+          renderAll();
+          showToast('Saldo inicial guardado correctamente');
+        }
+      } else {
+        showToast('El monto ingresado no es válido', true);
+      }
+    }
+  }, 100);
+}
 /* ---- Wallet Connection Status ---- */
 
 async function loadWalletStatus(accountId) {

@@ -49,7 +49,13 @@ async function init() {
     const [path, queryString] = hashStr.split('?');
     const urlParams = new URLSearchParams(queryString);
     if (urlParams.get('wallet_connected') === '1') {
-      setTimeout(() => showToast('Billetera conectada exitosamente (OAuth)'), 500);
+      const accId = urlParams.get('account_id');
+      setTimeout(() => {
+        showToast('Billetera conectada exitosamente (OAuth)');
+        if (accId && typeof promptInitialBalance === 'function') {
+          promptInitialBalance(accId);
+        }
+      }, 500);
       window.history.replaceState({}, document.title, window.location.pathname + path);
     } else if (urlParams.get('wallet_error')) {
       setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);
@@ -59,7 +65,13 @@ async function init() {
     // Fallback por si acaso
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('wallet_connected') === '1') {
-      setTimeout(() => showToast('Billetera conectada exitosamente (OAuth)'), 500);
+      const accId = urlParams.get('account_id');
+      setTimeout(() => {
+        showToast('Billetera conectada exitosamente (OAuth)');
+        if (accId && typeof promptInitialBalance === 'function') {
+          promptInitialBalance(accId);
+        }
+      }, 500);
       window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
     } else if (urlParams.get('wallet_error')) {
       setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);

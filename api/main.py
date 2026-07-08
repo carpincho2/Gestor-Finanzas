@@ -7,7 +7,7 @@ import secrets
 import requests
 import bcrypt
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, Query
 from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -1832,6 +1832,48 @@ async def create_transaction(payload: TransactionCreate, request: Request, db: S
     db.commit()
     db.refresh(new_tx)
     return {"ok": True, "transaction": new_tx}
+
+@app.post("/api/transactions/bulk", status_code=201)
+async def create_transactions_bulk(payload: List[TransactionCreate], request: Request, db: Session = Depends(get_db)):
+    user_id = get_current_user_id(request)
+    
+    # Agrupar saldos de cuentas para hacer una única actualización
+    account_balances = {}
+    
+    new_transactions = []
+    for tx_data in payload:
+        new_tx = Transaction(
+            user_id=user_id,
+            account_id=tx_data.account_id,
+            type=tx_data.type,
+            desc=tx_data.desc.strip(),
+            amount=tx_data.amount,
+            cat=tx_data.cat,
+            date=tx_data.date,
+            transfer_id=tx_data.transfer_id
+        )
+        db.add(new_tx)
+        new_transactions.append(new_tx)
+        
+        # Calcular balances
+        if tx_data.account_id:
+            if tx_data.account_id not in account_balances:
+                account_balances[tx_data.account_id] = 0
+                
+            if tx_data.type == "income":
+                account_balances[tx_data.account_id] += tx_data.amount
+            else:
+                account_balances[tx_data.account_id] -= tx_data.amount
+                
+    # Actualizar saldos de las cuentas
+    for acc_id, balance_diff in account_balances.items():
+        if balance_diff != 0:
+            acc = db.query(Account).filter(Account.id == acc_id, Account.user_id == user_id).first()
+            if acc:
+                acc.balance += balance_diff
+                
+    db.commit()
+    return {"ok": True, "message": f"{len(new_transactions)} transacciones creadas exitosamente."}
 
 @app.put("/api/transactions/{id}")
 async def update_transaction(id: int, payload: TransactionCreate, request: Request, db: Session = Depends(get_db)):

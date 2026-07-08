@@ -263,6 +263,12 @@ function renderCvDetail() {
         Registrar
       </button>
     </div>
+    <div style="margin-top:8px;">
+      <button class="btn" style="width:100%;justify-content:center;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);" onclick="if(typeof openImportModal === 'function') openImportModal(${a.id})">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Importar Excel / CSV
+      </button>
+    </div>
   `;
 
   if (a.type === 'digital') {

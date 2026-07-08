@@ -1623,11 +1623,11 @@ async def mp_callback(request: Request, code: str = "", state: str = "", error: 
             acc.mp_token = access_encrypted
         
         db.commit()
-        return RedirectResponse(url="/main.html#cuentas?wallet_connected=1", status_code=302)
+        return RedirectResponse(url=f"/main.html#cuentas?wallet_connected=1&account_id={account_id}", status_code=302)
         
     except Exception as e:
         print(f"❌ Error en OAuth callback de MP: {e}")
-        return RedirectResponse(url=f"/main.html#cuentas?wallet_error=exchange_failed", status_code=302)
+        return RedirectResponse(url="/main.html#cuentas?wallet_error=exchange_failed", status_code=302)
 
 @app.post("/api/wallets/mercadopago/disconnect/{account_id}")
 async def mp_disconnect(account_id: int, request: Request, db: Session = Depends(get_db)):

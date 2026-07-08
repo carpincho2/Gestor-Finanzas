@@ -51,6 +51,7 @@ async function init() {
     if (urlParams.get('wallet_connected') === '1') {
       const accId = urlParams.get('account_id');
       setTimeout(() => {
+        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
         showToast('Billetera conectada exitosamente (OAuth)');
         if (accId && typeof promptInitialBalance === 'function') {
           promptInitialBalance(accId);
@@ -58,7 +59,10 @@ async function init() {
       }, 500);
       window.history.replaceState({}, document.title, window.location.pathname + path);
     } else if (urlParams.get('wallet_error')) {
-      setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);
+      setTimeout(() => {
+        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
+        showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true);
+      }, 500);
       window.history.replaceState({}, document.title, window.location.pathname + path);
     }
   } else {
@@ -67,6 +71,7 @@ async function init() {
     if (urlParams.get('wallet_connected') === '1') {
       const accId = urlParams.get('account_id');
       setTimeout(() => {
+        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
         showToast('Billetera conectada exitosamente (OAuth)');
         if (accId && typeof promptInitialBalance === 'function') {
           promptInitialBalance(accId);
@@ -74,7 +79,10 @@ async function init() {
       }, 500);
       window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
     } else if (urlParams.get('wallet_error')) {
-      setTimeout(() => showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true), 500);
+      setTimeout(() => {
+        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
+        showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true);
+      }, 500);
       window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
     }
   }

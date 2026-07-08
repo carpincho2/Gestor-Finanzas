@@ -1409,24 +1409,32 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
         print(f"⚠️ No se pudo obtener saldo de MP vía API: {balance_err}")
     
     if not balance_updated and imported_count > 0:
-        # Ajuste incremental: solo sumar/restar las transacciones NUEVAS
-        for ntx in normalized_txs:
-            existing = db.query(Transaction).filter(
-                Transaction.user_id == user_id,
-                Transaction.account_id == id,
-                Transaction.amount == ntx.amount,
-                Transaction.date == ntx.date,
-                Transaction.desc == ntx.description
-            ).count()
-            # Si existe más de 1, significa que ya estaba antes + la que acabamos de crear
-            # Si existe exactamente 1, es la que acabamos de crear (nueva)
-            if existing > 1:
-                continue
-            if ntx.type == "income":
-                acc.balance += ntx.amount
-            else:
-                acc.balance -= ntx.amount
-        print(f"📊 Saldo ajustado incrementalmente: ${acc.balance:,.2f} ({imported_count} tx nuevas)")
+        # Determinar si es la primera sincronización histórica
+        is_first_sync = True
+        if wallet_conn and wallet_conn.last_sync_at:
+            is_first_sync = False
+            
+        if not is_first_sync:
+            # Ajuste incremental: solo sumar/restar las transacciones NUEVAS si no es el primer sync
+            for ntx in normalized_txs:
+                existing = db.query(Transaction).filter(
+                    Transaction.user_id == user_id,
+                    Transaction.account_id == id,
+                    Transaction.amount == ntx.amount,
+                    Transaction.date == ntx.date,
+                    Transaction.desc == ntx.description
+                ).count()
+                # Si existe más de 1, significa que ya estaba antes + la que acabamos de crear
+                # Si existe exactamente 1, es la que acabamos de crear (nueva)
+                if existing > 1:
+                    continue
+                if ntx.type == "income":
+                    acc.balance += ntx.amount
+                else:
+                    acc.balance -= ntx.amount
+            print(f"📊 Saldo ajustado incrementalmente: ${acc.balance:,.2f} ({imported_count} tx nuevas)")
+        else:
+            print(f"📊 Primer sync detectado. Se omite el ajuste incremental para respetar el saldo inicial cargado.")
     
     # Registrar sincronización exitosa
     sync_duration = int((_time.time() - sync_start) * 1000)

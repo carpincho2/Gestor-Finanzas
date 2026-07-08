@@ -389,7 +389,7 @@ function promptInitialBalance(accountId) {
             <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;">Saldo actual</div>
             <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
               <span style="font-size:24px;color:var(--text);font-weight:600;">$</span>
-              <input type="number" step="0.01" id="mpBalanceInput" placeholder="0.00" style="background:transparent;border:none;color:var(--text);font-size:32px;font-weight:700;width:150px;text-align:center;outline:none;" onfocus="this.select()">
+              <input type="text" inputmode="decimal" id="mpBalanceInput" placeholder="0,00" style="background:transparent;border:none;color:var(--text);font-size:32px;font-weight:700;width:150px;text-align:center;outline:none;" onfocus="this.select()" oninput="formatMpBalanceInput(this)">
             </div>
           </div>
           <button class="btn btn-primary" onclick="saveMpBalance()" id="mpBalanceSaveBtn" style="width:100%;justify-content:center;padding:14px;font-size:15px;font-weight:600;">
@@ -405,11 +405,36 @@ function promptInitialBalance(accountId) {
     document.getElementById('mpBalanceAccName').textContent = acc.name;
     document.getElementById('mpBalanceAccId').value = acc.id;
     const input = document.getElementById('mpBalanceInput');
-    input.value = acc.balance || '';
+    // Si ya tiene balance, formatearlo para mostrar
+    if (acc.balance) {
+      let valStr = String(acc.balance).replace('.', ',');
+      input.value = valStr;
+      formatMpBalanceInput(input);
+    } else {
+      input.value = '';
+    }
     
     document.getElementById('mpBalanceModalOverlay').classList.add('open');
     setTimeout(() => input.focus(), 100);
   }, 100);
+}
+
+function formatMpBalanceInput(el) {
+  let val = el.value;
+  // Permitir solo números y coma
+  val = val.replace(/[^0-9,]/g, '');
+  // Evitar más de una coma
+  const parts = val.split(',');
+  if (parts.length > 2) {
+    val = parts[0] + ',' + parts.slice(1).join('');
+  }
+  
+  // Formatear la parte entera con puntos
+  let p = val.split(',');
+  if (p[0].length > 0) {
+    p[0] = parseInt(p[0], 10).toLocaleString('es-AR').replace(/,/g, '.');
+  }
+  el.value = p.length > 1 ? p[0] + ',' + p[1] : p[0];
 }
 
 function closeMpBalanceModal() {
@@ -428,7 +453,9 @@ function saveMpBalance() {
     return;
   }
   
-  const newBalance = parseFloat(balanceStr.replace(',', '.'));
+  // Convertir 11.000,50 a 11000.50
+  const cleanStr = balanceStr.replace(/\./g, '').replace(',', '.');
+  const newBalance = parseFloat(cleanStr);
   if (isNaN(newBalance)) {
     showToast('El monto ingresado no es válido', true);
     return;

@@ -445,6 +445,7 @@ function saveMpBalance() {
       body: JSON.stringify(acc)
     }).then(() => {
       renderAll();
+      renderCuentasView();
       closeMpBalanceModal();
       showToast('Saldo inicial guardado correctamente');
       btn.disabled = false;
@@ -457,6 +458,7 @@ function saveMpBalance() {
   } else {
     save();
     renderAll();
+    renderCuentasView();
     closeMpBalanceModal();
     showToast('Saldo inicial guardado correctamente');
     btn.disabled = false;

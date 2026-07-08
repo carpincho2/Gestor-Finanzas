@@ -187,7 +187,10 @@
   cursor: pointer;
   border: none;
   transition: all .18s;
+  position: relative;
+  z-index: 10;
 }
+.btn > svg { pointer-events: none; }
 
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--accent3));

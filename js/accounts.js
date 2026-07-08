@@ -365,37 +365,74 @@ async function syncMercadoPago(accountId) {
 
 
 
-// Prompt para saldo inicial cuando se conecta Mercado Pago por primera vez
+// Modal para saldo inicial de MP
 function promptInitialBalance(accountId) {
   const acc = accounts.find(a => a.id === parseInt(accountId));
   if (!acc) return;
   
   setTimeout(() => {
-    const balanceStr = prompt(`¡Billetera conectada exitosamente!\n\nComo Mercado Pago no permite leer el saldo actual automáticamente por seguridad, por favor ingresá manualmente tu saldo actual para la cuenta "${acc.name}":\n(Podés usar comas o puntos para los decimales)`, acc.balance || 0);
+    document.getElementById('mpBalanceAccName').textContent = acc.name;
+    document.getElementById('mpBalanceAccId').value = acc.id;
+    const input = document.getElementById('mpBalanceInput');
+    input.value = acc.balance || '';
     
-    if (balanceStr !== null && balanceStr.trim() !== '') {
-      const newBalance = parseFloat(balanceStr.replace(',', '.'));
-      if (!isNaN(newBalance)) {
-        acc.balance = newBalance;
-        if (IS_SERVER) {
-          apiFetch(`/accounts/${acc.id}`, {
-            method: 'PUT',
-            body: JSON.stringify(acc)
-          }).then(() => {
-            renderAll();
-            showToast('Saldo inicial guardado correctamente');
-          }).catch(e => showToast('Error al guardar el saldo: ' + e.message, true));
-        } else {
-          save();
-          renderAll();
-          showToast('Saldo inicial guardado correctamente');
-        }
-      } else {
-        showToast('El monto ingresado no es válido', true);
-      }
-    }
+    document.getElementById('mpBalanceModalOverlay').classList.add('open');
+    setTimeout(() => input.focus(), 100);
   }, 100);
 }
+
+function closeMpBalanceModal() {
+  document.getElementById('mpBalanceModalOverlay').classList.remove('open');
+}
+
+function saveMpBalance() {
+  const accIdStr = document.getElementById('mpBalanceAccId').value;
+  const balanceStr = document.getElementById('mpBalanceInput').value;
+  
+  const acc = accounts.find(a => a.id === parseInt(accIdStr));
+  if (!acc) return;
+  
+  if (balanceStr.trim() === '') {
+    showToast('Por favor, ingresá un monto válido', true);
+    return;
+  }
+  
+  const newBalance = parseFloat(balanceStr.replace(',', '.'));
+  if (isNaN(newBalance)) {
+    showToast('El monto ingresado no es válido', true);
+    return;
+  }
+  
+  const btn = document.getElementById('mpBalanceSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  
+  acc.balance = newBalance;
+  if (IS_SERVER) {
+    apiFetch(`/accounts/${acc.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(acc)
+    }).then(() => {
+      renderAll();
+      closeMpBalanceModal();
+      showToast('Saldo inicial guardado correctamente');
+      btn.disabled = false;
+      btn.textContent = 'Guardar Saldo Inicial';
+    }).catch(e => {
+      showToast('Error al guardar el saldo: ' + e.message, true);
+      btn.disabled = false;
+      btn.textContent = 'Guardar Saldo Inicial';
+    });
+  } else {
+    save();
+    renderAll();
+    closeMpBalanceModal();
+    showToast('Saldo inicial guardado correctamente');
+    btn.disabled = false;
+    btn.textContent = 'Guardar Saldo Inicial';
+  }
+}
+
 /* ---- Wallet Connection Status ---- */
 
 async function loadWalletStatus(accountId) {

@@ -1,62 +1,13 @@
-/* =====================================================
-   AUTH SYSTEM — Dedicated script for index.html
-   ===================================================== */
+import { IS_SERVER } from './store/store.js';
+import { login, register, loginWithGoogle, fetchMe } from './api/authApi.js';
 
 const AUTH_KEY = 'flujo_auth_user';
 
-// Modo servidor vs. archivo local
-const IS_SERVER = window.location.protocol !== 'file:';
-
-// Base URL de la API (si está en localhost apunta al puerto 8000 de FastAPI)
-const API_BASE = IS_SERVER
-  ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://' + window.location.hostname + ':8000/api'
-      : window.location.origin + '/api')
-  : null;
-
-// Helper: llamadas a la API
-async function apiFetch(path, options = {}) {
-  const url = API_BASE + path;
-  const r   = await fetch(url, {
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options
-  });
-  
-  if (r.redirected) {
-    throw new Error(`La petición fue redirigida por el servidor a: ${r.url}. Esto convierte la petición POST en GET y causa el error 405 en el backend. Asegúrate de acceder a la app usando la URL exacta configurada en el servidor.`);
-  }
-  
-  let data = null;
-  const contentType = r.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    try {
-      data = await r.json();
-    } catch (e) {
-      console.warn('Error al decodificar la respuesta JSON del servidor:', e);
-    }
-  }
-  
-  if (!r.ok) {
-    const errorMsg = (data && data.error) 
-      ? data.error + (data.message ? `: ${data.message}` : '')
-      : `Error de servidor backend (HTTP ${r.status}).`;
-    throw new Error(errorMsg);
-  }
-  
-  if (data === null) {
-    const text = await r.text();
-    throw new Error(`Respuesta inválida del servidor (HTTP ${r.status}). Contenido: ${text.slice(0, 150)}...`);
-  }
-  
-  return data;
-}
-
 /* ---- Check if already logged in ---- */
-async function authCheckSession() {
+export async function authCheckSession() {
   if (IS_SERVER) {
     try {
-      const data = await apiFetch('/auth/me');
+      const data = await fetchMe();
       if (data.user) { authFinishLogin(data.user, true); return; }
     } catch(e) { /* no hay sesión activa */ }
   } else {
@@ -72,7 +23,7 @@ async function authCheckSession() {
 }
 
 /* ---- Tab switch ---- */
-function authSwitchTab(tab) {
+export function authSwitchTab(tab) {
   const loginForm    = document.getElementById('authLoginForm');
   const registerForm = document.getElementById('authRegisterForm');
   const tabLogin     = document.getElementById('authTabLogin');
@@ -95,7 +46,7 @@ function authSwitchTab(tab) {
 }
 
 /* ---- Show/hide password ---- */
-function authTogglePw(inputId, btn) {
+export function authTogglePw(inputId, btn) {
   const input = document.getElementById(inputId);
   if (input.type === 'password') {
     input.type   = 'text';
@@ -107,7 +58,7 @@ function authTogglePw(inputId, btn) {
 }
 
 /* ---- Auth error / success message ---- */
-function authShowError(msg, isOk = false) {
+export function authShowError(msg, isOk = false) {
   const el = document.getElementById('authError');
   el.textContent = msg;
   el.style.display = '';
@@ -118,7 +69,7 @@ function authShowError(msg, isOk = false) {
 }
 
 /* ---- Login ---- */
-async function authLogin() {
+export async function authLogin() {
   const email = document.getElementById('authLoginEmail').value.trim();
   const pw    = document.getElementById('authLoginPw').value;
 
@@ -133,12 +84,8 @@ async function authLogin() {
   btn.textContent = ' Iniciando sesión…';
 
   if (IS_SERVER) {
-    // ─── Modo Python Backend ───
     try {
-      const data = await apiFetch('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password: pw })
-      });
+      const data = await login(email, pw);
       authFinishLogin(data.user);
     } catch(e) {
       btn.classList.remove('loading');
@@ -146,7 +93,6 @@ async function authLogin() {
       authShowError('⚠️ ' + e.message);
     }
   } else {
-    // ─── Fallback localStorage ───
     setTimeout(() => {
       const users = JSON.parse(localStorage.getItem('flujo_users') || '[]');
       const found = users.find(u => u.email === email && u.pw === pw);
@@ -163,7 +109,7 @@ async function authLogin() {
 }
 
 /* ---- Register ---- */
-async function authRegister() {
+export async function authRegister() {
   const name   = document.getElementById('authRegName').value.trim();
   const email  = document.getElementById('authRegEmail').value.trim();
   const pw     = document.getElementById('authRegPw').value;
@@ -182,12 +128,8 @@ async function authRegister() {
   btn.textContent = ' Creando cuenta…';
 
   if (IS_SERVER) {
-    // ─── Modo Python Backend ───
     try {
-      const data = await apiFetch('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, password: pw })
-      });
+      const data = await register(name, email, pw);
       authFinishLogin(data.user);
     } catch(e) {
       btn.classList.remove('loading');
@@ -195,7 +137,6 @@ async function authRegister() {
       authShowError('⚠️ ' + e.message);
     }
   } else {
-    // ─── Fallback localStorage ───
     setTimeout(() => {
       const users = JSON.parse(localStorage.getItem('flujo_users') || '[]');
       if (users.find(u => u.email === email)) {
@@ -217,12 +158,9 @@ async function authRegister() {
 /* ---- Google Sign In ---- */
 const GOOGLE_CLIENT_ID = window.FLUJO_GOOGLE_CLIENT_ID || '';
 
-function handleGoogleCredential(response) {
+export function handleGoogleCredential(response) {
   if (IS_SERVER) {
-    apiFetch('/auth/google', {
-      method: 'POST',
-      body: JSON.stringify({ credential: response.credential })
-    }).then(data => {
+    loginWithGoogle(response.credential).then(data => {
       authFinishLogin(data.user);
     }).catch(e => {
       authShowError('⚠️ Error Google: ' + e.message);
@@ -243,7 +181,7 @@ function handleGoogleCredential(response) {
   }
 }
 
-function initGoogleAuth() {
+export function initGoogleAuth() {
   if (!GOOGLE_CLIENT_ID) {
     console.warn('Google Sign-In no configurado. Falta CLIENT_ID.');
     return;
@@ -266,10 +204,9 @@ function initGoogleAuth() {
         shape: 'rectangular',
         text: 'continue_with',
         locale: 'es',
-        width: 400 // Amplio para cubrir todo el overlay invisible
+        width: 400
       });
 
-      // Sincronizar hover con el botón personalizado de abajo
       const customBtn = document.getElementById('authBtnGoogleCustom');
       if (customBtn) {
         container.addEventListener('mouseenter', () => customBtn.classList.add('hover'));
@@ -277,13 +214,12 @@ function initGoogleAuth() {
       }
     }
   } else {
-    // Esperar y reintentar si el script de Google no cargó
     setTimeout(initGoogleAuth, 300);
   }
 }
 
 /* ---- Forgot password ---- */
-function authForgot() {
+export function authForgot() {
   const email = document.getElementById('authLoginEmail').value.trim();
   if (!email) {
     authShowError('ℹ️ Ingresá tu email arriba y presioná el link de nuevo.', false);
@@ -293,13 +229,17 @@ function authForgot() {
 }
 
 /* ---- Finish login: save session and redirect to main.html ---- */
-function authFinishLogin(user, instant) {
-  // Guardar sesión en localStorage siempre para que sea leída por main.html
+export function authFinishLogin(user, instant) {
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  
-  // Redirigir directamente al Gestor principal (main.html)
   window.location.href = 'main.html';
 }
+
+// Attach globals for HTML onclicks
+window.authSwitchTab = authSwitchTab;
+window.authTogglePw = authTogglePw;
+window.authForgot = authForgot;
+window.authLogin = authLogin;
+window.authRegister = authRegister;
 
 // Ejecutar chequeo de sesión al cargar e inicializar Google Sign-In
 authCheckSession();

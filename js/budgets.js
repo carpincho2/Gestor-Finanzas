@@ -1,5 +1,10 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
-   BUDGETS
+   state.BUDGETS
    ===================================================== */
 function renderBudgets() {
   const now = new Date();
@@ -7,13 +12,13 @@ function renderBudgets() {
   const year = now.getFullYear();
 
   const el = document.getElementById('budgetList');
-  if (!budgets || budgets.length === 0) {
+  if (!state.budgets || state.budgets.length === 0) {
     el.innerHTML = `<div style="padding:16px 0;text-align:center;font-size:11px;font-family:var(--font-mono);color:var(--muted);">Sin presupuestos creados.</div>`;
     return;
   }
 
-  el.innerHTML = budgets.slice(0, 5).map(b => {
-    const spent = transactions
+  el.innerHTML = state.budgets.slice(0, 5).map(b => {
+    const spent = state.transactions
       .filter(t => t.type === 'expense' && t.cat === b.cat)
       .filter(t => { const d = new Date(t.date); return d.getMonth() === month && d.getFullYear() === year; })
       .reduce((s, t) => s + t.amount, 0);
@@ -38,7 +43,7 @@ function renderBudgets() {
 /* =====================================================
    PRESUPUESTOS
    ===================================================== */
-let budgets = [];
+
 let budgetViewMonth = new Date().getMonth();
 let budgetViewYear = new Date().getFullYear();
 let editingBudgetId = null;
@@ -54,11 +59,11 @@ let bmSelectedColor = BM_COLORS[0];
 let bmEditingId = null;
 
 function saveBudgets() {
-  localStorage.setItem(userKey('flujo_budgets'), JSON.stringify(budgets));
+  localStorage.setItem(userKey('flujo_budgets'), JSON.stringify(state.budgets));
 }
 
 function initBudgets() {
-  if (budgets.length === 0) {
+  if (state.budgets.length === 0) {
     saveBudgets();
   }
 }
@@ -91,7 +96,7 @@ function renderBudgetView() {
   document.getElementById('bvDonutMonth').textContent = monthName;
 
   // Get spending per category for this month
-  const monthTx = transactions.filter(t => {
+  const monthTx = state.transactions.filter(t => {
     if (t.type !== 'expense') return false;
     const d = new Date(t.date);
     return d.getMonth() === budgetViewMonth && d.getFullYear() === budgetViewYear;
@@ -101,8 +106,8 @@ function renderBudgetView() {
   monthTx.forEach(t => { spentByCat[t.cat] = (spentByCat[t.cat] || 0) + t.amount; });
 
   // Summary header
-  const totalLimit = budgets.reduce((s, b) => s + b.limit, 0);
-  const totalSpent = budgets.reduce((s, b) => s + (spentByCat[b.cat] || 0), 0);
+  const totalLimit = state.budgets.reduce((s, b) => s + b.limit, 0);
+  const totalSpent = state.budgets.reduce((s, b) => s + (spentByCat[b.cat] || 0), 0);
   const totalLeft = totalLimit - totalSpent;
   const fmt = n => '$' + Math.abs(n).toLocaleString('es-AR');
 
@@ -125,7 +130,7 @@ function renderBudgetView() {
 function renderBvCards(spentByCat, monthTx) {
   const el = document.getElementById('bvCards');
 
-  if (budgets.length === 0) {
+  if (state.budgets.length === 0) {
     el.innerHTML = `
       <div class="panel" style="padding:48px 24px;text-align:center;">
         <div style="font-size:36px;margin-bottom:12px;">🎯</div>
@@ -136,7 +141,7 @@ function renderBvCards(spentByCat, monthTx) {
     return;
   }
 
-  el.innerHTML = budgets.map(b => {
+  el.innerHTML = state.budgets.map(b => {
     const spent = spentByCat[b.cat] || 0;
     const pct = b.limit > 0 ? Math.min((spent / b.limit) * 100, 100) : 0;
     const left = b.limit - spent;
@@ -234,9 +239,9 @@ function renderBudgetDonut(spentByCat) {
   const canvas = document.getElementById('budgetDonut');
   const ctx = canvas.getContext('2d');
 
-  const data = budgets.map(b => spentByCat[b.cat] || 0);
-  const labels = budgets.map(b => b.name);
-  const colors = budgets.map(b => b.color);
+  const data = state.budgets.map(b => spentByCat[b.cat] || 0);
+  const labels = state.budgets.map(b => b.name);
+  const colors = state.budgets.map(b => b.color);
   const total = data.reduce((s, v) => s + v, 0);
 
   document.getElementById('bvDonutTotal').textContent = '$' + total.toLocaleString('es-AR');
@@ -248,8 +253,8 @@ function renderBudgetDonut(spentByCat) {
     data: {
       labels,
       datasets: [{
-        data: total === 0 ? budgets.map(() => 1) : data,
-        backgroundColor: total === 0 ? budgets.map(() => '#1a2030') : colors.map(c => c + 'cc'),
+        data: total === 0 ? state.budgets.map(() => 1) : data,
+        backgroundColor: total === 0 ? state.budgets.map(() => '#1a2030') : colors.map(c => c + 'cc'),
         borderColor: total === 0 ? '#232b3a' : colors,
         borderWidth: 2,
         hoverOffset: 6,
@@ -272,7 +277,7 @@ function renderBudgetDonut(spentByCat) {
 
   // Legend
   const leg = document.getElementById('bvLegend');
-  leg.innerHTML = budgets.map((b, i) => {
+  leg.innerHTML = state.budgets.map((b, i) => {
     const spent = spentByCat[b.cat] || 0;
     const pct = total > 0 ? Math.round((spent / total) * 100) : 0;
     return `
@@ -294,15 +299,15 @@ function renderBudgetDonut(spentByCat) {
 function renderBvTip(spentByCat) {
   const tips = [];
 
-  budgets.forEach(b => {
+  state.budgets.forEach(b => {
     const spent = spentByCat[b.cat] || 0;
     const pct = b.limit > 0 ? (spent / b.limit) * 100 : 0;
     if (pct > 100) tips.push(`⚠️ Superaste el presupuesto de <strong>${b.name}</strong> en $${(spent - b.limit).toLocaleString('es-AR')}.`);
     else if (pct > 80) tips.push(`🔶 Te queda poco presupuesto en <strong>${b.name}</strong> — solo el ${Math.round(100 - pct)}% disponible.`);
   });
 
-  const allSpent = budgets.reduce((s, b) => s + (spentByCat[b.cat] || 0), 0);
-  const allLimit = budgets.reduce((s, b) => s + b.limit, 0);
+  const allSpent = state.budgets.reduce((s, b) => s + (spentByCat[b.cat] || 0), 0);
+  const allLimit = state.budgets.reduce((s, b) => s + b.limit, 0);
   if (allSpent === 0) tips.push('📭 Aún no hay gastos registrados para este mes.');
   else if (allSpent / allLimit < 0.5) tips.push('✅ Vas muy bien — llevás menos del 50% del presupuesto total gastado.');
 
@@ -325,7 +330,7 @@ function openBudgetModal(id) {
   `).join('');
 
   if (id) {
-    const b = budgets.find(x => x.id === id);
+    const b = state.budgets.find(x => x.id === id);
     if (!b) return;
     document.getElementById('budgetModalTitle').textContent = 'Editar Presupuesto';
     document.getElementById('bmSaveBtn').textContent = 'Guardar cambios';
@@ -431,9 +436,9 @@ async function saveBudget() {
     }
   } else {
     if (bmEditingId) {
-      const idx = budgets.findIndex(x => x.id === bmEditingId);
+      const idx = state.budgets.findIndex(x => x.id === bmEditingId);
       if (idx > -1) {
-        budgets[idx] = { ...budgets[idx], cat, name: cat, limit, icon, color: bmSelectedColor, notes };
+        state.budgets[idx] = { ...state.budgets[idx], cat, name: cat, limit, icon, color: bmSelectedColor, notes };
         saveBudgets();
         renderBudgetView();
         renderBudgets();
@@ -441,7 +446,7 @@ async function saveBudget() {
       }
     } else {
       const newB = { id: Date.now(), cat, name: cat, limit, icon, color: bmSelectedColor, notes };
-      budgets.push(newB);
+      state.budgets.push(newB);
       saveBudgets();
       renderBudgetView();
       renderBudgets();
@@ -454,7 +459,7 @@ async function saveBudget() {
 /* --- Delete --- */
 function confirmDeleteBudget(id) {
   bmEditingId = id;
-  const b = budgets.find(x => x.id === id);
+  const b = state.budgets.find(x => x.id === id);
   document.getElementById('bdName').textContent = b ? b.name : '';
   document.getElementById('budgetDeleteOverlay').classList.add('open');
 }
@@ -481,7 +486,7 @@ async function doDeleteBudget() {
       showToast("Error al eliminar presupuesto en el servidor", true);
     }
   } else {
-    budgets = budgets.filter(x => x.id !== bmEditingId);
+    state.budgets = state.budgets.filter(x => x.id !== bmEditingId);
     saveBudgets();
     renderBudgetView();
     renderBudgets();
@@ -490,3 +495,25 @@ async function doDeleteBudget() {
   closeBudgetDeleteModal();
 }
 
+
+
+// --- WINDOW ATTACHMENTS ---
+window.changeBudgetMonth = changeBudgetMonth;
+window.enterBudgetView = enterBudgetView;
+window.onBmCatChange = onBmCatChange;
+window.closeBudgetDeleteModal = closeBudgetDeleteModal;
+window.openBudgetModal = openBudgetModal;
+window.initBudgets = initBudgets;
+window.toggleBvCard = toggleBvCard;
+window.confirmDeleteBudget = confirmDeleteBudget;
+window.renderBudgetView = renderBudgetView;
+window.renderBvTip = renderBvTip;
+window.renderBudgets = renderBudgets;
+window.closeBudgetModal = closeBudgetModal;
+window.renderBudgetDonut = renderBudgetDonut;
+window.fmt2 = fmt2;
+window.doDeleteBudget = doDeleteBudget;
+window.renderBvCards = renderBvCards;
+window.saveBudgets = saveBudgets;
+window.saveBudget = saveBudget;
+window.selectBmColor = selectBmColor;

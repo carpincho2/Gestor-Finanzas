@@ -1,3 +1,8 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
    SCANNER — Estado
    ===================================================== */
@@ -5,7 +10,7 @@ let scCameraStream = null;
 let scCapturedBlob = null;
 let scCapturedDataUrl = null;
 let scCurrentTab = 'camera';
-let scScanHistory = [];
+
 let scCurrentParsedData = null;
 
 /* =====================================================
@@ -1176,9 +1181,9 @@ function scSaveTicket() {
     ticket: { nombre_local: name, hora: time, forma_pago: payment, direccion: address, escaneado: new Date().toISOString() }
   });
 
-  scScanHistory.unshift({ id: Date.now(), name: name || txDesc, amount, cat, date, payment });
-  if (scScanHistory.length > 20) scScanHistory = scScanHistory.slice(0, 20);
-  localStorage.setItem(userKey('flujo_scan_history'), JSON.stringify(scScanHistory));
+  state.scScanHistory.unshift({ id: Date.now(), name: name || txDesc, amount, cat, date, payment });
+  if (state.scScanHistory.length > 20) state.scScanHistory = state.scScanHistory.slice(0, 20);
+  localStorage.setItem(userKey('flujo_scan_history'), JSON.stringify(state.scScanHistory));
 
   if (IS_SERVER && scCurrentParsedData && scCurrentParsedData.articulos && scCurrentParsedData.articulos.length > 0) {
     apiFetch('/ocr/save', {
@@ -1206,13 +1211,13 @@ function scSaveTicket() {
    ===================================================== */
 function scRenderHistory() {
   const el = document.getElementById('scHistoryList');
-  if (!scScanHistory || scScanHistory.length === 0) {
+  if (!state.scScanHistory || state.scScanHistory.length === 0) {
     el.innerHTML = '<div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:16px 0;">Aun no escaneaste ningun ticket.</div>';
     return;
   }
-  el.innerHTML = scScanHistory.slice(0, 8).map(h =>
+  el.innerHTML = state.scScanHistory.slice(0, 8).map(h =>
     '<div class="sc-history-item">' +
-    '<div class="sc-history-icon">' + (CAT_ICONS[h.cat] || '🧾') + '</div>' +
+    '<div class="sc-history-icon">' + (state.CAT_ICONS[h.cat] || '🧾') + '</div>' +
     '<div class="sc-history-info">' +
     '<div class="sc-history-name">' + escHtml(h.name) + '</div>' +
     '<div class="sc-history-meta">' + formatDateLong(h.date) + (h.payment ? ' · ' + h.payment : '') + '</div>' +
@@ -1519,3 +1524,52 @@ function generateRecommendations(fields) {
 // Alias para compatibilidad con suites de pruebas
 const scParseTicketText_IMPROVED = scParseTicketText;
 
+
+
+// --- WINDOW ATTACHMENTS ---
+window.scShowResultModal = scShowResultModal;
+window.scCapturePhoto = scCapturePhoto;
+window.scShowLoading = scShowLoading;
+window.findKeywordFuzzy = findKeywordFuzzy;
+window.scToggleItems = scToggleItems;
+window.scInitWorker = scInitWorker;
+window.scStopCamera = scStopCamera;
+window.scDragLeave = scDragLeave;
+window.scLearnFromTicket = scLearnFromTicket;
+window.debugLog = debugLog;
+window.scFileSelected = scFileSelected;
+window.validateDate = validateDate;
+window.scLoadOCRPatterns = scLoadOCRPatterns;
+window.scCloseResultModal = scCloseResultModal;
+window.scCleanupWorker = scCleanupWorker;
+window.scPreprocessImage = scPreprocessImage;
+window.validatePaymentMethod = validatePaymentMethod;
+window.disableDebugMode = disableDebugMode;
+window.enableDebugMode = enableDebugMode;
+window.scDragOver = scDragOver;
+window.scScanTicket = scScanTicket;
+window.scParseTicketText = scParseTicketText;
+window.validateTotal = validateTotal;
+window.scSaveTicket = scSaveTicket;
+window.getLevenshteinDistance = getLevenshteinDistance;
+window.scStartCamera = scStartCamera;
+window.generateRecommendations = generateRecommendations;
+window.validateLocalName = validateLocalName;
+window.scGetLearnedData = scGetLearnedData;
+window.otsuThreshold = otsuThreshold;
+window.scSwitchTab = scSwitchTab;
+window.scDrop = scDrop;
+window.scExtractLearnedFields = scExtractLearnedFields;
+window.scDetectUserCountry = scDetectUserCountry;
+window.scProcessFile = scProcessFile;
+window.scRenderHistory = scRenderHistory;
+window.calculateConfidencePerField = calculateConfidencePerField;
+window.scToggleCamera = scToggleCamera;
+window.scParseAmount = scParseAmount;
+window.scMergeScannerResults = scMergeScannerResults;
+window.enterScannerView = enterScannerView;
+window.scShowPreview = scShowPreview;
+window.scToggleRaw = scToggleRaw;
+window.detectSkewAngle = detectSkewAngle;
+window.scResetCapture = scResetCapture;
+window.scHideLoading = scHideLoading;

@@ -1,3 +1,8 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
    IA INSIGHTS LOGIC
    ===================================================== */
@@ -14,7 +19,7 @@ function aiBuildContext() {
   const month = now.getMonth();
   const year = now.getFullYear();
 
-  const thisMonth = transactions.filter(t => {
+  const thisMonth = state.transactions.filter(t => {
     const d = new Date(t.date);
     return d.getMonth() === month && d.getFullYear() === year;
   });
@@ -34,7 +39,7 @@ function aiBuildContext() {
     .join(', ');
 
   // Budgets status
-  const budgetStatus = budgets.map(b => {
+  const budgetStatus = state.budgets.map(b => {
     const spent = thisMonth.filter(t => t.type === 'expense' && t.cat === b.name)
       .reduce((s, t) => s + t.amount, 0);
     const pct = b.limit > 0 ? Math.round(spent / b.limit * 100) : 0;
@@ -42,7 +47,7 @@ function aiBuildContext() {
   }).join('; ');
 
   // Goals
-  const goalStatus = goals.map(g => {
+  const goalStatus = state.goals.map(g => {
     const saved = (g.contributions || []).reduce((s, c) => s + c.amount, 0) + (g.initial || 0);
     const pct = g.target > 0 ? Math.round(saved / g.target * 100) : 0;
     return `${g.name}: $${saved.toLocaleString('es-AR')} de $${g.target.toLocaleString('es-AR')} (${pct}%)`;
@@ -52,7 +57,7 @@ function aiBuildContext() {
   const last3 = [0, 1, 2].map(offset => {
     const m = (month - offset + 12) % 12;
     const y = month - offset < 0 ? year - 1 : year;
-    const tx = transactions.filter(t => {
+    const tx = state.transactions.filter(t => {
       const d = new Date(t.date);
       return d.getMonth() === m && d.getFullYear() === y;
     });
@@ -71,7 +76,7 @@ function aiBuildContext() {
 - Estado presupuestos: ${budgetStatus || 'Sin presupuestos'}
 - Objetivos de ahorro: ${goalStatus || 'Sin objetivos'}
 - Tendencia últimos 3 meses: ${last3}
-- Total transacciones históricas: ${transactions.length}`;
+- Total transacciones históricas: ${state.transactions.length}`;
 }
 
 /* ---- Quick prompt shortcuts ---- */
@@ -246,3 +251,14 @@ async function aiGenerateCards() {
   }
 }
 
+
+
+// --- WINDOW ATTACHMENTS ---
+window.aiBuildContext = aiBuildContext;
+window.aiAppendMessage = aiAppendMessage;
+window.aiQuickPrompt = aiQuickPrompt;
+window.aiFormatText = aiFormatText;
+window.aiGenerateCards = aiGenerateCards;
+window.enterInsightsView = enterInsightsView;
+window.aiSendMessage = aiSendMessage;
+window.aiSetLoading = aiSetLoading;

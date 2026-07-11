@@ -1,3 +1,8 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
    RENDER
    ===================================================== */
@@ -13,7 +18,7 @@ function renderStats() {
   const month = now.getMonth();
   const year = now.getFullYear();
 
-  const thisMonth = transactions.filter(t => {
+  const thisMonth = state.transactions.filter(t => {
     const d = new Date(t.date);
     return d.getMonth() === month && d.getFullYear() === year;
   });
@@ -22,12 +27,12 @@ function renderStats() {
   const expenses = thisMonth.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const savings = income - expenses;
 
-  const allIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const allExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const allIncome = state.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const allExpenses = state.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   
   // El saldo total real es la suma de los saldos actuales de todas las cuentas,
   // no la resta histórica de ingresos - gastos (ya que el historial puede ser parcial).
-  const balance = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+  const balance = state.accounts.reduce((s, a) => s + (a.balance || 0), 0);
 
   const fmt = n => '$' + n.toLocaleString('es-AR');
 
@@ -47,9 +52,9 @@ function renderStats() {
 }
 
 function renderTransactions() {
-  const list = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+  const list = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
   const el = document.getElementById('txList');
-  document.getElementById('txCount').textContent = transactions.length + ' registros';
+  document.getElementById('txCount').textContent = state.transactions.length + ' registros';
 
   if (list.length === 0) {
     el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">Sin transacciones aún.</div>`;
@@ -58,8 +63,8 @@ function renderTransactions() {
 
   el.innerHTML = list.map(t => `
     <div class="tx-item">
-      <div class="tx-icon" style="background:${CAT_COLORS[t.cat]}22;">
-        ${CAT_ICONS[t.cat] || '📦'}
+      <div class="tx-icon" style="background:${state.CAT_COLORS[t.cat]}22;">
+        ${state.CAT_ICONS[t.cat] || '📦'}
       </div>
       <div class="tx-info">
         <div class="tx-name">${escHtml(t.desc)}</div>
@@ -82,7 +87,7 @@ function formatDate(str) {
    QUICK ADD
    ===================================================== */
 function setType(type) {
-  currentType = type;
+  state.currentType = type;
   const expBtn = document.getElementById('typeExpBtn');
   const incBtn = document.getElementById('typeIncBtn');
   const catSelect = document.getElementById('qCat');
@@ -122,7 +127,7 @@ function quickAdd() {
   if (!desc) { showToast('⚠️ Ingresá una descripción', true); return; }
   if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
 
-  addTransaction({ type: currentType, desc, amount, cat, date: new Date().toISOString().split('T')[0] });
+  addTransaction({ type: state.currentType, desc, amount, cat, date: new Date().toISOString().split('T')[0] });
   document.getElementById('qAmount').value = '';
   updateCustomSelectDisplay(document.getElementById('qCat'));
   showToast('✅ Transacción registrada');
@@ -142,7 +147,7 @@ function closeModal(e) {
 }
 
 function setModalType(type) {
-  mCurrentType = type;
+  state.mCurrentType = type;
   const expBtn = document.getElementById('mTypeExpBtn');
   const incBtn = document.getElementById('mTypeIncBtn');
   const catSelect = document.getElementById('mCat');
@@ -184,7 +189,7 @@ function addFromModal() {
   if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
   if (!date) { showToast('⚠️ Seleccioná una fecha', true); return; }
 
-  addTransaction({ type: mCurrentType, desc, amount, cat, date });
+  addTransaction({ type: state.mCurrentType, desc, amount, cat, date });
   document.getElementById('mDesc').value = '';
   document.getElementById('mAmount').value = '';
   closeModal();
@@ -215,7 +220,7 @@ async function addTransaction(tx) {
     }
   } else {
     tx.id = Date.now();
-    transactions.unshift(tx);
+    state.transactions.unshift(tx);
     save();
     renderAll();
     if (currentPage === 'transacciones') renderTxView();
@@ -232,7 +237,7 @@ let txPage = 1;
 let editingId = null;
 
 function getFilteredTx() {
-  let list = [...transactions];
+  let list = [...state.transactions];
 
   if (txFilter.type !== 'all') list = list.filter(t => t.type === txFilter.type);
   if (txFilter.cat !== 'all') list = list.filter(t => t.cat === txFilter.cat);
@@ -281,8 +286,8 @@ function renderTxView() {
       <tr class="tx-row" data-id="${t.id}">
         <td>
           <div style="display:flex;align-items:center;gap:10px;">
-            <div class="tx-icon" style="background:${CAT_COLORS[t.cat]}22;width:32px;height:32px;font-size:14px;">
-              ${CAT_ICONS[t.cat] || '📦'}
+            <div class="tx-icon" style="background:${state.CAT_COLORS[t.cat]}22;width:32px;height:32px;font-size:14px;">
+              ${state.CAT_ICONS[t.cat] || '📦'}
             </div>
             <div>
               <div style="font-weight:600;font-size:13.5px;">${escHtml(t.desc)}</div>
@@ -290,7 +295,7 @@ function renderTxView() {
           </div>
         </td>
         <td>
-          <span class="cat-chip" style="background:${CAT_COLORS[t.cat]}18;color:${CAT_COLORS[t.cat]};">
+          <span class="cat-chip" style="background:${state.CAT_COLORS[t.cat]}18;color:${state.CAT_COLORS[t.cat]};">
             ${t.cat}
           </span>
         </td>
@@ -445,7 +450,7 @@ async function exportExcel() {
 
 /* Edit */
 function openEditModal(id) {
-  const t = transactions.find(x => x.id === id);
+  const t = state.transactions.find(x => x.id === id);
   if (!t) return;
   editingId = id;
 
@@ -483,7 +488,7 @@ async function saveEdit() {
 
   if (IS_SERVER) {
     try {
-      const orig = transactions.find(x => x.id === editingId);
+      const orig = state.transactions.find(x => x.id === editingId);
       await apiFetchLocal(`/transactions/${editingId}`, {
         method: 'PUT',
         body: JSON.stringify({
@@ -505,9 +510,9 @@ async function saveEdit() {
       showToast("Error al actualizar la transacción en el servidor", true);
     }
   } else {
-    const idx = transactions.findIndex(x => x.id === editingId);
+    const idx = state.transactions.findIndex(x => x.id === editingId);
     if (idx > -1) {
-      transactions[idx] = { ...transactions[idx], type, desc, amount, cat, date };
+      state.transactions[idx] = { ...state.transactions[idx], type, desc, amount, cat, date };
       save();
       renderAll();
       if (currentPage === 'transacciones') renderTxView();
@@ -527,7 +532,7 @@ function closeEditModal(e) {
 /* Delete */
 function confirmDelete(id) {
   editingId = id;
-  const t = transactions.find(x => x.id === id);
+  const t = state.transactions.find(x => x.id === id);
   document.getElementById('deleteModalDesc').textContent = t ? `"${t.desc}" — $${t.amount.toLocaleString('es-AR')}` : '';
   document.getElementById('deleteModalOverlay').classList.add('open');
 }
@@ -554,7 +559,7 @@ async function doDelete() {
       showToast("Error al eliminar la transacción en el servidor", true);
     }
   } else {
-    transactions = transactions.filter(x => x.id !== editingId);
+    state.transactions = state.transactions.filter(x => x.id !== editingId);
     save();
     renderAll();
     if (currentPage === 'transacciones') renderTxView();
@@ -572,3 +577,35 @@ function formatDateLong(str) {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+
+
+// --- WINDOW ATTACHMENTS ---
+window.quickAdd = quickAdd;
+window.applyTxFilter = applyTxFilter;
+window.formatDate = formatDate;
+window.closeEditModal = closeEditModal;
+window.getFilteredTx = getFilteredTx;
+window.closeModal = closeModal;
+window.formatDateLong = formatDateLong;
+window.clearTxFilters = clearTxFilters;
+window.addFromModal = addFromModal;
+window.confirmDelete = confirmDelete;
+window.setType = setType;
+window.addTransaction = addTransaction;
+window.setEditType = setEditType;
+window.renderAll = renderAll;
+window.sortTx = sortTx;
+window.doDelete = doDelete;
+window.closeDeleteModal = closeDeleteModal;
+window.setModalType = setModalType;
+window.exportExcel = exportExcel;
+window.renderTxView = renderTxView;
+window.renderTransactions = renderTransactions;
+window.openEditModal = openEditModal;
+window.renderTxPagination = renderTxPagination;
+window.escHtml = escHtml;
+window.goTxPage = goTxPage;
+window.saveEdit = saveEdit;
+window.renderStats = renderStats;
+window.openModal = openModal;
+window.syncTxFilterUI = syncTxFilterUI;

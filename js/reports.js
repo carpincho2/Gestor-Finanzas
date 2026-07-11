@@ -1,3 +1,8 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
    CHART
    ===================================================== */
@@ -5,9 +10,9 @@ function renderChart() {
   const ctx = document.getElementById('mainChart').getContext('2d');
   const { labels, incomeData, expenseData } = getChartData();
 
-  if (chartInstance) chartInstance.destroy();
+  if (state.chartInstance) state.chartInstance.destroy();
 
-  chartInstance = new Chart(ctx, {
+  state.chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
@@ -61,28 +66,28 @@ function renderChart() {
 function getChartData() {
   const now = new Date();
 
-  if (chartPeriod === 'semana') {
+  if (state.chartPeriod === 'semana') {
     const labels = [], incomeData = [], expenseData = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const str = d.toISOString().split('T')[0];
       labels.push(d.toLocaleDateString('es-AR', { weekday: 'short' }));
-      const day = transactions.filter(t => t.date === str);
+      const day = state.transactions.filter(t => t.date === str);
       incomeData.push(day.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
       expenseData.push(day.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
     }
     return { labels, incomeData, expenseData };
   }
 
-  if (chartPeriod === 'mes') {
+  if (state.chartPeriod === 'mes') {
     const labels = [], incomeData = [], expenseData = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const str = d.toISOString().split('T')[0];
       labels.push(i % 5 === 0 ? d.getDate() + '/' + (d.getMonth() + 1) : '');
-      const day = transactions.filter(t => t.date === str);
+      const day = state.transactions.filter(t => t.date === str);
       incomeData.push(day.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
       expenseData.push(day.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
     }
@@ -95,7 +100,7 @@ function getChartData() {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     labels.push(d.toLocaleDateString('es-AR', { month: 'short' }));
     const m = d.getMonth(), y = d.getFullYear();
-    const mo = transactions.filter(t => { const td = new Date(t.date); return td.getMonth() === m && td.getFullYear() === y; });
+    const mo = state.transactions.filter(t => { const td = new Date(t.date); return td.getMonth() === m && td.getFullYear() === y; });
     incomeData.push(mo.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0));
     expenseData.push(mo.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0));
   }
@@ -105,7 +110,7 @@ function getChartData() {
 function setChartPeriod(btn, period) {
   document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  chartPeriod = period;
+  state.chartPeriod = period;
   renderChart();
 }
 
@@ -163,7 +168,7 @@ function getRvDateRange() {
 
 function getRvTx() {
   const { from, to } = getRvDateRange();
-  return transactions.filter(t => t.date >= from && t.date <= to);
+  return state.transactions.filter(t => t.date >= from && t.date <= to);
 }
 
 /* ---- Main render ---- */
@@ -197,7 +202,7 @@ function renderRvKpis(tx, from, to) {
   const span = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
   const prevTo = new Date(from); prevTo.setDate(prevTo.getDate() - 1);
   const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - span + 1);
-  const prevTx = transactions.filter(t => t.date >= prevFrom.toISOString().split('T')[0] && t.date <= prevTo.toISOString().split('T')[0]);
+  const prevTx = state.transactions.filter(t => t.date >= prevFrom.toISOString().split('T')[0] && t.date <= prevTo.toISOString().split('T')[0]);
   const prevExp = prevTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const prevInc = prevTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
 
@@ -336,7 +341,7 @@ function renderRvDonut(tx) {
 
   const labels = sorted.map(([k]) => k);
   const data = sorted.map(([, v]) => v);
-  const colors = sorted.map(([k]) => CAT_COLORS[k] || '#94a3b8');
+  const colors = sorted.map(([k]) => state.CAT_COLORS[k] || '#94a3b8');
 
   if (rvChartDonut) rvChartDonut.destroy();
 
@@ -364,8 +369,8 @@ function renderRvDonut(tx) {
   leg.innerHTML = sorted.slice(0, 6).map(([cat, amt]) => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:7px;">
-        <div style="width:8px;height:8px;border-radius:2px;background:${CAT_COLORS[cat] || '#94a3b8'};flex-shrink:0;"></div>
-        <span style="font-size:12px;font-weight:600;">${CAT_ICONS[cat] || '📦'} ${cat}</span>
+        <div style="width:8px;height:8px;border-radius:2px;background:${state.CAT_COLORS[cat] || '#94a3b8'};flex-shrink:0;"></div>
+        <span style="font-size:12px;font-weight:600;">${state.CAT_ICONS[cat] || '📦'} ${cat}</span>
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">$${amt.toLocaleString('es-AR')}</span>
@@ -397,12 +402,12 @@ function renderRvCatTable(tx) {
 
   el.innerHTML = sorted.map(([cat, { amount, count }]) => {
     const pct = total > 0 ? (amount / total) * 100 : 0;
-    const color = CAT_COLORS[cat] || '#94a3b8';
+    const color = state.CAT_COLORS[cat] || '#94a3b8';
     return `
       <tr class="rv-cat-row">
         <td>
           <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:30px;height:30px;border-radius:8px;background:${color}18;display:flex;align-items:center;justify-content:center;font-size:14px;">${CAT_ICONS[cat] || '📦'}</div>
+            <div style="width:30px;height:30px;border-radius:8px;background:${color}18;display:flex;align-items:center;justify-content:center;font-size:14px;">${state.CAT_ICONS[cat] || '📦'}</div>
             <div>
               <div style="font-weight:600;">${cat}</div>
               <div class="rv-cat-mini-bar" style="width:80px;">
@@ -429,7 +434,7 @@ function renderRvMonthTable() {
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const m = d.getMonth(), y = d.getFullYear();
-    const monthTx = transactions.filter(t => {
+    const monthTx = state.transactions.filter(t => {
       const td = new Date(t.date); return td.getMonth() === m && td.getFullYear() === y;
     });
     const inc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -522,3 +527,21 @@ async function exportReportExcel() {
   showToast('📥 Reporte exportado en Excel');
 }
 
+
+
+// --- WINDOW ATTACHMENTS ---
+window.renderRvDonut = renderRvDonut;
+window.setChartPeriod = setChartPeriod;
+window.renderRvKpis = renderRvKpis;
+window.renderRvLineChart = renderRvLineChart;
+window.enterReportesView = enterReportesView;
+window.renderRvCatTable = renderRvCatTable;
+window.renderRvMonthTable = renderRvMonthTable;
+window.getRvDateRange = getRvDateRange;
+window.setRvPeriod = setRvPeriod;
+window.renderChart = renderChart;
+window.getWeekNum = getWeekNum;
+window.renderReportesView = renderReportesView;
+window.getRvTx = getRvTx;
+window.exportReportExcel = exportReportExcel;
+window.getChartData = getChartData;

@@ -1,7 +1,12 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
    CUENTAS
    ===================================================== */
-let accounts = [];
+
 let selectedAccountId = null;
 let editingAccountId = null;
 
@@ -22,19 +27,19 @@ const ACC_TYPE_COLORS = {
 
 function saveAccounts() {
   if (!IS_SERVER) {
-    localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(accounts));
+    localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(state.accounts));
   }
 }
 
 function initAccounts() {
-  if (accounts.length === 0) {
+  if (state.accounts.length === 0) {
     saveAccounts();
   }
 }
 
 /* ---- Nav entry ---- */
 function enterCuentasView() {
-  selectedAccountId = accounts.length > 0 ? accounts[0].id : null;
+  selectedAccountId = state.accounts.length > 0 ? state.accounts[0].id : null;
   renderCuentasView();
 }
 
@@ -49,10 +54,10 @@ function renderCuentasView() {
 
 /* Net worth */
 function renderCvWorth() {
-  const total = accounts.reduce((s, a) => s + a.balance, 0);
+  const total = state.accounts.reduce((s, a) => s + a.balance, 0);
   document.getElementById('cvNetWorth').textContent = '$' + total.toLocaleString('es-AR');
 
-  document.getElementById('cvWorthBreakdown').innerHTML = accounts.map(a => `
+  document.getElementById('cvWorthBreakdown').innerHTML = state.accounts.map(a => `
     <div class="cv-worth-chip">
       <div class="cv-worth-chip-dot" style="background:${ACC_TYPE_COLORS[a.type]};"></div>
       <span style="color:var(--muted);">${escHtml(a.name)}</span>
@@ -67,7 +72,7 @@ function renderCvWorth() {
 function renderCvCards() {
   const el = document.getElementById('cvCards');
 
-  const cards = accounts.map(a => {
+  const cards = state.accounts.map(a => {
     const color = ACC_TYPE_COLORS[a.type];
     const cls = 'acc-' + a.type;
     const sel = a.id === selectedAccountId ? 'selected' : '';
@@ -75,7 +80,7 @@ function renderCvCards() {
     // month change
     const now = new Date();
     const m = now.getMonth(), y = now.getFullYear();
-    const monthTx = transactions.filter(t => {
+    const monthTx = state.transactions.filter(t => {
       const d = new Date(t.date);
       const tAccId = t.account_id || t.accountId;
       return (tAccId === a.id) && d.getMonth() === m && d.getFullYear() === y;
@@ -122,12 +127,12 @@ function renderCvDetail() {
     return;
   }
 
-  const a = accounts.find(x => x.id === selectedAccountId);
+  const a = state.accounts.find(x => x.id === selectedAccountId);
   if (!a) return;
 
   const now = new Date();
   const m = now.getMonth(), y = now.getFullYear();
-  const accTx = transactions.filter(t => (t.account_id || t.accountId) === a.id);
+  const accTx = state.transactions.filter(t => (t.account_id || t.accountId) === a.id);
   const monthTx = accTx.filter(t => {
     const d = new Date(t.date);
     return d.getMonth() === m && d.getFullYear() === y;
@@ -315,7 +320,7 @@ async function saveMpToken(accountId) {
     if (res && res.ok) {
       showToast('Token de Mercado Pago actualizado');
       // Actualizar localmente el token de la cuenta
-      const acc = accounts.find(x => x.id === accountId);
+      const acc = state.accounts.find(x => x.id === accountId);
       if (acc) {
         acc.mp_token = tokenVal;
       }
@@ -350,7 +355,7 @@ async function syncWallet(accountId) {
 
     if (res && res.ok) {
       // Actualizar el balance local con el saldo real devuelto por el servidor
-      const acc = accounts.find(x => x.id === accountId);
+      const acc = state.accounts.find(x => x.id === accountId);
       if (acc && res.balance !== undefined) {
         acc.balance = res.balance;
       }
@@ -379,7 +384,7 @@ async function syncWallet(accountId) {
 
 // Modal para saldo inicial de MP
 function promptInitialBalance(accountId) {
-  const acc = accounts.find(a => a.id === parseInt(accountId));
+  const acc = state.accounts.find(a => a.id === parseInt(accountId));
   if (!acc) return;
   
   // Inject modal into DOM if it doesn't exist (due to cached main.html)
@@ -457,7 +462,7 @@ function saveMpBalance() {
   const accIdStr = document.getElementById('mpBalanceAccId').value;
   const balanceStr = document.getElementById('mpBalanceInput').value;
   
-  const acc = accounts.find(a => a.id === parseInt(accIdStr));
+  const acc = state.accounts.find(a => a.id === parseInt(accIdStr));
   if (!acc) return;
   
   if (balanceStr.trim() === '') {
@@ -591,7 +596,7 @@ async function disconnectWallet(accountId) {
 
     if (res && res.ok) {
       showToast('Billetera desconectada');
-      const acc = accounts.find(x => x.id === accountId);
+      const acc = state.accounts.find(x => x.id === accountId);
       if (acc) acc.mp_token = null;
       renderCuentasView();
     } else {
@@ -642,8 +647,8 @@ function renderCvTxList() {
     return;
   }
 
-  const a = accounts.find(x => x.id === selectedAccountId);
-  const list = transactions.filter(t => (t.account_id || t.accountId) === selectedAccountId)
+  const a = state.accounts.find(x => x.id === selectedAccountId);
+  const list = state.transactions.filter(t => (t.account_id || t.accountId) === selectedAccountId)
     .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15);
 
   document.getElementById('cvTxPanelTitle').textContent = a ? `Movimientos — ${a.name}` : 'Movimientos';
@@ -656,8 +661,8 @@ function renderCvTxList() {
 
   el.innerHTML = list.map(t => `
     <div class="cv-tx-item">
-      <div class="tx-icon" style="background:${CAT_COLORS[t.cat] || '#ffffff'}22;width:34px;height:34px;font-size:14px;border-radius:8px;flex-shrink:0;">
-        ${CAT_ICONS[t.cat] || '📦'}
+      <div class="tx-icon" style="background:${state.CAT_COLORS[t.cat] || '#ffffff'}22;width:34px;height:34px;font-size:14px;border-radius:8px;flex-shrink:0;">
+        ${state.CAT_ICONS[t.cat] || '📦'}
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;">${escHtml(t.desc)}</div>
@@ -676,10 +681,10 @@ function renderCvTxList() {
 function renderCvTransferSelects() {
   const fromEl = document.getElementById('cvTransferFrom');
   const toEl = document.getElementById('cvTransferTo');
-  const opts = accounts.map(a => `<option value="${a.id}">${ACC_TYPE_ICONS[a.type]} ${escHtml(a.name)} ($${a.balance.toLocaleString('es-AR')})</option>`).join('');
+  const opts = state.accounts.map(a => `<option value="${a.id}">${ACC_TYPE_ICONS[a.type]} ${escHtml(a.name)} ($${a.balance.toLocaleString('es-AR')})</option>`).join('');
   fromEl.innerHTML = opts;
   toEl.innerHTML = opts;
-  if (accounts.length > 1) toEl.selectedIndex = 1;
+  if (state.accounts.length > 1) toEl.selectedIndex = 1;
   initCustomSelects(document.getElementById('cvTransferFrom').parentNode);
   initCustomSelects(document.getElementById('cvTransferTo').parentNode);
 }
@@ -701,8 +706,8 @@ async function doTransfer() {
   if (fromId === toId) { showToast('⚠️ Seleccioná cuentas distintas', true); return; }
   if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
 
-  const fromAcc = accounts.find(x => x.id === fromId);
-  const toAcc = accounts.find(x => x.id === toId);
+  const fromAcc = state.accounts.find(x => x.id === fromId);
+  const toAcc = state.accounts.find(x => x.id === toId);
   if (!fromAcc || !toAcc) return;
 
   if (IS_SERVER) {
@@ -753,8 +758,8 @@ async function doTransfer() {
 
     const dateStr = new Date().toISOString().split('T')[0];
     const linkId = Date.now();
-    transactions.unshift({ id: linkId, type: 'expense', desc: `${desc} → ${toAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
-    transactions.unshift({ id: linkId + 1, type: 'income', desc: `${desc} ← ${fromAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
+    state.transactions.unshift({ id: linkId, type: 'expense', desc: `${desc} → ${toAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
+    state.transactions.unshift({ id: linkId + 1, type: 'income', desc: `${desc} ← ${fromAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
     save();
 
     document.getElementById('cvTransferAmount').value = '';
@@ -778,7 +783,7 @@ function openAccModal(id) {
   document.getElementById('amLimitWrap').style.display = 'none';
 
   if (id) {
-    const a = accounts.find(x => x.id === id);
+    const a = state.accounts.find(x => x.id === id);
     if (!a) return;
     document.getElementById('accModalTitle').textContent = 'Editar Cuenta';
     document.getElementById('amSaveBtn').textContent = 'Guardar cambios';
@@ -841,9 +846,9 @@ async function saveAccount() {
           body: JSON.stringify(payload)
         });
         if (res && res.ok) {
-          const idx = accounts.findIndex(x => x.id === editingAccountId);
+          const idx = state.accounts.findIndex(x => x.id === editingAccountId);
           if (idx > -1) {
-            accounts[idx] = res.account;
+            state.accounts[idx] = res.account;
             renderCuentasView();
             showToast('✏️ Cuenta actualizada');
           }
@@ -854,7 +859,7 @@ async function saveAccount() {
           body: JSON.stringify(payload)
         });
         if (res && res.ok) {
-          accounts.push(res.account);
+          state.accounts.push(res.account);
           selectedAccountId = res.account.id;
           renderCuentasView();
           showToast('✅ Cuenta creada');
@@ -866,16 +871,16 @@ async function saveAccount() {
     }
   } else {
     if (editingAccountId) {
-      const idx = accounts.findIndex(x => x.id === editingAccountId);
+      const idx = state.accounts.findIndex(x => x.id === editingAccountId);
       if (idx > -1) {
-        accounts[idx] = { ...accounts[idx], name, type, bank, balance, currency, limit, notes };
+        state.accounts[idx] = { ...state.accounts[idx], name, type, bank, balance, currency, limit, notes };
         saveAccounts();
         renderCuentasView();
         showToast('✏️ Cuenta actualizada');
       }
     } else {
       const newA = { id: Date.now(), name, type, bank, balance, currency, limit, notes };
-      accounts.push(newA);
+      state.accounts.push(newA);
       selectedAccountId = newA.id;
       saveAccounts();
       renderCuentasView();
@@ -888,7 +893,7 @@ async function saveAccount() {
 /* ---- Delete ---- */
 function confirmDeleteAccount(id) {
   editingAccountId = id;
-  const a = accounts.find(x => x.id === id);
+  const a = state.accounts.find(x => x.id === id);
   document.getElementById('adName').textContent = a ? a.name : '';
   document.getElementById('accDeleteOverlay').classList.add('open');
 }
@@ -911,7 +916,7 @@ async function doDeleteAccount() {
         // para que desaparezcan las transacciones que el backend eliminó en cascada
         await loadUserData();
         
-        if (selectedAccountId === editingAccountId) selectedAccountId = accounts[0]?.id || null;
+        if (selectedAccountId === editingAccountId) selectedAccountId = state.accounts[0]?.id || null;
         renderCuentasView();
         renderAll();
         showToast('🗑️ Cuenta eliminada');
@@ -921,8 +926,8 @@ async function doDeleteAccount() {
       showToast('⚠️ Error al eliminar en el servidor', true);
     }
   } else {
-    accounts = accounts.filter(x => x.id !== editingAccountId);
-    if (selectedAccountId === editingAccountId) selectedAccountId = accounts[0]?.id || null;
+    state.accounts = state.accounts.filter(x => x.id !== editingAccountId);
+    if (selectedAccountId === editingAccountId) selectedAccountId = state.accounts[0]?.id || null;
     saveAccounts();
     renderCuentasView();
     showToast('🗑️ Cuenta eliminada');
@@ -930,3 +935,36 @@ async function doDeleteAccount() {
   closeAccDeleteModal();
 }
 
+
+
+// --- WINDOW ATTACHMENTS ---
+window.toggleMpTokenVisibility = toggleMpTokenVisibility;
+window.renderCvTxList = renderCvTxList;
+window.swapTransfer = swapTransfer;
+window.renderCvWorth = renderCvWorth;
+window.openAccModal = openAccModal;
+window.saveMpToken = saveMpToken;
+window.closeAccModal = closeAccModal;
+window.saveAccount = saveAccount;
+window.saveMpBalance = saveMpBalance;
+window.saveAccounts = saveAccounts;
+window.renderCvDetail = renderCvDetail;
+window.onAmTypeChange = onAmTypeChange;
+window.cleanupDuplicates = cleanupDuplicates;
+window.formatMpBalanceInput = formatMpBalanceInput;
+window.confirmDeleteAccount = confirmDeleteAccount;
+window.renderCvCards = renderCvCards;
+window.doDeleteAccount = doDeleteAccount;
+window.disconnectWallet = disconnectWallet;
+window.initAccounts = initAccounts;
+window.promptInitialBalance = promptInitialBalance;
+window.selectAccount = selectAccount;
+window.closeMpBalanceModal = closeMpBalanceModal;
+window.syncWallet = syncWallet;
+window.loadWalletStatus = loadWalletStatus;
+window.formatTimeAgo = formatTimeAgo;
+window.renderCuentasView = renderCuentasView;
+window.closeAccDeleteModal = closeAccDeleteModal;
+window.enterCuentasView = enterCuentasView;
+window.doTransfer = doTransfer;
+window.renderCvTransferSelects = renderCvTransferSelects;

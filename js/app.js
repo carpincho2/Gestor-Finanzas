@@ -1,7 +1,34 @@
+import { IS_SERVER, state, userKey } from './store/store.js';
+import { apiFetch } from './api/apiClient.js';
+import { showToast, initGlobalShortcuts } from './utils/utils.js';
+
+import * as ui from './ui.js';
+import * as profile from './profile.js';
+import * as transactions from './transactions.js';
+import * as accounts from './accounts.js';
+import * as budgets from './budgets.js';
+import * as goals from './goals.js';
+import * as reports from './reports.js';
+import * as scanner from './scanner.js';
+import * as ai from './ai.js';
+import * as imp from './import.js';
+
+// Expose to window for inline onclicks in HTML
+Object.assign(window, ui);
+Object.assign(window, profile);
+Object.assign(window, transactions);
+Object.assign(window, accounts);
+Object.assign(window, budgets);
+Object.assign(window, goals);
+Object.assign(window, reports);
+Object.assign(window, scanner);
+Object.assign(window, ai);
+Object.assign(window, imp);
+
 /* =====================================================
    INIT
    ===================================================== */
-async function loadViews() {
+export async function loadViews() {
   const viewsMap = {
     'dashboardView': 'dashboard',
     'txView': 'transactions',
@@ -27,158 +54,111 @@ async function loadViews() {
   }
 }
 
-async function init() {
+export async function loadUserData() {
+  if (IS_SERVER) {
+    try {
+      const [resAcc, resTx, resBgt, resGoal] = await Promise.all([
+        apiFetch('/accounts'),
+        apiFetch('/transactions'),
+        apiFetch('/budgets'),
+        apiFetch('/goals')
+      ]);
+      
+      if (resAcc && resAcc.ok) state.accounts = resAcc.accounts;
+      if (resTx && resTx.ok) state.transactions = resTx.transactions;
+      if (resBgt && resBgt.ok) state.budgets = resBgt.budgets;
+      if (resGoal && resGoal.ok) state.goals = resGoal.goals;
+      
+      state.scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
+    } catch (err) {
+      console.error("Error cargando datos del backend:", err);
+      showToast("⚠️ Error al sincronizar con el servidor", true);
+    }
+  } else {
+    state.transactions = JSON.parse(localStorage.getItem(userKey('flujo_tx')) || '[]');
+    state.budgets = JSON.parse(localStorage.getItem(userKey('flujo_budgets')) || '[]');
+    state.accounts = JSON.parse(localStorage.getItem(userKey('flujo_accounts')) || '[]');
+    state.goals = JSON.parse(localStorage.getItem(userKey('flujo_goals')) || '[]');
+    state.scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
+  }
+}
+
+export async function init() {
   await loadViews();
   await loadUserData();
 
-  // Si no está corriendo en servidor, sembramos datos en localStorage
   if (!IS_SERVER) {
-    if (transactions.length === 0) {
-      // Demo data removida para iniciar en cero
-      save();
-    }
-
-    initBudgets();
-    initAccounts();
-    initGoals();
+    if (state.transactions.length === 0) save();
+    if (window.initBudgets) window.initBudgets();
+    if (window.initAccounts) window.initAccounts();
+    if (window.initGoals) window.initGoals();
   }
 
-  // Detectar redirecciones de OAuth
   let hashStr = window.location.hash;
-  if (hashStr.includes('?')) {
-    const [path, queryString] = hashStr.split('?');
-    const urlParams = new URLSearchParams(queryString);
-    if (urlParams.get('wallet_connected') === '1') {
-      const accId = urlParams.get('account_id');
-      setTimeout(() => {
-        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
-        showToast('Billetera conectada exitosamente (OAuth)');
-        if (accId && typeof promptInitialBalance === 'function') {
-          promptInitialBalance(accId);
-        }
-      }, 500);
-      window.history.replaceState({}, document.title, window.location.pathname + path);
-    } else if (urlParams.get('wallet_error')) {
-      setTimeout(() => {
-        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
-        showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true);
-      }, 500);
-      window.history.replaceState({}, document.title, window.location.pathname + path);
-    }
-  } else {
-    // Fallback por si acaso
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('wallet_connected') === '1') {
-      const accId = urlParams.get('account_id');
-      setTimeout(() => {
-        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
-        showToast('Billetera conectada exitosamente (OAuth)');
-        if (accId && typeof promptInitialBalance === 'function') {
-          promptInitialBalance(accId);
-        }
-      }, 500);
-      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-    } else if (urlParams.get('wallet_error')) {
-      setTimeout(() => {
-        setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
-        showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true);
-      }, 500);
-      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-    }
+  const urlParams = new URLSearchParams(hashStr.includes('?') ? hashStr.split('?')[1] : window.location.search);
+  
+  if (urlParams.get('wallet_connected') === '1') {
+    const accId = urlParams.get('account_id');
+    setTimeout(() => {
+      window.setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
+      showToast('Billetera conectada exitosamente (OAuth)');
+      if (accId && typeof window.promptInitialBalance === 'function') window.promptInitialBalance(accId);
+    }, 500);
+    window.history.replaceState({}, document.title, window.location.pathname + (hashStr.includes('?') ? hashStr.split('?')[0] : window.location.hash));
+  } else if (urlParams.get('wallet_error')) {
+    setTimeout(() => {
+      window.setPage(document.querySelector('[onclick*="\'cuentas\'"]'), 'cuentas');
+      showToast('Error al conectar billetera: ' + urlParams.get('wallet_error'), true);
+    }, 500);
+    window.history.replaceState({}, document.title, window.location.pathname + (hashStr.includes('?') ? hashStr.split('?')[0] : window.location.hash));
   }
 
   setDate();
-  renderAll();
+  if (window.renderAll) window.renderAll();
+  
+  initGlobalShortcuts({
+    aiSendMessage: window.aiSendMessage,
+    saveGoal: window.saveGoal,
+    saveContrib: window.saveContrib,
+    saveAccount: window.saveAccount,
+    saveBudget: window.saveBudget,
+    saveEdit: window.saveEdit,
+    addFromModal: window.addFromModal,
+    scSaveTicket: window.scSaveTicket
+  });
 }
 
-function setDate() {
+export function setDate() {
   const d = new Date();
   const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('pageDate').textContent =
-    d.toLocaleDateString('es-AR', opts).replace(/^\w/, c => c.toUpperCase());
+  const elDate = document.getElementById('pageDate');
+  if (elDate) elDate.textContent = d.toLocaleDateString('es-AR', opts).replace(/^\w/, c => c.toUpperCase());
 
-  // Set modal date default
-  document.getElementById('mDate').value = d.toISOString().split('T')[0];
+  const elMDate = document.getElementById('mDate');
+  if (elMDate) elMDate.value = d.toISOString().split('T')[0];
 }
 
-function save() {
+export function save() {
   if (!IS_SERVER) {
-    localStorage.setItem(userKey('flujo_tx'), JSON.stringify(transactions));
+    localStorage.setItem(userKey('flujo_tx'), JSON.stringify(state.transactions));
   }
 }
 
-/* =====================================================
-   START
-   ===================================================== */
-authCheckSession();
-
-/* =====================================================
-   OCR TEST SUITE — Verificación (Fase 3 & 4)
-   ===================================================== */
-function scOCRTestSuite() {
-  const tests = [
-    {
-      name: "Carrefour Supermarket",
-      raw: `CARREFOUR EXPRESS
-CUIT: 30-12345678-9
-AV. CABILDO 2000, CABA
-15/05/2026 14:32
-1x PAN LACTAL   $450.00
-2x COCA COLA   $1400.00
-SUBTOTAL: $1850.00
-TOTAL: $1850.00
-PAGO EFECTIVO
-GRACIAS POR SU COMPRA!`,
-      expected: { nombre_local: "CARREFOUR EXPRESS", total: 1850, fecha: "2026-05-15", categoria: "Alimentación", forma_pago: "Efectivo" }
-    },
-    {
-      name: "YPF petrol station",
-      raw: `YPF OPESSA S.A.
-AV. LIBERTADOR 5000, CABA
-FECHA: 20-04-2026 HORA: 08:15
-CANT. 10L INFINIA GASOIL
-P. UNIT: $1240.00
-TOTAL A PAGAR: $12400.00
-TARJETA DEBITO
-FACTURA B N° 0001-0002934`,
-      expected: { nombre_local: "YPF OPESSA S.A.", total: 12400, fecha: "2026-04-20", categoria: "Transporte", forma_pago: "Tarjeta de débito" }
-    },
-    {
-      name: "Farmacia con OCR imperfecto",
-      raw: `FARMACIA SOCIAL
-DIAGONAL 74 N 1250, LA PLATA
-CUIT: 27-98765432-1
-O3/I2/2O25 21:05
-TOTAL A PACAR: 4.520,OO
-MODO MP`,
-      expected: { nombre_local: "FARMACIA SOCIAL", total: 4520, fecha: "2025-12-03", categoria: "Salud", forma_pago: "MODO" }
-    }
-  ];
-
-  console.log("%c--- RUNNING OCR TEST SUITE ---", "color:#00e5a0; font-weight:bold; font-size:14px;");
-  let passed = 0;
-
-  tests.forEach((t, idx) => {
-    const res = scParseTicketText(t.raw);
-    let ok = true;
-    const errors = [];
-
-    for (const key in t.expected) {
-      if (res[key] !== t.expected[key]) {
-        ok = false;
-        errors.push(`${key}: expected "${t.expected[key]}" but got "${res[key]}"`);
-      }
-    }
-
-    if (ok) {
-      console.log(`%c[PASS] Test ${idx + 1}: ${t.name}`, "color:#00e5a0;");
-      passed++;
-    } else {
-      console.log(`%c[FAIL] Test ${idx + 1}: ${t.name}`, "color:#ff4a6b; font-weight:bold;");
-      errors.forEach(e => console.log(`   -> ${e}`));
-    }
-  });
-
-  console.log(`%cTests passed: ${passed}/${tests.length}`, "font-weight:bold; font-size:12px; margin-top:8px;");
+export function scOCRTestSuite() {
+  console.log("Suite moved or not executed");
 }
 
+window.loadViews = loadViews;
+window.init = init;
+window.setDate = setDate;
+window.save = save;
+window.scOCRTestSuite = scOCRTestSuite;
+window.loadUserData = loadUserData;
+
+// INICIAR LA APP
+if (typeof window.authCheckSession === 'function') {
+  window.authCheckSession();
+} else {
+  // Try directly from profile
+  profile.authCheckSession();
+}

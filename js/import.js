@@ -1,3 +1,8 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
    IMPORT EXCEL/CSV
    ===================================================== */
@@ -289,9 +294,9 @@ async function executeImport() {
   } else {
     txsToCreate.forEach(tx => {
       const newTx = { ...tx, id: Date.now() + Math.floor(Math.random()*1000) };
-      transactions.push(newTx);
+      state.transactions.push(newTx);
       
-      const acc = accounts.find(a => a.id === importTargetAccountId);
+      const acc = state.accounts.find(a => a.id === importTargetAccountId);
       if (acc) {
         if (newTx.type === 'income') acc.balance += newTx.amount;
         else acc.balance -= newTx.amount;
@@ -306,3 +311,13 @@ async function executeImport() {
     btn.textContent = 'Importar Transacciones';
   }
 }
+
+
+// --- WINDOW ATTACHMENTS ---
+window.closeImportModal = closeImportModal;
+window.executeImport = executeImport;
+window.openImportModal = openImportModal;
+window.injectImportModal = injectImportModal;
+window.buildMappingUI = buildMappingUI;
+window.handleImportFileSelect = handleImportFileSelect;
+window.processImportData = processImportData;

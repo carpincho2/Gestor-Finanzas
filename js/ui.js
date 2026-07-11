@@ -1,3 +1,8 @@
+import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { showToast, formatCurrency } from './utils/utils.js';
+import { apiFetch } from './api/apiClient.js';
+// (Imports cruzados inyectados por refactor)
+
 /* =====================================================
    NAV
    ===================================================== */
@@ -244,3 +249,10 @@ document.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => initCustomSelects(), 100);
 });
+
+
+// --- WINDOW ATTACHMENTS ---
+window.toggleSidebar = toggleSidebar;
+window.updateCustomSelectDisplay = updateCustomSelectDisplay;
+window.setPage = setPage;
+window.initCustomSelects = initCustomSelects;

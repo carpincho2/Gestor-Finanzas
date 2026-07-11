@@ -12,6 +12,7 @@ import * as reports from './reports.js';
 import * as scanner from './scanner.js';
 import * as ai from './ai.js';
 import * as imp from './import.js';
+import * as shopping from './shopping.js';
 
 // Expose to window for inline onclicks in HTML
 Object.assign(window, ui);
@@ -24,6 +25,7 @@ Object.assign(window, reports);
 Object.assign(window, scanner);
 Object.assign(window, ai);
 Object.assign(window, imp);
+Object.assign(window, shopping);
 
 /* =====================================================
    INIT
@@ -93,6 +95,9 @@ export async function init() {
     if (window.initAccounts) window.initAccounts();
     if (window.initGoals) window.initGoals();
   }
+
+  // Initialize Shopping UI
+  if (window.initShopping) window.initShopping();
 
   let hashStr = window.location.hash;
   const urlParams = new URLSearchParams(hashStr.includes('?') ? hashStr.split('?')[1] : window.location.search);

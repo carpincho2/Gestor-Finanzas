@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from database import engine, Base, DATABASE_URL, load_env
-from routers import auth, accounts, transactions, budgets, goals, wallets, ai
+from routers import auth, accounts, transactions, budgets, goals, wallets, ai, shopping
 
 # Load .env variables (if any are missing)
 load_env()
@@ -101,6 +101,7 @@ app.include_router(budgets.router)
 app.include_router(goals.router)
 app.include_router(wallets.router)
 app.include_router(ai.router)
+app.include_router(shopping.router)
 
 # Serve static files
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

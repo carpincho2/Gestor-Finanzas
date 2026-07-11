@@ -50,6 +50,8 @@ class Transaction(Base):
     cat = Column(String(100), nullable=False)
     date = Column(String(50), nullable=False)
     transfer_id = Column(Integer, nullable=True)
+    # ID externo del proveedor (ej: 'mp-1234567890') para deduplicar importaciones
+    external_id = Column(String(100), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now())
 
 class Budget(Base):

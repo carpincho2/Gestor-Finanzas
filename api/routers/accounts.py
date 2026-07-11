@@ -175,7 +175,9 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
             raise Exception(f"Adaptador {provider_name} no disponible")
         
         if wallet_conn and wallet_conn.last_sync_at:
-            since_date = wallet_conn.last_sync_at.strftime("%Y-%m-%d")
+            # Restamos 1 día como margen de seguridad para no perder transacciones
+            # que MP puede demorar en aprobar o que caigan en límites de hora/timezone
+            since_date = (wallet_conn.last_sync_at - timedelta(days=1)).strftime("%Y-%m-%d")
         else:
             since_date = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
         
@@ -210,13 +212,23 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
     skipped_count = 0
     
     for ntx in normalized_txs:
-        existing = db.query(Transaction).filter(
-            Transaction.user_id == user_id,
-            Transaction.account_id == id,
-            Transaction.amount == ntx.amount,
-            Transaction.date == ntx.date,
-            Transaction.desc == ntx.description
-        ).first()
+        # Deduplicar primero por external_id (ID único del proveedor, ej: 'mp-1234567890')
+        # Esto es lo más confiable: evita duplicados aunque el monto o la fecha varíen levemente.
+        if ntx.external_id:
+            existing = db.query(Transaction).filter(
+                Transaction.user_id == user_id,
+                Transaction.account_id == id,
+                Transaction.external_id == ntx.external_id
+            ).first()
+        else:
+            # Fallback para transacciones sin external_id (ingresadas manualmente)
+            existing = db.query(Transaction).filter(
+                Transaction.user_id == user_id,
+                Transaction.account_id == id,
+                Transaction.amount == ntx.amount,
+                Transaction.date == ntx.date,
+                Transaction.desc == ntx.description
+            ).first()
         
         if existing:
             skipped_count += 1
@@ -229,7 +241,8 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
             desc=ntx.description,
             amount=ntx.amount,
             cat=ntx.category_hint,
-            date=ntx.date
+            date=ntx.date,
+            external_id=ntx.external_id,  # Guardar el ID externo para futuras deduplications
         )
         db.add(new_tx)
         imported_count += 1

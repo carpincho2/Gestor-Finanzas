@@ -247,28 +247,26 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
         db.add(new_tx)
         imported_count += 1
     
-    balance_updated = False
-    try:
-        balance_info = adapter.fetch_balance(access_token=token)
-        if balance_info and "available_balance" in balance_info:
-            acc.balance = balance_info["available_balance"]
-            balance_updated = True
-    except Exception as balance_err:
-        print(f"⚠️ No se pudo obtener saldo de MP vía API: {balance_err}")
-    
-    if not balance_updated and imported_count > 0:
+    # ─── ACTUALIZACIÓN DE SALDO ────────────────────────────────────────────────
+    # El saldo de MP no se obtiene de la API (no hay un endpoint confiable para eso).
+    # En cambio, el usuario ingresa su saldo inicial al vincular la cuenta,
+    # y a partir de ahí lo mantenemos actualizado sumando ingresos y restando gastos
+    # por cada transacción NUEVA que detectemos en cada sincronización.
+    if imported_count > 0:
+        # Solo ajustamos si NO es la primera sincronización.
+        # En la primera sync, el usuario ya ingresó su saldo inicial manualmente,
+        # así que no queremos volver a sumarle todo el historial importado.
         is_first_sync = not (wallet_conn and wallet_conn.last_sync_at)
-            
+        
         if not is_first_sync:
-            # Solo ajustamos el saldo por las transacciones REALMENTE nuevas (imported_count > 0)
-            # Usamos external_id para contar correctamente, igual que el deduplicador principal
             for ntx in normalized_txs:
+                # Verificar que sea realmente nueva (no un duplicado que saltamos antes)
                 if ntx.external_id:
                     is_duplicate = db.query(Transaction).filter(
                         Transaction.user_id == user_id,
                         Transaction.account_id == id,
                         Transaction.external_id == ntx.external_id
-                    ).count() > 1  # > 1 porque ya insertamos la nueva arriba
+                    ).count() > 1  # > 1 porque la nueva ya fue insertada arriba
                 else:
                     is_duplicate = db.query(Transaction).filter(
                         Transaction.user_id == user_id,
@@ -281,6 +279,7 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
                 if is_duplicate:
                     continue
                 
+                # Aplicar delta: ingreso suma, gasto resta
                 if ntx.type == "income":
                     acc.balance += ntx.amount
                 else:

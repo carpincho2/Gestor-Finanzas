@@ -39,28 +39,60 @@ class PlaidAdapter(BaseWalletAdapter):
         return "Plaid (Bancos EE.UU./Europa)"
 
     def get_auth_url(self, state: str, redirect_uri: str, code_challenge: Optional[str] = None) -> str:
-        raise NotImplementedError(
-            "Plaid usa Plaid Link (widget frontend), no una URL de OAuth estándar. "
-            "Se necesita implementar el flujo de link_token."
-        )
+        # Plaid normally uses Link (frontend widget), but for our Router demo, 
+        # we will simulate an OAuth redirect flow that auto-accepts after 2 seconds.
+        return f"/api/wallets/plaid/callback?state={state}&code=mock-plaid-auth-code"
 
     def exchange_code(self, code: str, redirect_uri: str, code_verifier: Optional[str] = None) -> dict:
-        raise NotImplementedError(
-            "Implementar POST /item/public_token/exchange para obtener access_token."
-        )
+        return {
+            "access_token": "mock-plaid-access-token-12345",
+            "refresh_token": "mock-plaid-refresh-token",
+            "expires_in": 31536000, # 1 year
+            "provider_user_id": "plaid-user-999"
+        }
 
     def refresh_access_token(self, refresh_token: str) -> dict:
-        raise NotImplementedError(
-            "Plaid no usa refresh_token. Los access_tokens no expiran, "
-            "pero pueden ser invalidados por el usuario o el banco."
-        )
+        return {
+            "access_token": "mock-plaid-access-token-12345",
+            "refresh_token": "mock-plaid-refresh-token",
+            "expires_in": 31536000
+        }
 
     def fetch_transactions(self, access_token: str, since_date: Optional[str] = None, **kwargs) -> List[NormalizedTransaction]:
-        raise NotImplementedError(
-            "Implementar POST /transactions/get para obtener transacciones de Plaid."
-        )
+        # Return 2 mock transactions from Plaid (e.g. Chase Bank, Starbucks)
+        from datetime import datetime, timedelta
+        import random
+        
+        today = datetime.utcnow()
+        yesterday = today - timedelta(days=1)
+        
+        return [
+            NormalizedTransaction(
+                external_id=f"plaid-tx-{random.randint(1000, 9999)}",
+                provider=self.provider_name,
+                description="Starbucks Coffee",
+                amount=5.50,
+                currency="USD",
+                date=today.strftime("%Y-%m-%d"),
+                type="expense",
+                category_hint="Alimentación",
+                merchant_name="Starbucks"
+            ),
+            NormalizedTransaction(
+                external_id=f"plaid-tx-{random.randint(1000, 9999)}",
+                provider=self.provider_name,
+                description="Chase Bank Payroll",
+                amount=1500.00,
+                currency="USD",
+                date=yesterday.strftime("%Y-%m-%d"),
+                type="income",
+                category_hint="Salario",
+                merchant_name="Chase"
+            )
+        ]
 
     def revoke_access(self, access_token: str) -> bool:
-        raise NotImplementedError(
-            "Implementar POST /item/remove para desconectar la cuenta de Plaid."
-        )
+        return True
+
+from .base_adapter import register_adapter
+register_adapter(PlaidAdapter)

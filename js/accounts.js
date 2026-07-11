@@ -209,12 +209,18 @@ function renderCvDetail() {
         </div>
 
         <!-- Panel OAuth (Recomendado) -->
-        <div id="walletOAuthPanel_${a.id}" style="margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px solid rgba(56,189,248,0.15);">
+        <div id="walletOAuthPanel_${a.id}" style="margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px solid rgba(56,189,248,0.15); display:flex; flex-direction:column; gap:8px;">
           <button class="btn" style="width:100%;justify-content:center;background:#009ee3;color:white;font-size:12px;font-weight:600;border:none;padding:10px;" onclick="window.location.href='/api/wallets/mercadopago/connect?account_id=${a.id}'">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-            Conectar con Mercado Pago
+            Conectar Mercado Pago
           </button>
-          <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:6px;">Conexión segura y oficial (OAuth 2.0)</div>
+          <button class="btn" style="width:100%;justify-content:center;background:#111111;color:white;font-size:12px;font-weight:600;border:none;padding:10px;" onclick="window.location.href='/api/wallets/plaid/connect?account_id=${a.id}'">
+            Conectar Plaid (Bancos EE.UU./Europa)
+          </button>
+          <button class="btn" style="width:100%;justify-content:center;background:#440099;color:white;font-size:12px;font-weight:600;border:none;padding:10px;" onclick="window.location.href='/api/wallets/belvo/connect?account_id=${a.id}'">
+            Conectar Belvo (Bancos LatAm)
+          </button>
+          <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:2px;">Conexión segura mediante Router Multiproveedor</div>
         </div>
 
         <!-- Panel de conexión manual (token) -->
@@ -233,11 +239,11 @@ function renderCvDetail() {
 
         <!-- Botones de sincronización y saldo -->
         <div id="walletSyncPanel_${a.id}" style="display:none;flex-direction:column;gap:6px;">
-          <button class="btn" style="justify-content:center;font-size:12px;width:100%;background:#38bdf8;color:#0b0e13;" onclick="syncMercadoPago(${a.id})" id="btnSyncMp_${a.id}">
+          <button class="btn" style="justify-content:center;font-size:12px;width:100%;background:#38bdf8;color:#0b0e13;" onclick="syncWallet(${a.id})" id="btnSyncWallet_${a.id}">
             <svg class="sync-icon-svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="margin-right:4px;transition:transform 0.5s ease;">
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
             </svg>
-            <span id="syncMpText_${a.id}">Sincronizar Billetera</span>
+            <span id="syncWalletText_${a.id}">Sincronizar Billetera</span>
           </button>
         </div>
 
@@ -328,9 +334,9 @@ async function saveMpToken(accountId) {
   }
 }
 
-async function syncMercadoPago(accountId) {
-  const btn = document.getElementById(`btnSyncMp_${accountId}`);
-  const text = document.getElementById(`syncMpText_${accountId}`);
+async function syncWallet(accountId) {
+  const btn = document.getElementById(`btnSyncWallet_${accountId}`);
+  const text = document.getElementById(`syncWalletText_${accountId}`);
   const svg = btn ? btn.querySelector('.sync-icon-svg') : null;
 
   if (btn) btn.disabled = true;
@@ -360,8 +366,8 @@ async function syncMercadoPago(accountId) {
       showToast(res.error || 'Error en la sincronización', true);
     }
   } catch (err) {
-    console.error("Error al sincronizar Mercado Pago:", err);
-    showToast('Error de red al sincronizar con Mercado Pago', true);
+    console.error("Error al sincronizar billetera:", err);
+    showToast('Error de red al sincronizar con la billetera', true);
   } finally {
     if (btn) btn.disabled = false;
     if (text) text.textContent = 'Sincronizar Billetera';
@@ -514,9 +520,22 @@ async function loadWalletStatus(accountId) {
     const oauthPanel = document.getElementById(`walletOAuthPanel_${accountId}`);
 
     if (res.connected) {
+      // Guardar provider en el panel para usarlo al desconectar
+      const panelWrap = document.getElementById(`walletPanel_${accountId}`);
+      if (panelWrap) {
+        panelWrap.dataset.provider = res.provider;
+      }
+      
+      const providerNames = {
+        'mercadopago': 'Mercado Pago',
+        'plaid': 'Plaid',
+        'belvo': 'Belvo'
+      };
+      const providerLabel = providerNames[res.provider] || 'CONECTADA';
+
       // Billetera conectada: ocultar opciones de conexión, mostrar sync/desconectar
       if (badge) {
-        badge.textContent = '🟢 CONECTADA';
+        badge.textContent = `🟢 ${providerLabel.toUpperCase()}`;
         badge.style.background = 'rgba(34,197,94,0.12)';
         badge.style.color = '#22c55e';
       }
@@ -563,7 +582,10 @@ async function disconnectWallet(accountId) {
   if (!confirm('¿Estás seguro de desconectar la billetera? Tus transacciones importadas se mantienen.')) return;
 
   try {
-    const res = await apiFetchLocal(`/wallets/mercadopago/disconnect/${accountId}`, {
+    const panelWrap = document.getElementById(`walletPanel_${accountId}`);
+    const provider = panelWrap ? panelWrap.dataset.provider : 'mercadopago'; // default fallback
+    
+    const res = await apiFetchLocal(`/wallets/${provider}/disconnect/${accountId}`, {
       method: 'POST'
     });
 

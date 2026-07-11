@@ -62,8 +62,8 @@ function renderTransactions() {
         ${CAT_ICONS[t.cat] || '📦'}
       </div>
       <div class="tx-info">
-        <div class="tx-name">${t.desc}</div>
-        <div class="tx-cat">${t.cat}</div>
+        <div class="tx-name">${escHtml(t.desc)}</div>
+        <div class="tx-cat">${escHtml(t.cat)}</div>
       </div>
       <div class="tx-right">
         <div class="tx-amount ${t.type}">${t.type === 'income' ? '+' : '-'}$${t.amount.toLocaleString('es-AR')}</div>

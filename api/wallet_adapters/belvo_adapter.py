@@ -39,28 +39,58 @@ class BelvoAdapter(BaseWalletAdapter):
         return "Belvo (México/Colombia/Brasil)"
 
     def get_auth_url(self, state: str, redirect_uri: str, code_challenge: Optional[str] = None) -> str:
-        raise NotImplementedError(
-            "Belvo usa un Connect Widget (similar a Plaid Link), no OAuth estándar. "
-            "Se necesita implementar el flujo del widget."
-        )
+        # Simulate OAuth redirect flow for our Router demo.
+        return f"/api/wallets/belvo/callback?state={state}&code=mock-belvo-auth-code"
 
     def exchange_code(self, code: str, redirect_uri: str, code_verifier: Optional[str] = None) -> dict:
-        raise NotImplementedError(
-            "Implementar la creación de links y obtención de credenciales de Belvo."
-        )
+        return {
+            "access_token": "mock-belvo-access-token-67890",
+            "refresh_token": "mock-belvo-refresh-token",
+            "expires_in": 31536000,
+            "provider_user_id": "belvo-user-404"
+        }
 
     def refresh_access_token(self, refresh_token: str) -> dict:
-        raise NotImplementedError(
-            "Belvo maneja la renovación de credenciales internamente. "
-            "Los links pueden requerir re-autenticación periódica."
-        )
+        return {
+            "access_token": "mock-belvo-access-token-67890",
+            "refresh_token": "mock-belvo-refresh-token",
+            "expires_in": 31536000
+        }
 
     def fetch_transactions(self, access_token: str, since_date: Optional[str] = None, **kwargs) -> List[NormalizedTransaction]:
-        raise NotImplementedError(
-            "Implementar GET /api/transactions/ para obtener transacciones de Belvo."
-        )
+        # Return mock transactions from Belvo (e.g. Nubank, Rappi)
+        from datetime import datetime, timedelta
+        import random
+        
+        today = datetime.utcnow()
+        
+        return [
+            NormalizedTransaction(
+                external_id=f"belvo-tx-{random.randint(1000, 9999)}",
+                provider=self.provider_name,
+                description="Rappi Supermercado",
+                amount=25000.00,
+                currency="COP",
+                date=today.strftime("%Y-%m-%d"),
+                type="expense",
+                category_hint="Alimentación",
+                merchant_name="Rappi"
+            ),
+            NormalizedTransaction(
+                external_id=f"belvo-tx-{random.randint(1000, 9999)}",
+                provider=self.provider_name,
+                description="Nubank Transferencia",
+                amount=150.00,
+                currency="BRL",
+                date=today.strftime("%Y-%m-%d"),
+                type="income",
+                category_hint="Transferencia",
+                merchant_name="Nubank"
+            )
+        ]
 
     def revoke_access(self, access_token: str) -> bool:
-        raise NotImplementedError(
-            "Implementar DELETE /api/links/{id}/ para desconectar la cuenta de Belvo."
-        )
+        return True
+
+from .base_adapter import register_adapter
+register_adapter(BelvoAdapter)

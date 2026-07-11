@@ -257,21 +257,30 @@ async def sync_account_transactions(id: int, request: Request, db: Session = Dep
         print(f"⚠️ No se pudo obtener saldo de MP vía API: {balance_err}")
     
     if not balance_updated and imported_count > 0:
-        is_first_sync = True
-        if wallet_conn and wallet_conn.last_sync_at:
-            is_first_sync = False
+        is_first_sync = not (wallet_conn and wallet_conn.last_sync_at)
             
         if not is_first_sync:
+            # Solo ajustamos el saldo por las transacciones REALMENTE nuevas (imported_count > 0)
+            # Usamos external_id para contar correctamente, igual que el deduplicador principal
             for ntx in normalized_txs:
-                existing = db.query(Transaction).filter(
-                    Transaction.user_id == user_id,
-                    Transaction.account_id == id,
-                    Transaction.amount == ntx.amount,
-                    Transaction.date == ntx.date,
-                    Transaction.desc == ntx.description
-                ).count()
-                if existing > 1:
+                if ntx.external_id:
+                    is_duplicate = db.query(Transaction).filter(
+                        Transaction.user_id == user_id,
+                        Transaction.account_id == id,
+                        Transaction.external_id == ntx.external_id
+                    ).count() > 1  # > 1 porque ya insertamos la nueva arriba
+                else:
+                    is_duplicate = db.query(Transaction).filter(
+                        Transaction.user_id == user_id,
+                        Transaction.account_id == id,
+                        Transaction.amount == ntx.amount,
+                        Transaction.date == ntx.date,
+                        Transaction.desc == ntx.description
+                    ).count() > 1
+                
+                if is_duplicate:
                     continue
+                
                 if ntx.type == "income":
                     acc.balance += ntx.amount
                 else:

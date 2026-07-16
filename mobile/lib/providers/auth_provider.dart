@@ -64,7 +64,7 @@ class AuthNotifier extends Notifier<AuthState> {
           user: response['user'],
         );
       } else {
-        state = state.copyWith(isLoading: false, error: response['error'] ?? 'Credenciales inválidas');
+        state = state.copyWith(isLoading: false, error: 'RAW: $response');
       }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Error de conexión: $e');
@@ -90,7 +90,7 @@ class AuthNotifier extends Notifier<AuthState> {
           user: response['user'],
         );
       } else {
-        state = state.copyWith(isLoading: false, error: response['error'] ?? 'Error al registrarse');
+        state = state.copyWith(isLoading: false, error: 'RAW: $response');
       }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Error de conexión: $e');
@@ -135,7 +135,7 @@ class AuthNotifier extends Notifier<AuthState> {
           user: response['user'],
         );
       } else {
-        state = state.copyWith(isLoading: false, error: response['error'] ?? 'Error de Google Sign In');
+        state = state.copyWith(isLoading: false, error: 'RAW: $response');
       }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Error al conectar con Google: $e');

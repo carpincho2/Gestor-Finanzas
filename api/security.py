@@ -1,7 +1,14 @@
 import os
 import bcrypt
+import jwt
+from datetime import datetime, timedelta, timezone
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request
+
+# Configuración JWT
+JWT_SECRET = os.getenv("ENCRYPTION_KEY", "super-secret-default-key")
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION_MINUTES = 60 * 24 * 30 # 30 días
 
 class TokenEncryptionService:
     """Servicio de cifrado simétrico para tokens OAuth usando Fernet."""
@@ -46,8 +53,29 @@ class TokenEncryptionService:
 # Instancia global del servicio de cifrado
 token_crypto = TokenEncryptionService()
 
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRATION_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return encoded_jwt
+
 def get_current_user_id(request: Request):
+    # 1. Intentar obtener el usuario desde el token JWT (Flutter/Mobile)
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            user_id: int = payload.get("sub")
+            if user_id is not None:
+                return user_id
+        except jwt.PyJWTError:
+            pass # Si falla el token, caer a la cookie o lanzar error luego
+            
+    # 2. Intentar obtener el usuario desde la Cookie de Sesión (Web)
     user_id = request.session.get("user_id")
+    
     if not user_id:
         raise HTTPException(status_code=401, detail="No autorizado")
     return user_id

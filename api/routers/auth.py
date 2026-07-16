@@ -12,7 +12,7 @@ from models import User, Account, Transaction, Budget, Goal, GoalContribution, T
 from schemas import (
     LoginRequest, RegisterRequest, GoogleRequest, ProfileUpdateRequest, PasswordChangeRequest
 )
-from security import DUMMY_PASSWORD_HASH
+from security import DUMMY_PASSWORD_HASH, create_access_token
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -192,8 +192,12 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
     request.session["user_id"] = user.id
     request.session["email"] = user.email
     
+    # Generar token JWT para Mobile
+    access_token = create_access_token(data={"sub": user.id, "email": user.email})
+    
     return {
         "ok": True,
+        "token": access_token,
         "user": {
             "id": user.id,
             "name": user.name,
@@ -257,8 +261,11 @@ async def register(request: Request, payload: RegisterRequest, db: Session = Dep
     request.session["user_id"] = new_user.id
     request.session["email"] = new_user.email
     
+    access_token = create_access_token(data={"sub": new_user.id, "email": new_user.email})
+    
     return {
         "ok": True,
+        "token": access_token,
         "user": {
             "id": new_user.id,
             "name": new_user.name,
@@ -337,8 +344,11 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
     request.session["user_id"] = user.id
     request.session["email"] = user.email
     
+    access_token = create_access_token(data={"sub": user.id, "email": user.email})
+    
     return {
         "ok": True,
+        "token": access_token,
         "user": {
             "id": user.id,
             "name": user.name,

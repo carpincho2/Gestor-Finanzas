@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api_service.dart';
 
 class AuthState {
@@ -93,6 +94,51 @@ class AuthNotifier extends Notifier<AuthState> {
       }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Error de conexión: $e');
+    }
+  }
+
+  Future<void> loginWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final googleSignIn = GoogleSignIn.instance;
+      await googleSignIn.initialize(
+        serverClientId: '181912655817-l553ttb3c4p8q0q6p7kfon2e5p60bfcu.apps.googleusercontent.com',
+      );
+
+      await googleSignIn.signOut();
+
+      final googleUser = await googleSignIn.authenticate();
+      if (googleUser == null) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        state = state.copyWith(isLoading: false, error: 'No se pudo obtener el token de Google');
+        return;
+      }
+
+      final api = ApiService();
+      final response = await api.post('/api/auth/google', {
+        'credential': idToken,
+      });
+
+      if (response['ok'] == true && response['token'] != null) {
+        await api.setToken(response['token']);
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: response['user'],
+        );
+      } else {
+        state = state.copyWith(isLoading: false, error: response['error'] ?? 'Error de Google Sign In');
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Error al conectar con Google: $e');
     }
   }
 

@@ -33,10 +33,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  void _mockGoogleLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Inicio con Google próximamente disponible.')),
-    );
+  void _googleLogin() {
+    ref.read(authProvider.notifier).loginWithGoogle();
   }
 
   @override
@@ -163,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 SizedBox(
                   height: 56,
                   child: OutlinedButton.icon(
-                    onPressed: _mockGoogleLogin,
+                    onPressed: authState.isLoading ? null : _googleLogin,
                     icon: const Icon(Icons.g_mobiledata, color: Colors.white, size: 32),
                     label: const Text('Continuar con Google', style: TextStyle(fontSize: 16, color: Colors.white)),
                     style: OutlinedButton.styleFrom(

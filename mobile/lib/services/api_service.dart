@@ -52,10 +52,17 @@ class ApiService {
       body: jsonEncode(body),
     );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Error en API (${response.statusCode}): ${response.body}');
+    try {
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        decoded['ok'] = false;
+        if (!decoded.containsKey('error')) {
+          decoded['error'] = 'Error ${response.statusCode}';
+        }
+      }
+      return decoded;
+    } catch (e) {
+      return {'ok': false, 'error': 'Error de red (${response.statusCode})'};
     }
   }
 
@@ -66,10 +73,17 @@ class ApiService {
       headers: _headers,
     );
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Error en API (${response.statusCode}): ${response.body}');
+    try {
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        decoded['ok'] = false;
+        if (!decoded.containsKey('error')) {
+          decoded['error'] = 'Error ${response.statusCode}';
+        }
+      }
+      return decoded;
+    } catch (e) {
+      return {'ok': false, 'error': 'Error de red (${response.statusCode})'};
     }
   }
 
@@ -86,10 +100,17 @@ class ApiService {
     final streamedResponse = await request.send();
     final response = await http.Response.fromStream(streamedResponse);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Error en API (${response.statusCode}): ${response.body}');
+    try {
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        decoded['ok'] = false;
+        if (!decoded.containsKey('error')) {
+          decoded['error'] = 'Error ${response.statusCode}';
+        }
+      }
+      return decoded;
+    } catch (e) {
+      return {'ok': false, 'error': 'Error de red (${response.statusCode})'};
     }
   }
 }

@@ -312,7 +312,7 @@ async function saveMpToken(accountId) {
   }
 
   try {
-    const res = await apiFetchLocal(`/accounts/${accountId}/token`, {
+    const res = await apiFetch(`/accounts/${accountId}/token`, {
       method: 'PUT',
       body: JSON.stringify({ mp_token: tokenVal })
     });
@@ -349,7 +349,7 @@ async function syncWallet(accountId) {
   if (svg) svg.classList.add('spin-anim');
 
   try {
-    const res = await apiFetchLocal(`/accounts/${accountId}/sync`, {
+    const res = await apiFetch(`/accounts/${accountId}/sync`, {
       method: 'POST'
     });
 
@@ -514,7 +514,7 @@ function saveMpBalance() {
 
 async function loadWalletStatus(accountId) {
   try {
-    const res = await apiFetchLocal(`/wallets/status/${accountId}`);
+    const res = await apiFetch(`/wallets/status/${accountId}`);
     if (!res || !res.ok) return;
 
     const badge = document.getElementById(`walletStatusBadge_${accountId}`);
@@ -590,7 +590,7 @@ async function disconnectWallet(accountId) {
     const panelWrap = document.getElementById(`walletPanel_${accountId}`);
     const provider = panelWrap ? panelWrap.dataset.provider : 'mercadopago'; // default fallback
     
-    const res = await apiFetchLocal(`/wallets/${provider}/disconnect/${accountId}`, {
+    const res = await apiFetch(`/wallets/${provider}/disconnect/${accountId}`, {
       method: 'POST'
     });
 
@@ -715,7 +715,7 @@ async function doTransfer() {
       const dateStr = new Date().toISOString().split('T')[0];
       const linkId = Date.now();
       
-      await apiFetchLocal('/transactions', {
+      await apiFetch('/transactions', {
         method: 'POST',
         body: JSON.stringify({
           account_id: fromId,
@@ -728,7 +728,7 @@ async function doTransfer() {
         })
       });
       
-      await apiFetchLocal('/transactions', {
+      await apiFetch('/transactions', {
         method: 'POST',
         body: JSON.stringify({
           account_id: toId,
@@ -841,7 +841,7 @@ async function saveAccount() {
   if (IS_SERVER) {
     try {
       if (editingAccountId) {
-        const res = await apiFetchLocal(`/accounts/${editingAccountId}`, {
+        const res = await apiFetch(`/accounts/${editingAccountId}`, {
           method: 'PUT',
           body: JSON.stringify(payload)
         });
@@ -854,7 +854,7 @@ async function saveAccount() {
           }
         }
       } else {
-        const res = await apiFetchLocal('/accounts', {
+        const res = await apiFetch('/accounts', {
           method: 'POST',
           body: JSON.stringify(payload)
         });
@@ -908,7 +908,7 @@ function closeAccDeleteModal(e) {
 async function doDeleteAccount() {
   if (IS_SERVER) {
     try {
-      const res = await apiFetchLocal(`/accounts/${editingAccountId}`, {
+      const res = await apiFetch(`/accounts/${editingAccountId}`, {
         method: 'DELETE'
       });
       if (res && res.ok) {

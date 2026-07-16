@@ -401,7 +401,7 @@ async function saveBudget() {
   if (IS_SERVER) {
     try {
       if (bmEditingId) {
-        await apiFetchLocal(`/budgets/${bmEditingId}`, {
+        await apiFetch(`/budgets/${bmEditingId}`, {
           method: 'PUT',
           body: JSON.stringify({
             cat,
@@ -414,7 +414,7 @@ async function saveBudget() {
         });
         showToast('Presupuesto actualizado');
       } else {
-        await apiFetchLocal('/budgets', {
+        await apiFetch('/budgets', {
           method: 'POST',
           body: JSON.stringify({
             cat,
@@ -474,7 +474,7 @@ function closeBudgetDeleteModal(e) {
 async function doDeleteBudget() {
   if (IS_SERVER) {
     try {
-      await apiFetchLocal(`/budgets/${bmEditingId}`, {
+      await apiFetch(`/budgets/${bmEditingId}`, {
         method: 'DELETE'
       });
       await loadUserData();

@@ -199,7 +199,7 @@ function addFromModal() {
 async function addTransaction(tx) {
   if (IS_SERVER) {
     try {
-      await apiFetchLocal('/transactions', {
+      await apiFetch('/transactions', {
         method: 'POST',
         body: JSON.stringify({
           account_id: tx.account_id || null,
@@ -489,7 +489,7 @@ async function saveEdit() {
   if (IS_SERVER) {
     try {
       const orig = state.transactions.find(x => x.id === editingId);
-      await apiFetchLocal(`/transactions/${editingId}`, {
+      await apiFetch(`/transactions/${editingId}`, {
         method: 'PUT',
         body: JSON.stringify({
           account_id: orig ? orig.account_id : null,
@@ -547,7 +547,7 @@ function closeDeleteModal(e) {
 async function doDelete() {
   if (IS_SERVER) {
     try {
-      await apiFetchLocal(`/transactions/${editingId}`, {
+      await apiFetch(`/transactions/${editingId}`, {
         method: 'DELETE'
       });
       await loadUserData();

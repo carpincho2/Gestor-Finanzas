@@ -423,7 +423,7 @@ async function saveGoal() {
   if (IS_SERVER) {
     try {
       if (editingGoalId) {
-        await apiFetchLocal(`/goals/${editingGoalId}`, {
+        await apiFetch(`/goals/${editingGoalId}`, {
           method: 'PUT',
           body: JSON.stringify({
             name,
@@ -439,7 +439,7 @@ async function saveGoal() {
         });
         showToast('Objetivo actualizado');
       } else {
-        await apiFetchLocal('/goals', {
+        await apiFetch('/goals', {
           method: 'POST',
           body: JSON.stringify({
             name,
@@ -531,7 +531,7 @@ async function saveContrib() {
 
   if (IS_SERVER) {
     try {
-      await apiFetchLocal(`/goals/${contribGoalId}/contributions`, {
+      await apiFetch(`/goals/${contribGoalId}/contributions`, {
         method: 'POST',
         body: JSON.stringify({
           amount,
@@ -565,7 +565,7 @@ async function deleteContrib(goalId, contribId) {
 
   if (IS_SERVER) {
     try {
-      await apiFetchLocal(`/goals/${goalId}/contributions/${contribId}`, {
+      await apiFetch(`/goals/${goalId}/contributions/${contribId}`, {
         method: 'DELETE'
       });
       await loadUserData();
@@ -606,7 +606,7 @@ function closeGoalDeleteModal(e) {
 async function doDeleteGoal() {
   if (IS_SERVER) {
     try {
-      await apiFetchLocal(`/goals/${editingGoalId}`, {
+      await apiFetch(`/goals/${editingGoalId}`, {
         method: 'DELETE'
       });
       await loadUserData();

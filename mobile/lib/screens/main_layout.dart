@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dashboard_screen.dart';
 import 'shopping_screen.dart';
+import 'scanner_screen.dart';
 import '../providers/auth_provider.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
@@ -41,6 +42,17 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         index: _currentIndex,
         children: _screens,
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ScannerScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFF10B981),
+        child: const Icon(Icons.document_scanner, color: Colors.white),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: Colors.white10, width: 1)),

@@ -73,4 +73,24 @@ class ApiService {
       throw Exception('Error en API (${response.statusCode}): ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> postMultipart(String endpoint, String filePath) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    final request = http.MultipartRequest('POST', uri);
+    
+    if (_jwtToken != null) {
+      request.headers['Authorization'] = 'Bearer $_jwtToken';
+    }
+
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Error en API (${response.statusCode}): ${response.body}');
+    }
+  }
 }

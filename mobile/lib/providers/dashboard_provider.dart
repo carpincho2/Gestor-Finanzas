@@ -17,8 +17,11 @@ class DashboardState {
   }
 }
 
-class DashboardNotifier extends StateNotifier<DashboardState> {
-  DashboardNotifier() : super(DashboardState());
+class DashboardNotifier extends Notifier<DashboardState> {
+  @override
+  DashboardState build() {
+    return DashboardState();
+  }
 
   Future<void> fetchAccounts() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -40,6 +43,6 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   }
 }
 
-final dashboardProvider = StateNotifierProvider<DashboardNotifier, DashboardState>((ref) {
+final dashboardProvider = NotifierProvider<DashboardNotifier, DashboardState>(() {
   return DashboardNotifier();
 });

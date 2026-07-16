@@ -29,9 +29,11 @@ class AuthState {
   }
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(AuthState()) {
+class AuthNotifier extends Notifier<AuthState> {
+  @override
+  AuthState build() {
     _init();
+    return AuthState();
   }
 
   Future<void> _init() async {
@@ -68,6 +70,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> register(String name, String email, String password) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final api = ApiService();
+      final response = await api.post('/api/auth/register', {
+        'name': name,
+        'email': email,
+        'password': password,
+      });
+
+      if (response['ok'] == true && response['token'] != null) {
+        await api.setToken(response['token']);
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: response['user'],
+        );
+      } else {
+        state = state.copyWith(isLoading: false, error: response['error'] ?? 'Error al registrarse');
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Error de conexión: $e');
+    }
+  }
+
   Future<void> logout() async {
     final api = ApiService();
     await api.clearToken();
@@ -75,6 +103,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(() {
   return AuthNotifier();
 });

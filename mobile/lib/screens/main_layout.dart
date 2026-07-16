@@ -26,7 +26,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
-        title: const Text('Gestor de Finanzas', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text('Flujo', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
         actions: [

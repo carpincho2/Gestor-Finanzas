@@ -20,7 +20,7 @@ class MyApp extends ConsumerWidget {
     final authState = ref.watch(authProvider);
 
     return MaterialApp(
-      title: 'Gestor de Finanzas',
+      title: 'Flujo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(

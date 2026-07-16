@@ -18,8 +18,11 @@ class ShoppingState {
   }
 }
 
-class ShoppingNotifier extends StateNotifier<ShoppingState> {
-  ShoppingNotifier() : super(ShoppingState());
+class ShoppingNotifier extends Notifier<ShoppingState> {
+  @override
+  ShoppingState build() {
+    return ShoppingState();
+  }
 
   Future<void> analyzeUrl({
     required String url,
@@ -49,6 +52,6 @@ class ShoppingNotifier extends StateNotifier<ShoppingState> {
   }
 }
 
-final shoppingProvider = StateNotifierProvider<ShoppingNotifier, ShoppingState>((ref) {
+final shoppingProvider = NotifierProvider<ShoppingNotifier, ShoppingState>(() {
   return ShoppingNotifier();
 });

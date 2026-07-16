@@ -17,8 +17,11 @@ class ScannerState {
   }
 }
 
-class ScannerNotifier extends StateNotifier<ScannerState> {
-  ScannerNotifier() : super(ScannerState());
+class ScannerNotifier extends Notifier<ScannerState> {
+  @override
+  ScannerState build() {
+    return ScannerState();
+  }
 
   Future<void> scanTicket(String filePath) async {
     state = state.copyWith(isLoading: true, error: null);
@@ -42,6 +45,6 @@ class ScannerNotifier extends StateNotifier<ScannerState> {
   }
 }
 
-final scannerProvider = StateNotifierProvider<ScannerNotifier, ScannerState>((ref) {
+final scannerProvider = NotifierProvider<ScannerNotifier, ScannerState>(() {
   return ScannerNotifier();
 });

@@ -59,4 +59,18 @@ class ApiService {
       throw Exception('Error en API (${response.statusCode}): ${response.body}');
     }
   }
+
+  Future<Map<String, dynamic>> get(String endpoint) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    final response = await http.get(
+      uri,
+      headers: _headers,
+    );
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Error en API (${response.statusCode}): ${response.body}');
+    }
+  }
 }

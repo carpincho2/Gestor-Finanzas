@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'screens/shopping_screen.dart';
+import 'screens/main_layout.dart';
 import 'screens/login_screen.dart';
 import 'providers/auth_provider.dart';
 
@@ -29,7 +29,7 @@ class MyApp extends ConsumerWidget {
         ),
         useMaterial3: true,
       ),
-      home: authState.isAuthenticated ? const ShoppingScreen() : const LoginScreen(),
+      home: authState.isAuthenticated ? const MainLayout() : const LoginScreen(),
     );
   }
 }

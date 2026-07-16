@@ -1,0 +1,80 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/api_service.dart';
+
+class AuthState {
+  final bool isLoading;
+  final String? error;
+  final bool isAuthenticated;
+  final Map<String, dynamic>? user;
+
+  AuthState({
+    this.isLoading = false,
+    this.error,
+    this.isAuthenticated = false,
+    this.user,
+  });
+
+  AuthState copyWith({
+    bool? isLoading,
+    String? error,
+    bool? isAuthenticated,
+    Map<String, dynamic>? user,
+  }) {
+    return AuthState(
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      user: user ?? this.user,
+    );
+  }
+}
+
+class AuthNotifier extends StateNotifier<AuthState> {
+  AuthNotifier() : super(AuthState()) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final api = ApiService();
+    await api.init();
+    if (api.isAuthenticated) {
+      state = state.copyWith(isAuthenticated: true);
+      // Opcional: hacer un fetch a /api/auth/me para revalidar el token
+    }
+  }
+
+  Future<void> login(String email, String password) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final api = ApiService();
+      final response = await api.post('/api/auth/login', {
+        'email': email,
+        'password': password,
+      });
+
+      if (response['ok'] == true && response['token'] != null) {
+        await api.setToken(response['token']);
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: response['user'],
+        );
+      } else {
+        state = state.copyWith(isLoading: false, error: response['error'] ?? 'Credenciales inválidas');
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Error de conexión: $e');
+    }
+  }
+
+  Future<void> logout() async {
+    final api = ApiService();
+    await api.clearToken();
+    state = AuthState(); // Reset a estado inicial (no autenticado)
+  }
+}
+
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return AuthNotifier();
+});

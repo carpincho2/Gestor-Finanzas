@@ -1,26 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/shopping_screen.dart';
+import 'screens/login_screen.dart';
+import 'providers/auth_provider.dart';
 
 void main() {
-  // Envolvemos la app en un ProviderScope para que Riverpod funcione en toda la jerarquía
-  runApp(const ProviderScope(child: FlujoApp()));
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-class FlujoApp extends StatelessWidget {
-  const FlujoApp({super.key});
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
     return MaterialApp(
       title: 'Gestor de Finanzas',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF38BDF8), brightness: Brightness.dark),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF38BDF8),
+          brightness: Brightness.dark,
+        ),
         useMaterial3: true,
-        fontFamily: 'Inter',
       ),
-      home: const ShoppingScreen(),
+      home: authState.isAuthenticated ? const ShoppingScreen() : const LoginScreen(),
     );
   }
 }

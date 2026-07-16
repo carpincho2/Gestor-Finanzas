@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -9,16 +10,31 @@ class ApiService {
   ApiService._internal();
 
   String? _jwtToken;
+  static const String _tokenKey = 'jwt_token';
 
-  void setToken(String token) {
-    _jwtToken = token;
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    _jwtToken = prefs.getString(_tokenKey);
   }
 
-  // Detectar la IP automáticamente según la plataforma
+  Future<void> setToken(String token) async {
+    _jwtToken = token;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, token);
+  }
+
+  Future<void> clearToken() async {
+    _jwtToken = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+  }
+
+  bool get isAuthenticated => _jwtToken != null;
+
   String get baseUrl {
     if (kIsWeb) return 'http://127.0.0.1:8000';
     if (Platform.isAndroid) return 'http://10.0.2.2:8000';
-    return 'http://127.0.0.1:8000'; // iOS, Windows, etc.
+    return 'http://127.0.0.1:8000';
   }
 
   Map<String, String> get _headers {

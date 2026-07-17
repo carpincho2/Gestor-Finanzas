@@ -193,7 +193,7 @@ async def login(request: Request, payload: LoginRequest, db: Session = Depends(g
     request.session["email"] = user.email
     
     # Generar token JWT para Mobile
-    access_token = create_access_token(data={"sub": user.id, "email": user.email})
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
     
     return {
         "ok": True,
@@ -261,7 +261,7 @@ async def register(request: Request, payload: RegisterRequest, db: Session = Dep
     request.session["user_id"] = new_user.id
     request.session["email"] = new_user.email
     
-    access_token = create_access_token(data={"sub": new_user.id, "email": new_user.email})
+    access_token = create_access_token(data={"sub": str(new_user.id), "email": new_user.email})
     
     return {
         "ok": True,
@@ -344,7 +344,7 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
     request.session["user_id"] = user.id
     request.session["email"] = user.email
     
-    access_token = create_access_token(data={"sub": user.id, "email": user.email})
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email})
     
     return {
         "ok": True,

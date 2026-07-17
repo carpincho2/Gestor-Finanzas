@@ -155,7 +155,7 @@ function processImportData(data) {
   importRawRows = data.filter(row => row.some(cell => cell && String(cell).trim() !== ''));
   
   // Asumimos que la primera fila es encabezado
-  importHeaders = importRawRows[0].map((h, i) => h ? String(h).trim() : \`Columna \${i+1}\`);
+  importHeaders = importRawRows[0].map((h, i) => h ? String(h).trim() : `Columna ${i+1}`);
   
   buildMappingUI();
   
@@ -170,7 +170,7 @@ function buildMappingUI() {
     const sel = document.getElementById(selId);
     sel.innerHTML = '<option value="">-- Ignorar --</option>';
     importHeaders.forEach((h, i) => {
-      sel.innerHTML += \`<option value="\${i}">\${h}</option>\`;
+      sel.innerHTML += `<option value="${i}">${h}</option>`;
     });
   });
   
@@ -185,11 +185,11 @@ function buildMappingUI() {
   
   // Build preview table (first 5 rows)
   const headTr = document.getElementById('importPreviewHead');
-  headTr.innerHTML = importHeaders.map(h => \`<th style="padding:8px; border-bottom:1px solid var(--border);">\${escHtml(h)}</th>\`).join('');
+  headTr.innerHTML = importHeaders.map(h => `<th style="padding:8px; border-bottom:1px solid var(--border);">${escHtml(h)}</th>`).join('');
   
   const body = document.getElementById('importPreviewBody');
   body.innerHTML = importRawRows.slice(1, 6).map(row => {
-    return '<tr>' + importHeaders.map((_, i) => \`<td style="padding:8px; border-bottom:1px solid var(--border);">\${escHtml(String(row[i] || ''))}</td>\`).join('') + '</tr>';
+    return '<tr>' + importHeaders.map((_, i) => `<td style="padding:8px; border-bottom:1px solid var(--border);">${escHtml(String(row[i] || ''))}</td>`).join('') + '</tr>';
   }).join('');
 }
 
@@ -229,9 +229,9 @@ async function executeImport() {
       let parts = dStr.split(/[-/]/);
       if (parts.length === 3) {
         if (parts[2].length === 4) {
-          parsedDate = \`\${parts[2]}-\${parts[1].padStart(2,'0')}-\${parts[0].padStart(2,'0')}\`;
+          parsedDate = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
         } else if (parts[0].length === 4) {
-          parsedDate = \`\${parts[0]}-\${parts[1].padStart(2,'0')}-\${parts[2].padStart(2,'0')}\`;
+          parsedDate = `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
         }
       }
       if (!parsedDate) parsedDate = new Date().toISOString().split('T')[0];
@@ -243,7 +243,7 @@ async function executeImport() {
     const lastDot = amountStr.lastIndexOf('.');
     
     if (lastComma > lastDot) {
-      amountStr = amountStr.replace(/\\./g, '').replace(',', '.');
+      amountStr = amountStr.replace(/\./g, '').replace(',', '.');
     } else if (lastDot > lastComma) {
       amountStr = amountStr.replace(/,/g, '');
     } else if (lastComma > -1 && lastDot === -1) {
@@ -279,7 +279,7 @@ async function executeImport() {
         body: JSON.stringify(txsToCreate)
       });
       if (res && res.ok) {
-        showToast(\`Se importaron \${txsToCreate.length} transacciones\`);
+        showToast(`Se importaron ${txsToCreate.length} transacciones`);
         closeImportModal();
         await loadUserData();
         renderAll();
@@ -303,7 +303,7 @@ async function executeImport() {
       }
     });
     save();
-    showToast(\`Se importaron \${txsToCreate.length} transacciones (Local)\`);
+    showToast(`Se importaron ${txsToCreate.length} transacciones (Local)`);
     closeImportModal();
     renderAll();
     renderCuentasView();

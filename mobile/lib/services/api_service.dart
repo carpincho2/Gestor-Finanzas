@@ -87,6 +87,45 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> put(String endpoint, Map<String, dynamic> body) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    final response = await http.put(uri, headers: _headers, body: jsonEncode(body));
+    try {
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        decoded['ok'] = false;
+        if (!decoded.containsKey('error')) decoded['error'] = 'Error ${response.statusCode}';
+      }
+      return decoded;
+    } catch (e) { return {'ok': false, 'error': 'Error de red (${response.statusCode})'}; }
+  }
+
+  Future<Map<String, dynamic>> delete(String endpoint) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    final response = await http.delete(uri, headers: _headers);
+    try {
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        decoded['ok'] = false;
+        if (!decoded.containsKey('error')) decoded['error'] = 'Error ${response.statusCode}';
+      }
+      return decoded;
+    } catch (e) { return {'ok': false, 'error': 'Error de red (${response.statusCode})'}; }
+  }
+
+  Future<Map<String, dynamic>> patch(String endpoint, Map<String, dynamic> body) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    final response = await http.patch(uri, headers: _headers, body: jsonEncode(body));
+    try {
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        decoded['ok'] = false;
+        if (!decoded.containsKey('error')) decoded['error'] = 'Error ${response.statusCode}';
+      }
+      return decoded;
+    } catch (e) { return {'ok': false, 'error': 'Error de red (${response.statusCode})'}; }
+  }
+
   Future<Map<String, dynamic>> postMultipart(String endpoint, String filePath) async {
     final uri = Uri.parse('$baseUrl$endpoint');
     final request = http.MultipartRequest('POST', uri);

@@ -17,7 +17,30 @@ Base.metadata.create_all(bind=engine)
 # Run migrations for legacy tokens
 from models import Account, WalletConnection
 from security import token_crypto
-from database import SessionLocal
+from database import SessionLocal, engine
+from sqlalchemy import text, inspect
+
+def migrate_schema_columns():
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        # Check transactions.external_id
+        if "transactions" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("transactions")]
+            if "external_id" not in columns:
+                conn.execute(text("ALTER TABLE transactions ADD COLUMN external_id VARCHAR(100)"))
+                print("INFO: Migración de esquema: añadida columna external_id a transactions")
+                
+        # Check users.avatar and users.picture
+        if "users" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("users")]
+            if "avatar" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN avatar VARCHAR(10) DEFAULT 'JP'"))
+                print("INFO: Migración de esquema: añadida columna avatar a users")
+            if "picture" not in columns:
+                conn.execute(text("ALTER TABLE users ADD COLUMN picture VARCHAR(500)"))
+                print("INFO: Migración de esquema: añadida columna picture a users")
+                
+migrate_schema_columns()
 
 def migrate_plaintext_tokens():
     db = SessionLocal()

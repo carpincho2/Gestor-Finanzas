@@ -61,23 +61,28 @@ def create_access_token(data: dict) -> str:
     return encoded_jwt
 
 def get_current_user_id(request: Request):
-    # 1. Intentar obtener el usuario desde el token JWT (Flutter/Mobile)
     auth_header = request.headers.get("Authorization")
+    jwt_error = None
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-            user_id: int = payload.get("sub")
+            user_id = payload.get("sub")
             if user_id is not None:
-                return user_id
-        except jwt.PyJWTError:
+                return int(user_id)
+        except Exception as e:
+            jwt_error = f"JWT Decode error: {type(e).__name__} - {str(e)}"
+            print(jwt_error)
             pass # Si falla el token, caer a la cookie o lanzar error luego
             
     # 2. Intentar obtener el usuario desde la Cookie de Sesión (Web)
     user_id = request.session.get("user_id")
     
     if not user_id:
-        raise HTTPException(status_code=401, detail="No autorizado")
+        error_detail = "No autorizado"
+        if jwt_error:
+            error_detail += f" ({jwt_error})"
+        raise HTTPException(status_code=401, detail=error_detail)
     return user_id
 
 # Dummy hash generado con bcrypt para igualar tiempos (aprox 100ms)

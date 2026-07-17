@@ -2,7 +2,7 @@ import { IS_SERVER, state, userKey } from './store/store.js';
 import { fetchMe, logout, deleteAccount, updateProfile, updatePassword } from './api/authApi.js';
 import { apiFetch } from './api/apiClient.js';
 import { showToast } from './utils/utils.js';
-import { loadUserData, init, renderAll } from './app.js';
+import { loadUserData, init } from './app.js';
 
 const AUTH_KEY = 'flujo_auth_user';
 
@@ -193,6 +193,6 @@ export async function doResetData() {
     }
   }
   await loadUserData();
-  renderAll();
+  if (window.renderAll) window.renderAll();
   showToast("✅ Transacciones eliminadas y saldos en 0");
 }

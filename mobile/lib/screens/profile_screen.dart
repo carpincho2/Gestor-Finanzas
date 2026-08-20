@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
@@ -99,6 +99,71 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
+  void _showEmptyTransactionsDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Vaciar Transacciones', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          '¿Estás seguro de que querés vaciar TODAS tus transacciones y volver los saldos a cero? Esta acción NO se puede deshacer.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar', style: TextStyle(color: Colors.white70))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final r = await ApiService().delete('/api/transactions/all');
+              if (mounted) {
+                if (r['ok'] == true) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Transacciones eliminadas y saldos en 0'), backgroundColor: Color(0xFF10B981)));
+                  // Se debería forzar recarga en los providers principales si se navega a ellos
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error: \${r["error"]}'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: const Text('Vaciar Datos', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Eliminar Cuenta', style: TextStyle(color: Colors.redAccent)),
+        content: const Text(
+          'Esta acción eliminará de forma PERMANENTE tu cuenta y TODOS tus datos financieros (cuentas, transacciones, presupuestos y objetivos). No se puede deshacer.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar', style: TextStyle(color: Colors.white70))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final r = await ApiService().delete('/api/auth/me');
+              if (mounted) {
+                if (r['ok'] == true) {
+                  ref.read(authProvider.notifier).logout();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('❌ Error: \${r["error"]}'), backgroundColor: Colors.red));
+                }
+              }
+            },
+            child: const Text('Eliminar Cuenta', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final name = _userData?['name'] ?? '---';
@@ -128,6 +193,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const Divider(color: Colors.white12),
               _optionTile(Icons.lock_outline, 'Cambiar contraseña', _showChangePasswordSheet),
               const Divider(color: Colors.white12),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Zona de Peligro', style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Acciones destructivas para tu cuenta y datos.', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    const SizedBox(height: 16),
+                    SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.orange),
+                        padding: const EdgeInsets.all(12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.delete_sweep, color: Colors.orange),
+                      label: const Text('Vaciar Transacciones', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+                      onPressed: _showEmptyTransactionsDialog,
+                    )),
+                    const SizedBox(height: 12),
+                    SizedBox(width: double.infinity, child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.all(12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.delete_forever, color: Colors.white),
+                      label: const Text('Eliminar Cuenta', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      onPressed: _showDeleteAccountDialog,
+                    )),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
               SizedBox(width: double.infinity, child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(

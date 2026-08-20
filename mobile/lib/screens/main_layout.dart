@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dashboard_screen.dart';
 import 'transactions_screen.dart';
@@ -9,6 +9,7 @@ import 'reports_screen.dart';
 import 'profile_screen.dart';
 import 'scanner_screen.dart';
 import 'shopping_screen.dart';
+import 'insights_screen.dart';
 import '../providers/auth_provider.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
@@ -106,7 +107,8 @@ class _MoreScreen extends StatelessWidget {
       _MoreOption('Presupuestos', Icons.pie_chart_outline, const Color(0xFF8B5CF6), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BudgetsScreen()))),
       _MoreOption('Objetivos', Icons.flag_outlined, const Color(0xFF10B981), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GoalsScreen()))),
       _MoreOption('Reportes', Icons.bar_chart_outlined, const Color(0xFFF59E0B), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()))),
-      _MoreOption('Asistente IA', Icons.shopping_cart_outlined, const Color(0xFF38BDF8), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShoppingScreen()))),
+      _MoreOption('IA Insights', Icons.insights, const Color(0xFF10B981), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InsightsScreen()))),
+      _MoreOption('Asistente Compras', Icons.shopping_cart_outlined, const Color(0xFF38BDF8), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShoppingScreen()))),
       _MoreOption('Scanner', Icons.document_scanner_outlined, const Color(0xFFEC4899), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScannerScreen()))),
       _MoreOption('Mi Perfil', Icons.person_outline, const Color(0xFF64748B), () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))),
     ];

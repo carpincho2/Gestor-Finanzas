@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, func
+from sqlalchemy import Column, Integer, String, DateTime, Float, func, ForeignKey, Index, Text, Boolean
+from sqlalchemy.orm import relationship
 from database import Base
 
 class TicketItem(Base):
@@ -118,3 +119,88 @@ class SyncLog(Base):
     error_message = Column(String(500), nullable=True)
     duration_ms = Column(Integer, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+
+# ── Modelos SEPA ─────────────────────────────────────────────────────────
+
+class Comercio(Base):
+    __tablename__ = "comercios"
+
+    id          = Column(Integer, primary_key=True)
+    sepa_id     = Column(String(20), unique=True, nullable=False, index=True)
+    nombre      = Column(String(100), nullable=False)
+    nombre_key  = Column(String(100), nullable=False, index=True)
+    cuit        = Column(String(13))
+
+    sucursales  = relationship("Sucursal", back_populates="comercio")
+
+
+class Sucursal(Base):
+    __tablename__ = "sucursales"
+
+    id              = Column(Integer, primary_key=True)
+    sepa_id         = Column(String(20), unique=True, nullable=False, index=True)
+    comercio_id     = Column(Integer, ForeignKey("comercios.id"), nullable=False)
+    nombre          = Column(String(150))
+    direccion       = Column(String(200))
+    localidad       = Column(String(100))
+    provincia       = Column(String(100))
+    codigo_postal   = Column(String(10))
+    lat             = Column(Float, nullable=False)
+    lng             = Column(Float, nullable=False)
+    activa          = Column(Boolean, default=True)
+
+    comercio        = relationship("Comercio", back_populates="sucursales")
+    precios         = relationship("Precio", back_populates="sucursal")
+
+    __table_args__ = (
+        Index("ix_sucursal_lat_lng", "lat", "lng"),
+    )
+
+
+class Producto(Base):
+    __tablename__ = "productos"
+
+    id                  = Column(Integer, primary_key=True)
+    ean                 = Column(String(20), unique=True, nullable=False, index=True)
+    nombre              = Column(String(250), nullable=False)
+    nombre_normalizado  = Column(String(250), nullable=False, index=True)
+    marca               = Column(String(100))
+    categoria           = Column(String(100))
+    presentacion        = Column(String(50))
+
+    precios             = relationship("Precio", back_populates="producto")
+
+
+class Precio(Base):
+    __tablename__ = "precios"
+
+    id              = Column(Integer, primary_key=True)
+    sucursal_id     = Column(Integer, ForeignKey("sucursales.id"), nullable=False)
+    producto_id     = Column(Integer, ForeignKey("productos.id"), nullable=False)
+    precio_unitario = Column(Float, nullable=False)
+    precio_promo_a  = Column(Float)
+    precio_promo_b  = Column(Float)
+    fecha_vigencia  = Column(DateTime, nullable=False)
+    actualizado_en  = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    sucursal        = relationship("Sucursal", back_populates="precios")
+    producto        = relationship("Producto", back_populates="precios")
+
+    __table_args__ = (
+        Index("ix_precio_sucursal_ean", "sucursal_id", "producto_id"),
+        Index("ix_precio_fecha", "fecha_vigencia"),
+    )
+
+
+class IngestaLog(Base):
+    __tablename__ = "ingesta_logs"
+
+    id              = Column(Integer, primary_key=True)
+    iniciada_en     = Column(DateTime, default=func.now())
+    finalizada_en   = Column(DateTime)
+    estado          = Column(String(20))
+    fuente          = Column(String(50))
+    filas_procesadas= Column(Integer, default=0)
+    filas_cargadas  = Column(Integer, default=0)
+    filas_error     = Column(Integer, default=0)
+    detalle         = Column(Text)

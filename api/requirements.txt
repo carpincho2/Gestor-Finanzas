@@ -12,3 +12,8 @@ cryptography>=43.0.0
 PyJWT>=2.8.0
 
 python-multipart>=0.0.9
+pandas>=2.2.0
+rapidfuzz>=3.9.0
+apscheduler>=3.10.0
+tenacity>=8.3.0
+structlog>=24.1.0

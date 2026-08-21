@@ -5,14 +5,25 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
+from contextlib import asynccontextmanager
+
 from database import engine, Base, DATABASE_URL, load_env
-from routers import auth, accounts, transactions, budgets, goals, wallets, ai, shopping, ocr
+from routers import auth, accounts, transactions, budgets, goals, wallets, ai, shopping, ocr, sepa
 
 # Load .env variables (if any are missing)
 load_env()
 
 # Auto-create tables (SQLite and PostgreSQL)
 Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: iniciar scheduler SEPA
+    from services.sepa.ingestion import iniciar_scheduler, detener_scheduler
+    iniciar_scheduler()
+    yield
+    # Shutdown
+    detener_scheduler()
 
 # Run migrations for legacy tokens
 from models import Account, WalletConnection
@@ -84,7 +95,7 @@ def migrate_plaintext_tokens():
 
 migrate_plaintext_tokens()
 
-app = FastAPI(title="Flujo Finance Manager API")
+app = FastAPI(title="Flujo Finance Manager API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -126,6 +137,7 @@ app.include_router(wallets.router)
 app.include_router(ai.router)
 app.include_router(shopping.router)
 app.include_router(ocr.router)
+app.include_router(sepa.router)
 
 # Serve static files
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

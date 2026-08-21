@@ -13,6 +13,7 @@ import * as scanner from './scanner.js';
 import * as ai from './ai.js';
 import * as imp from './import.js';
 import * as shopping from './shopping.js';
+import * as supermercados from './supermercados.js';
 
 // Expose to window for inline onclicks in HTML
 Object.assign(window, ui);
@@ -26,6 +27,7 @@ Object.assign(window, scanner);
 Object.assign(window, ai);
 Object.assign(window, imp);
 Object.assign(window, shopping);
+Object.assign(window, supermercados);
 
 /* =====================================================
    INIT
@@ -40,7 +42,8 @@ export async function loadViews() {
     'objetivosView': 'objetivos',
     'scannerView': 'scanner',
     'insightsView': 'insights',
-    'perfilView': 'perfil'
+    'perfilView': 'perfil',
+    'supermercadosView': 'supermercados'
   };
   
   for (const [id, file] of Object.entries(viewsMap)) {

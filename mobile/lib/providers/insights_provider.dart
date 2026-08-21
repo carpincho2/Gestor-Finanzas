@@ -97,15 +97,15 @@ class InsightsNotifier extends Notifier<InsightsState> {
     final catBreakdown = catMap.entries.map((e) => '${e.key}: ${currency.format(e.value)}').join(', ');
 
     final budgetStatus = budgets.map((b) {
-      final spent = thisMonthTxs.where((t) => t.type == 'expense' && t.cat == b.category).fold(0.0, (s, t) => s + t.amount);
+      final spent = thisMonthTxs.where((t) => t.type == 'expense' && t.cat == b.cat).fold(0.0, (s, t) => s + t.amount);
       final pct = b.limit > 0 ? ((spent / b.limit) * 100).round() : 0;
-      return '${b.category}: gastado ${currency.format(spent)} de ${currency.format(b.limit)} ($pct%)';
+      return '${b.name}: gastado ${currency.format(spent)} de ${currency.format(b.limit)} ($pct%)';
     }).join('; ');
 
     final goalStatus = goals.map((g) {
-      final saved = g.currentAmount;
-      final pct = g.targetAmount > 0 ? ((saved / g.targetAmount) * 100).round() : 0;
-      return '${g.name}: ${currency.format(saved)} de ${currency.format(g.targetAmount)} ($pct%)';
+      final saved = g.current;
+      final pct = g.target > 0 ? ((saved / g.target) * 100).round() : 0;
+      return '${g.name}: ${currency.format(saved)} de ${currency.format(g.target)} ($pct%)';
     }).join('; ');
 
     return '''CONTEXTO FINANCIERO DEL USUARIO (${monthFormat.format(now)}):

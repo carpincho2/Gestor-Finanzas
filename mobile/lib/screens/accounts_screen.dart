@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/accounts_provider.dart';
@@ -20,13 +20,14 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
 
   static const _typeLabels = {
     'efectivo': 'Efectivo', 'banco': 'Banco', 'tarjeta_credito': 'Tarjeta Crédito',
-    'tarjeta_debito': 'Tarjeta Débito', 'inversion': 'Inversión', 'crypto': 'Crypto', 'otro': 'Otro',
+    'tarjeta_debito': 'Tarjeta Débito', 'inversion': 'Inversión', 'crypto': 'Crypto', 
+    'digital': 'Billetera Virtual', 'otro': 'Otro',
   };
 
   static const _typeIcons = {
     'efectivo': Icons.money, 'banco': Icons.account_balance, 'tarjeta_credito': Icons.credit_card,
     'tarjeta_debito': Icons.credit_card_outlined, 'inversion': Icons.trending_up,
-    'crypto': Icons.currency_bitcoin, 'otro': Icons.wallet,
+    'crypto': Icons.currency_bitcoin, 'digital': Icons.phone_android, 'otro': Icons.wallet,
   };
 
   @override
@@ -149,7 +150,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
     final balCtrl = TextEditingController(text: existing != null ? existing.balance.toStringAsFixed(0) : '');
     String type = existing?.type ?? 'efectivo';
     String currency = existing?.currency ?? 'ARS';
-    final types = ['efectivo', 'banco', 'tarjeta_credito', 'tarjeta_debito', 'inversion', 'crypto', 'otro'];
+    final types = ['efectivo', 'banco', 'tarjeta_credito', 'tarjeta_debito', 'inversion', 'crypto', 'digital', 'otro'];
 
     showModalBottomSheet(
       context: context, isScrollControlled: true,

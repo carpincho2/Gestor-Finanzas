@@ -12,7 +12,7 @@ from models import User, Account, Transaction, Budget, Goal, GoalContribution, T
 from schemas import (
     LoginRequest, RegisterRequest, GoogleRequest, ProfileUpdateRequest, PasswordChangeRequest
 )
-from security import DUMMY_PASSWORD_HASH, create_access_token
+from security import DUMMY_PASSWORD_HASH, create_access_token, get_current_user_id
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -21,10 +21,7 @@ MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_TIME_SECS = 300
 
 @router.get("/me")
-async def get_me(request: Request, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "Sin sesión activa"})
+async def get_me(request: Request, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -48,10 +45,7 @@ async def logout(request: Request):
     return {"ok": True, "message": "Sesión cerrada"}
 
 @router.delete("/me")
-async def delete_me(request: Request, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "Sin sesión activa"})
+async def delete_me(request: Request, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -81,10 +75,7 @@ async def delete_me(request: Request, db: Session = Depends(get_db)):
     return {"ok": True, "message": "Cuenta eliminada correctamente"}
 
 @router.put("/profile")
-async def update_profile(request: Request, payload: ProfileUpdateRequest, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "Sin sesión activa"})
+async def update_profile(payload: ProfileUpdateRequest, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     
     name = payload.name.strip()
     if not name:
@@ -114,10 +105,7 @@ async def update_profile(request: Request, payload: ProfileUpdateRequest, db: Se
     }
 
 @router.put("/password")
-async def change_password(request: Request, payload: PasswordChangeRequest, db: Session = Depends(get_db)):
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return JSONResponse(status_code=401, content={"error": "Sin sesión activa"})
+async def change_password(payload: PasswordChangeRequest, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

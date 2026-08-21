@@ -15,6 +15,13 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
 
+  @override
+  void dispose() {
+    // Para limpiar la caché del escáner manualmente en lugar de autoDispose
+    ref.read(scannerProvider.notifier).reset();
+    super.dispose();
+  }
+
   Future<void> _takePhoto() async {
     try {
       final XFile? photo = await _picker.pickImage(source: ImageSource.camera);

@@ -48,12 +48,24 @@ async def search_items(q: str = Query(...)):
 @router.post("/analyze-url")
 async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     """Analiza una URL de ML y recomienda el mejor método de pago."""
-    # Extraer ID del item (ej. MLA123456)
-    match = re.search(r'(MLA-?\d+)', payload.url)
-    if not match:
-        raise HTTPException(status_code=400, detail="URL inválida o ID de artículo no encontrado")
-    
-    item_id = match.group(1).replace('-', '')
+    url = payload.url
+    # 1. Si es directamente un ID (ej: MLA123456)
+    if re.match(r'^ML[A-Z]-?\d+$', url, re.IGNORECASE):
+        item_id = url.replace('-', '').upper()
+    else:
+        # 2. Si es una URL corta, intentamos seguir la redirección
+        if "mercadolibre" in url and "/sec/" in url:
+            try:
+                res = requests.head(url, allow_redirects=True, timeout=5)
+                url = res.url
+            except Exception:
+                pass
+                
+        # 3. Buscar el ID en la URL resultante
+        match = re.search(r'(ML[A-Z]-?\d+)', url, re.IGNORECASE)
+        if not match:
+            raise HTTPException(status_code=400, detail="URL inválida o ID de artículo no encontrado")
+        item_id = match.group(1).replace('-', '').upper()
     
     # Obtener datos del item de ML
     resp = requests.get(f"https://api.mercadolibre.com/items/{item_id}")

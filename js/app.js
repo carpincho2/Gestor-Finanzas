@@ -43,7 +43,8 @@ export async function loadViews() {
     'scannerView': 'scanner',
     'insightsView': 'insights',
     'perfilView': 'perfil',
-    'supermercadosView': 'supermercados'
+    'supermercadosView': 'supermercados',
+    'shoppingView': 'shopping'
   };
   
   for (const [id, file] of Object.entries(viewsMap)) {

@@ -62,7 +62,7 @@ function setPage(el, page) {
   const titles = {
     dashboard: 'Dashboard', transacciones: 'Transacciones', presupuestos: 'Presupuestos',
     cuentas: 'Cuentas', reportes: 'Reportes', objetivos: 'Objetivos', scanner: 'Escanear Ticket',
-    insights: 'IA Insights', perfil: 'Mi Perfil'
+    insights: 'IA Insights', perfil: 'Mi Perfil', supermercados: 'Buscador SEPA', shopping: 'Asistente de Compras'
   };
   document.getElementById('pageTitle').textContent = titles[page] || page;
 
@@ -77,6 +77,10 @@ function setPage(el, page) {
     document.getElementById('scannerView').style.display = 'none';
     document.getElementById('insightsView').style.display = 'none';
     document.getElementById('perfilView').style.display = 'none';
+    const sepaEl = document.getElementById('supermercadosView');
+    if (sepaEl) sepaEl.style.display = 'none';
+    const shopEl = document.getElementById('shoppingView');
+    if (shopEl) shopEl.style.display = 'none';
     document.getElementById('pageDate').style.display = 'none';
   }
 
@@ -120,6 +124,15 @@ function setPage(el, page) {
     hideAll();
     document.getElementById('perfilView').style.display = '';
     enterPerfilView();
+  } else if (page === 'supermercados') {
+    hideAll();
+    const el = document.getElementById('supermercadosView');
+    if (el) el.style.display = '';
+  } else if (page === 'shopping') {
+    hideAll();
+    const el = document.getElementById('shoppingView');
+    if (el) el.style.display = '';
+    if (window.initShopping) window.initShopping();
   } else {
     hideAll();
     document.getElementById('dashboardView').style.display = '';

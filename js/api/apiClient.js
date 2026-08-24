@@ -23,9 +23,16 @@ export async function apiFetch(path, options = {}) {
   }
   
   if (!r.ok) {
-    const errorMsg = (data && data.error) 
-      ? data.error + (data.message ? `: ${data.message}` : '')
-      : `Error de servidor backend (HTTP ${r.status}).`;
+    let errorMsg = `Error de servidor backend (HTTP ${r.status}).`;
+    if (data) {
+      if (typeof data.detail === 'string') {
+        errorMsg = data.detail;
+      } else if (Array.isArray(data.detail) && data.detail[0]?.msg) {
+        errorMsg = data.detail[0].msg;
+      } else if (data.error) {
+        errorMsg = data.error + (data.message ? `: ${data.message}` : '');
+      }
+    }
     throw new Error(errorMsg);
   }
   

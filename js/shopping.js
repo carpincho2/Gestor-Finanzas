@@ -32,6 +32,11 @@ export function initShopping() {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
           
           <div>
+            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--muted);">(Opcional)</span></label>
+            <input type="number" id="shoppingPrice" class="field-input" placeholder="Autodetectado o $..." min="0" style="width: 100%;">
+          </div>
+
+          <div>
             <label class="field-label" style="margin-bottom: 8px;">Cuotas sin interés</label>
             <select id="shoppingInstallments" class="field-select" style="width: 100%;">
               <option value="1">1 pago (Contado)</option>
@@ -75,6 +80,7 @@ export function initShopping() {
 export async function analyzeShoppingUrl() {
   const urlEl = document.getElementById('shoppingUrl');
   const url = urlEl ? urlEl.value.trim() : '';
+  const priceVal = parseFloat(document.getElementById('shoppingPrice')?.value) || null;
   const installments = parseInt(document.getElementById('shoppingInstallments')?.value) || 1;
   const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;
   const tna = parseFloat(document.getElementById('shoppingTna')?.value) || 40;
@@ -91,14 +97,19 @@ export async function analyzeShoppingUrl() {
   document.getElementById('shoppingResultsContainer').style.display = 'none';
 
   try {
+    const bodyPayload = {
+      url: url,
+      installments_without_interest: installments,
+      discount_percentage: discount,
+      custom_tna: tna
+    };
+    if (priceVal && priceVal > 0) {
+      bodyPayload.price = priceVal;
+    }
+
     const data = await apiFetch('/shopping/analyze-url', {
       method: 'POST',
-      body: JSON.stringify({
-        url: url,
-        installments_without_interest: installments,
-        discount_percentage: discount,
-        custom_tna: tna
-      })
+      body: JSON.stringify(bodyPayload)
     });
     
     renderShoppingResults(data);

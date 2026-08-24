@@ -1,5 +1,6 @@
 import requests
 import re
+from urllib.parse import urlparse, unquote
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -7,7 +8,7 @@ from typing import Optional
 
 from database import get_db
 from security import get_current_user_id
-from models import Account
+from models import Account, WalletConnection
 from services.recommendation import evaluate_payment_options
 
 router = APIRouter(prefix="/api/shopping", tags=["shopping"])
@@ -16,7 +17,8 @@ class AnalyzeUrlRequest(BaseModel):
     url: str
     discount_percentage: Optional[float] = 0.0
     installments_without_interest: Optional[int] = 1
-    custom_tna: Optional[float] = 40.0 # Tasa nominal anual (default fallback)
+    custom_tna: Optional[float] = 40.0 # Tasa nominal anual
+    price: Optional[float] = None       # Precio manual opcional
 
 class AnalyzeBarcodeRequest(BaseModel):
     barcode: str
@@ -49,88 +51,120 @@ async def search_items(q: str = Query(...)):
 async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     """Analiza una URL de ML y recomienda el mejor método de pago."""
     url = payload.url.strip()
+
+    # 1. Si el usuario conectó Mercado Pago, recuperar su token para hacer requests autenticados a la API de ML
+    user_token = None
+    wallet = db.query(WalletConnection).filter(
+        WalletConnection.user_id == user_id,
+        WalletConnection.provider == "mercadopago",
+        WalletConnection.status == "active"
+    ).first()
+    
+    if wallet and wallet.access_token_encrypted:
+        try:
+            from security import token_crypto
+            user_token = token_crypto.decrypt(wallet.access_token_encrypted)
+        except Exception:
+            pass
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "application/json, text/html, */*"
     }
+    if user_token:
+        headers["Authorization"] = f"Bearer {user_token}"
 
-    # 1. Si la URL es una redirección corta (ej: /sec/, mpago.li, etc.)
+    # 2. Seguir redirección si es un enlace corto (ej: mpago.li, /sec/, etc.)
     if any(domain in url for domain in ["mpago.li", "/sec/", "ml.com.ar", "mercadolibre"]):
         if not re.search(r'ML[A-Z]-?\d{6,}', url, re.IGNORECASE):
             try:
-                res = requests.get(url, allow_redirects=True, headers=headers, timeout=6, stream=True)
+                res = requests.get(url, allow_redirects=True, headers=headers, timeout=5, stream=True)
                 if res.url:
                     url = res.url
             except Exception:
                 pass
 
-    # 2. Extraer ID del item o producto
-    catalog_match = re.search(r'/p/(ML[A-Z]-?\d+)', url, re.IGNORECASE)
-    item_match = re.search(r'(ML[A-Z]-?\d{6,})', url, re.IGNORECASE)
-    
+    # 3. Extraer el ID específico del item o catálogo de la URL
     item_id = None
-    is_catalog = False
     
-    if catalog_match:
+    # Check A: query string o pdp_filters (ej: pdp_filters=item_id%3AMLA2055538384 o wid=MLA2055538384)
+    query_item = re.search(r'(?:item_id|wid)%3A(MLA-?\d+)', url, re.IGNORECASE) or re.search(r'(?:item_id|wid)=(MLA-?\d+)', url, re.IGNORECASE)
+    # Check B: ruta de catálogo /p/MLA...
+    catalog_match = re.search(r'/p/(ML[A-Z]-?\d+)', url, re.IGNORECASE)
+    # Check C: ruta de artículo /MLA-123456789...
+    general_match = re.search(r'(ML[A-Z]-?\d{6,})', url, re.IGNORECASE)
+
+    if query_item:
+        item_id = query_item.group(1).replace('-', '').upper()
+    elif catalog_match:
         item_id = catalog_match.group(1).replace('-', '').upper()
-        is_catalog = True
-    elif item_match:
-        item_id = item_match.group(1).replace('-', '').upper()
+    elif general_match:
+        item_id = general_match.group(1).replace('-', '').upper()
     elif re.match(r'^ML[A-Z]-?\d+$', url, re.IGNORECASE):
         item_id = url.replace('-', '').upper()
-    else:
-        fallback_match = re.search(r'ML[A-Z]\d+', url, re.IGNORECASE)
-        if fallback_match:
-            item_id = fallback_match.group(0).upper()
 
-    if not item_id:
-        raise HTTPException(
-            status_code=400, 
-            detail="No se encontró un ID de producto en el link. Copiá el link completo de la publicación de Mercado Libre."
-        )
+    # 4. Extraer el título directamente del slug de la URL como fallback visual
+    slug_title = None
+    try:
+        parsed = urlparse(url)
+        path_parts = [p for p in parsed.path.split('/') if p and p != 'p']
+        if path_parts and not path_parts[0].startswith('MLA'):
+            raw_slug = unquote(path_parts[0])
+            clean_slug = re.sub(r'[\-_]+', ' ', raw_slug).strip()
+            if len(clean_slug) > 4:
+                slug_title = clean_slug.title()
+    except Exception:
+        pass
 
-    # 3. Consultar la API de Mercado Libre
-    price = 0.0
-    title = ""
+    price = payload.price or 0.0
+    title = slug_title or "Producto Mercado Libre"
     currency_id = "ARS"
-    item_data = None
+    found = False
 
-    # Intentar como item normal primero (si no era explícitamente de catálogo)
-    if not is_catalog:
+    # 5. Intentar consultar las APIs de Mercado Libre (Items y Productos)
+    if item_id:
+        # Intentar en /items/
         try:
-            resp = requests.get(f"https://api.mercadolibre.com/items/{item_id}", headers=headers, timeout=8)
+            resp = requests.get(f"https://api.mercadolibre.com/items/{item_id}", headers=headers, timeout=6)
             if resp.status_code == 200:
-                item_data = resp.json()
-                price = float(item_data.get("price") or 0.0)
-                title = item_data.get("title", "")
-                currency_id = item_data.get("currency_id", "ARS")
+                data = resp.json()
+                price = float(data.get("price") or price)
+                title = data.get("title") or title
+                currency_id = data.get("currency_id") or currency_id
+                found = True
         except Exception:
             pass
 
-    # Si falló o era de catálogo (/p/...), consultar la API de productos
-    if not item_data or price == 0:
-        try:
-            prod_resp = requests.get(f"https://api.mercadolibre.com/products/{item_id}", headers=headers, timeout=8)
-            if prod_resp.status_code == 200:
-                prod_data = prod_resp.json()
-                buy_box = prod_data.get("buy_box_winner") or {}
-                price = float(buy_box.get("price") or prod_data.get("price") or 0.0)
-                title = prod_data.get("name") or prod_data.get("title") or "Producto Mercado Libre"
-                currency_id = buy_box.get("currency_id") or prod_data.get("currency_id") or "ARS"
-                item_data = prod_data
-        except Exception:
-            pass
+        # Intentar en /products/ si falló /items/
+        if not found:
+            try:
+                resp = requests.get(f"https://api.mercadolibre.com/products/{item_id}", headers=headers, timeout=6)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    buy_box = data.get("buy_box_winner") or {}
+                    price = float(buy_box.get("price") or data.get("price") or price)
+                    title = data.get("name") or data.get("title") or title
+                    currency_id = buy_box.get("currency_id") or data.get("currency_id") or currency_id
+                    found = True
+            except Exception:
+                pass
 
-    if not item_data or price == 0:
+    # 6. Manejo de fallbacks si Mercado Libre bloquea la consulta de API
+    if not found and price == 0:
+        if not item_id and not slug_title:
+            raise HTTPException(
+                status_code=400,
+                detail="No pudimos encontrar el ID de producto en el link. Copiá el link completo de la publicación."
+            )
+        # Si pudimos extraer el título pero no el precio (por bloqueo de API de ML)
         raise HTTPException(
-            status_code=404, 
-            detail=f"No pudimos obtener la información de la publicación ({item_id}). Verifica que el producto esté activo en Mercado Libre."
+            status_code=422,
+            detail=f"Identificamos '{title}', pero Mercado Libre requiere ingresar el precio manualmente para calcular las cuotas."
         )
-    
-    # Obtener cuentas del usuario
+
+    # 7. Evaluar opciones de pago con la billetera del usuario
     accounts = db.query(Account).filter(Account.user_id == user_id).all()
     
-    # Evaluar opciones de pago
     options = evaluate_payment_options(
         price=price,
         accounts=accounts,
@@ -142,7 +176,7 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
     return {
         "ok": True,
         "item": {
-            "id": item_id,
+            "id": item_id or "MLA_LINK",
             "title": title,
             "price": price,
             "currency": currency_id
@@ -154,7 +188,6 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
 async def analyze_barcode(payload: AnalyzeBarcodeRequest, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     """Busca un producto por GTIN/EAN (código de barras) y recomienda el mejor método de pago."""
     
-    # Buscar por GTIN
     search_resp = requests.get(f"https://api.mercadolibre.com/sites/MLA/search?gtin={payload.barcode}&limit=1")
     if search_resp.status_code != 200:
         raise HTTPException(status_code=502, detail="Error consultando Mercado Libre")

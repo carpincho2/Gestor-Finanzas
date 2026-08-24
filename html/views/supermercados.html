@@ -1,0 +1,44 @@
+<div style="max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+  
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Buscador SEPA</span>
+    </div>
+    <div style="padding: 20px 24px;">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+        Buscá un producto por su código EAN para ver qué supermercados cercanos lo tienen más barato. (Requiere permisos de ubicación).
+      </p>
+      
+      <div style="display: flex; gap: 12px; align-items: flex-end;">
+        <div class="form-full" style="flex: 1;">
+          <label class="field-label">Código del producto (EAN)</label>
+          <input class="field-input" id="sepaSearchInput" type="text" placeholder="Ej: 7790040001234"/>
+        </div>
+        <button class="btn btn-primary" onclick="searchSepa()" id="sepaSearchBtn">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Buscar
+        </button>
+      </div>
+      
+      <div id="sepaLoading" style="display:none; text-align:center; padding:30px; color:var(--muted); font-size:14px;">
+        <div class="sc-loading-spinner" style="width:24px; height:24px; margin:0 auto 12px; border-width:3px;"></div>
+        Buscando precios...
+      </div>
+      
+      <div id="sepaError" style="display:none; color:var(--danger); padding:16px; background:var(--danger)10; border-radius:8px; margin-top:20px; font-size:13px;">
+      </div>
+      
+      <div id="sepaResultsWrap" style="display:none; margin-top: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="font-size:14px; font-weight:600;" id="sepaResultsCount">0 sucursales encontradas</div>
+          <div style="font-size:12px; color:var(--muted);" id="sepaProductInfo"></div>
+        </div>
+        
+        <div id="sepaResultsList" style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Resultados dinámicos aquí -->
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>

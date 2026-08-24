@@ -17,3 +17,4 @@ rapidfuzz>=3.9.0
 apscheduler>=3.10.0
 tenacity>=8.3.0
 structlog>=24.1.0
+pydantic-settings>=2.0.0

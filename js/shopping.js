@@ -1,3 +1,6 @@
+import { apiFetch } from './api/apiClient.js';
+import { showToast } from './utils/utils.js';
+
 export function initShopping() {
   const container = document.getElementById('shoppingView');
   
@@ -89,9 +92,8 @@ export async function analyzeShoppingUrl() {
   document.getElementById('shoppingResultsContainer').style.display = 'none';
 
   try {
-    const resp = await fetch('/api/shopping/analyze-url', {
+    const data = await apiFetch('/shopping/analyze-url', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: url,
         installments_without_interest: installments,
@@ -100,17 +102,11 @@ export async function analyzeShoppingUrl() {
       })
     });
     
-    const data = await resp.json();
-    
-    if (!resp.ok) {
-      throw new Error(data.detail || 'Error al analizar la compra');
-    }
-    
     renderShoppingResults(data);
     
   } catch (err) {
     console.error(err);
-    window.showToast(err.message, true);
+    showToast(err.message, true);
   } finally {
     btn.innerHTML = `
       <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>

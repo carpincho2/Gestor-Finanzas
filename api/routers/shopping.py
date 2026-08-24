@@ -48,33 +48,52 @@ async def search_items(q: str = Query(...)):
 @router.post("/analyze-url")
 async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     """Analiza una URL de ML y recomienda el mejor método de pago."""
-    url = payload.url
+    url = payload.url.strip()
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "application/json"
+    }
+
     # 1. Si es directamente un ID (ej: MLA123456)
     if re.match(r'^ML[A-Z]-?\d+$', url, re.IGNORECASE):
         item_id = url.replace('-', '').upper()
     else:
-        # 2. Si es una URL corta, intentamos seguir la redirección
-        if "mercadolibre" in url and "/sec/" in url:
+        # 2. Si es una URL corta o redirección de ML/mpago
+        if any(domain in url for domain in ["mercadolibre", "mpago.li", "/sec/", "ml.com.ar"]):
             try:
-                res = requests.head(url, allow_redirects=True, timeout=5)
-                url = res.url
+                res = requests.head(url, allow_redirects=True, headers=headers, timeout=5)
+                if res.url:
+                    url = res.url
             except Exception:
                 pass
                 
-        # 3. Buscar el ID en la URL resultante
+        # 3. Buscar el ID en la URL resultante (soporta MLA-123456 y MLA123456)
         match = re.search(r'(ML[A-Z]-?\d+)', url, re.IGNORECASE)
         if not match:
-            raise HTTPException(status_code=400, detail="URL inválida o ID de artículo no encontrado")
+            raise HTTPException(status_code=400, detail="URL inválida. No se encontró un ID de publicación de Mercado Libre (ej: MLA...)")
         item_id = match.group(1).replace('-', '').upper()
     
-    # Obtener datos del item de ML
-    resp = requests.get(f"https://api.mercadolibre.com/items/{item_id}")
-    if resp.status_code != 200:
-        raise HTTPException(status_code=404, detail="Artículo no encontrado en Mercado Libre")
-    
-    item_data = resp.json()
-    price = item_data.get("price", 0.0)
-    title = item_data.get("title", "")
+    # 4. Obtener datos del item de ML (con fallback a catálogo /products/ si es un producto de catálogo)
+    resp = requests.get(f"https://api.mercadolibre.com/items/{item_id}", headers=headers)
+    price = 0.0
+    title = ""
+    currency_id = "ARS"
+
+    if resp.status_code == 200:
+        item_data = resp.json()
+        price = float(item_data.get("price") or 0.0)
+        title = item_data.get("title", "")
+        currency_id = item_data.get("currency_id", "ARS")
+    else:
+        # Intentar como producto de catálogo (/products/...)
+        prod_resp = requests.get(f"https://api.mercadolibre.com/products/{item_id}", headers=headers)
+        if prod_resp.status_code == 200:
+            prod_data = prod_resp.json()
+            buy_box = prod_data.get("buy_box_winner") or {}
+            price = float(buy_box.get("price") or prod_data.get("price") or 0.0)
+            title = prod_data.get("name") or prod_data.get("title") or "Producto Mercado Libre"
+        else:
+            raise HTTPException(status_code=404, detail="No se encontró la publicación en Mercado Libre. Verifica que la publicación esté activa y el link sea correcto.")
     
     # Obtener cuentas del usuario
     accounts = db.query(Account).filter(Account.user_id == user_id).all()
@@ -94,7 +113,7 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
             "id": item_id,
             "title": title,
             "price": price,
-            "currency": item_data.get("currency_id")
+            "currency": currency_id
         },
         "recommendation": options
     }

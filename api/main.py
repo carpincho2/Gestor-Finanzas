@@ -13,24 +13,6 @@ from routers import auth, accounts, transactions, budgets, goals, wallets, ai, s
 # Load .env variables (if any are missing)
 load_env()
 
-# Auto-create tables (SQLite and PostgreSQL)
-Base.metadata.create_all(bind=engine)
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: iniciar scheduler SEPA
-    from services.sepa.ingestion import iniciar_scheduler, detener_scheduler
-    iniciar_scheduler()
-    yield
-    # Shutdown
-    detener_scheduler()
-
-# Run migrations for legacy tokens
-from models import Account, WalletConnection
-from security import token_crypto
-from database import SessionLocal, engine
-from sqlalchemy import text, inspect
-
 def migrate_schema_columns():
     inspector = inspect(engine)
     with engine.begin() as conn:
@@ -50,8 +32,6 @@ def migrate_schema_columns():
             if "picture" not in columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN picture VARCHAR(500)"))
                 print("INFO: Migración de esquema: añadida columna picture a users")
-                
-migrate_schema_columns()
 
 def migrate_plaintext_tokens():
     db = SessionLocal()
@@ -93,7 +73,30 @@ def migrate_plaintext_tokens():
     finally:
         db.close()
 
-migrate_plaintext_tokens()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Crear tablas y ejecutar migración de esquema en segundo plano para no bloquear el puerto
+    try:
+        Base.metadata.create_all(bind=engine)
+        migrate_schema_columns()
+        migrate_plaintext_tokens()
+    except Exception as e:
+        print(f"WARNING: No se pudo completar la migración de DB en inicio: {e}")
+
+    # Iniciar scheduler SEPA
+    try:
+        from services.sepa.ingestion import iniciar_scheduler, detener_scheduler
+        iniciar_scheduler()
+    except Exception as e:
+        print(f"WARNING: No se pudo iniciar scheduler SEPA: {e}")
+
+    yield
+
+    # Shutdown
+    try:
+        detener_scheduler()
+    except Exception:
+        pass
 
 app = FastAPI(title="Flujo Finance Manager API", lifespan=lifespan)
 

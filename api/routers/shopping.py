@@ -157,36 +157,51 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
 
     # 5.b Respaldo: Scrapear HTML directo si la API pública de ML bloqueó la petición
     if not found or price == 0:
-        try:
-            html_resp = requests.get(url, headers=headers, timeout=6)
-            if html_resp.status_code == 200:
-                html_text = html_resp.text
-                
-                # Extraer precio de etiquetas og:price:amount, itemprop, schema JSON o HTML de ML
-                price_match = (
-                    re.search(r'property="og:price:amount"\s+content="([\d\.]+)"', html_text) or
-                    re.search(r'itemprop="price"\s+content="([\d\.]+)"', html_text) or
-                    re.search(r'"price":\s*(\d+(?:\.\d+)?)', html_text) or
-                    re.search(r'class="andes-money-amount__fraction"[^>]*>([\d\.]+)', html_text)
-                )
-                if price_match:
-                    raw_val = price_match.group(1).replace('.', '') if (',' in price_match.group(1) or price_match.group(1).count('.') > 1) else price_match.group(1)
-                    try:
-                        parsed_p = float(raw_val)
-                        if parsed_p > 0:
-                            price = parsed_p
-                            found = True
-                    except ValueError:
-                        pass
-                
-                # Extraer título si aún es el genérico
-                title_match = re.search(r'<meta\s+property="og:title"\s+content="([^"]+)"', html_text) or re.search(r'<title>([^<]+)</title>', html_text)
-                if title_match:
-                    clean_t = title_match.group(1).split('|')[0].split('- Mercado')[0].strip()
-                    if len(clean_t) > 3:
-                        title = clean_t
-        except Exception:
-            pass
+        urls_to_try = [url]
+        if item_id:
+            if item_id.startswith("MLA"):
+                urls_to_try.append(f"https://articulo.mercadolibre.com.ar/{item_id[:3]}-{item_id[3:]}")
+            urls_to_try.append(f"https://www.mercadolibre.com.ar/p/{item_id}")
+            
+        browser_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "es-AR,es-419;q=0.9,es;q=0.8",
+        }
+
+        for target_url in urls_to_try:
+            if found and price > 0:
+                break
+            try:
+                html_resp = requests.get(target_url, headers=browser_headers, timeout=5, allow_redirects=True)
+                if html_resp.status_code == 200:
+                    html_text = html_resp.text
+                    
+                    # Extraer precio de schema JSON-LD, og:price:amount, itemprop o HTML de ML
+                    price_match = (
+                        re.search(r'"price":\s*"?(\d+(?:\.\d+)?)"?', html_text) or
+                        re.search(r'property="og:price:amount"\s+content="([\d\.]+)"', html_text) or
+                        re.search(r'itemprop="price"\s+content="([\d\.]+)"', html_text) or
+                        re.search(r'class="andes-money-amount__fraction"[^>]*>([\d\.]+)', html_text)
+                    )
+                    if price_match:
+                        raw_val = price_match.group(1).replace('.', '') if (',' in price_match.group(1) or price_match.group(1).count('.') > 1) else price_match.group(1)
+                        try:
+                            parsed_p = float(raw_val)
+                            if parsed_p > 0:
+                                price = parsed_p
+                                found = True
+                        except ValueError:
+                            pass
+                    
+                    # Extraer título si aún es el genérico
+                    title_match = re.search(r'<meta\s+property="og:title"\s+content="([^"]+)"', html_text) or re.search(r'<title>([^<]+)</title>', html_text)
+                    if title_match:
+                        clean_t = title_match.group(1).split('|')[0].split('- Mercado')[0].strip()
+                        if len(clean_t) > 3 and title == "Producto Mercado Libre":
+                            title = clean_t
+            except Exception:
+                pass
 
     # 6. Manejo de fallbacks si Mercado Libre bloquea la consulta de API y HTML
     if price == 0:

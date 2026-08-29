@@ -35,17 +35,25 @@ def seed_db():
     db.add(s3)
     db.commit()
 
-    p = Producto(ean="7790040001234", nombre="Leche Entera La Serenisima 1L", nombre_normalizado="leche entera la serenisima 1l", marca="La Serenisima")
-    db.add(p)
+    p1 = Producto(ean="7790040001234", nombre="Leche Entera La Serenisima 1L", nombre_normalizado="leche entera la serenisima 1l", marca="La Serenisima")
+    p2 = Producto(ean="7790040001241", nombre="Leche Deslactosada La Serenisima 1L", nombre_normalizado="leche deslactosada la serenisima 1l", marca="La Serenisima")
+    p3 = Producto(ean="7790895000456", nombre="Coca Cola Sabor Original 2.25L", nombre_normalizado="coca cola sabor original 2.25l", marca="Coca Cola")
+    p4 = Producto(ean="7790070008012", nombre="Aceite de Girasol Natura 900ml", nombre_normalizado="aceite de girasol natura 900ml", marca="Natura")
+    db.add_all([p1, p2, p3, p4])
     db.commit()
     
     now = datetime.now()
-    pr1 = Precio(sucursal_id=s1.id, producto_id=p.id, precio_unitario=950.0, precio_promo_a=900.0, fecha_vigencia=now)
-    pr2 = Precio(sucursal_id=s2.id, producto_id=p.id, precio_unitario=900.0, precio_promo_a=850.0, fecha_vigencia=now)
-    pr3 = Precio(sucursal_id=s3.id, producto_id=p.id, precio_unitario=1050.0, fecha_vigencia=now)
-    db.add(pr1)
-    db.add(pr2)
-    db.add(pr3)
+    precios = [
+        Precio(sucursal_id=s1.id, producto_id=p1.id, precio_unitario=950.0, precio_promo_a=900.0, fecha_vigencia=now),
+        Precio(sucursal_id=s2.id, producto_id=p1.id, precio_unitario=900.0, precio_promo_a=850.0, fecha_vigencia=now),
+        Precio(sucursal_id=s3.id, producto_id=p1.id, precio_unitario=1050.0, fecha_vigencia=now),
+        Precio(sucursal_id=s1.id, producto_id=p2.id, precio_unitario=1100.0, precio_promo_a=1000.0, fecha_vigencia=now),
+        Precio(sucursal_id=s2.id, producto_id=p2.id, precio_unitario=1050.0, precio_promo_a=980.0, fecha_vigencia=now),
+        Precio(sucursal_id=s1.id, producto_id=p3.id, precio_unitario=2800.0, precio_promo_a=2500.0, fecha_vigencia=now),
+        Precio(sucursal_id=s2.id, producto_id=p3.id, precio_unitario=2700.0, precio_promo_a=2400.0, fecha_vigencia=now),
+        Precio(sucursal_id=s1.id, producto_id=p4.id, precio_unitario=1800.0, fecha_vigencia=now),
+    ]
+    db.add_all(precios)
     db.commit()
 
     print("Datos de prueba insertados exitosamente.")

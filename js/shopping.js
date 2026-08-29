@@ -36,7 +36,7 @@ export function initShopping() {
           
           <div>
             <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--muted);">(Opcional)</span></label>
-            <input type="number" id="shoppingPrice" class="field-input" placeholder="Autodetectado o $..." min="0" style="width: 100%;">
+            <input type="text" id="shoppingPrice" inputmode="decimal" class="field-input" placeholder="Autodetectado o ej: 194799" style="width: 100%;">
           </div>
 
           <div>
@@ -54,7 +54,7 @@ export function initShopping() {
           </div>
 
           <div>
-            <label class="field-label" style="margin-bottom: 8px;">Promoción bancaria (%)</label>
+            <label class="field-label" style="margin-bottom: 8px;">Descuento Extra Banco (%) <span style="font-size: 11px; color: var(--muted);">(Opcional)</span></label>
             <input type="number" id="shoppingDiscount" class="field-input" placeholder="0" min="0" max="100" value="0" style="width: 100%;">
           </div>
 
@@ -84,7 +84,21 @@ export function initShopping() {
 export async function analyzeShoppingUrl() {
   const urlEl = document.getElementById('shoppingUrl');
   const url = urlEl ? urlEl.value.trim() : '';
-  const priceVal = parseFloat(document.getElementById('shoppingPrice')?.value) || null;
+  
+  let priceStr = (document.getElementById('shoppingPrice')?.value || '').trim();
+  let priceVal = null;
+  if (priceStr) {
+    // Sanitizar punto de miles si fue ingresado como 194.799
+    if (priceStr.includes('.') && !priceStr.includes(',')) {
+      const parts = priceStr.split('.');
+      if (parts.length > 1 && parts[parts.length - 1].length === 3) {
+        priceStr = priceStr.replace(/\./g, '');
+      }
+    } else if (priceStr.includes('.')) {
+      priceStr = priceStr.replace(/\./g, '').replace(',', '.');
+    }
+    priceVal = parseFloat(priceStr) || null;
+  }
   const installments = parseInt(document.getElementById('shoppingInstallments')?.value);
   const selectedInstallments = isNaN(installments) ? 0 : installments;
   const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;

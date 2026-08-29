@@ -116,7 +116,13 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
     except Exception:
         pass
 
-    price = payload.price or 0.0
+    raw_price = payload.price or 0.0
+    # Corregir caso donde el usuario ingresa 194.799 pensando que son 194 mil pesos (separador de miles argentino)
+    if 0 < raw_price < 1000 and round(raw_price * 1000, 2) >= 1000 and round(raw_price * 1000, 3) == float(f"{raw_price * 1000:.3f}"):
+        price = float(round(raw_price * 1000, 2))
+    else:
+        price = raw_price
+
     title = slug_title or "Producto Mercado Libre"
     currency_id = "ARS"
     found = False

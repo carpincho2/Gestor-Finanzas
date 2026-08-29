@@ -30,8 +30,16 @@ def evaluate_payment_options(
     options = []
     
     for acc in accounts:
-        acc_type = acc.type.lower()
-        is_credit = "crédito" in acc_type or "credito" in acc_type or "credit" in acc_type
+        acc_type = (acc.type or "").lower()
+        acc_limit = getattr(acc, "limit", 0) or 0
+        is_credit = (
+            "crédito" in acc_type or 
+            "credito" in acc_type or 
+            "credit" in acc_type or 
+            "tarjeta" in acc_type or 
+            "card" in acc_type or 
+            acc_limit > 0
+        )
         
         if is_credit:
             # Para cuentas de crédito, probar las opciones de cuotas

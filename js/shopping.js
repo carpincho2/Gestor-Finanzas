@@ -42,13 +42,14 @@ export function initShopping() {
           <div>
             <label class="field-label" style="margin-bottom: 8px;">Cuotas sin interés</label>
             <select id="shoppingInstallments" class="field-select" style="width: 100%;">
+              <option value="0" selected>✨ Autodetectar mejor cuota (Recomendado)</option>
               <option value="1">1 pago (Contado)</option>
-              <option value="3">3 cuotas</option>
-              <option value="6">6 cuotas</option>
-              <option value="9">9 cuotas</option>
-              <option value="12">12 cuotas</option>
-              <option value="18">18 cuotas</option>
-              <option value="24">24 cuotas</option>
+              <option value="3">Hasta 3 cuotas</option>
+              <option value="6">Hasta 6 cuotas</option>
+              <option value="9">Hasta 9 cuotas</option>
+              <option value="12">Hasta 12 cuotas</option>
+              <option value="18">Hasta 18 cuotas</option>
+              <option value="24">Hasta 24 cuotas</option>
             </select>
           </div>
 
@@ -84,7 +85,8 @@ export async function analyzeShoppingUrl() {
   const urlEl = document.getElementById('shoppingUrl');
   const url = urlEl ? urlEl.value.trim() : '';
   const priceVal = parseFloat(document.getElementById('shoppingPrice')?.value) || null;
-  const installments = parseInt(document.getElementById('shoppingInstallments')?.value) || 1;
+  const installments = parseInt(document.getElementById('shoppingInstallments')?.value);
+  const selectedInstallments = isNaN(installments) ? 0 : installments;
   const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;
   const tna = parseFloat(document.getElementById('shoppingTna')?.value) || 40;
   
@@ -102,7 +104,7 @@ export async function analyzeShoppingUrl() {
   try {
     const bodyPayload = {
       url: url,
-      installments_without_interest: installments,
+      installments_without_interest: selectedInstallments,
       discount_percentage: discount,
       custom_tna: tna
     };

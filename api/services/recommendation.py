@@ -1,70 +1,85 @@
-from typing import List, Dict, Any
+def calculate_vpn(final_price: float, installments: int, tem: float) -> float:
+    if installments > 1 and tem > 0:
+        cuota = final_price / installments
+        return cuota * ((1 - (1 + tem)**-installments) / tem)
+    return final_price
 
 def evaluate_payment_options(
     price: float, 
     accounts: List[Any], 
     tna: float = 40.0, 
     discount: float = 0.0, 
-    installments: int = 1
+    installments: int | None = None
 ) -> List[Dict[str, Any]]:
     """
     Motor matemático de recomendación.
-    Compara pagar con débito/billetera vs crédito en cuotas.
+    Compara pagar al contado/débito vs crédito en distintas cuotas sin interés.
     
-    tna: Tasa Nominal Anual de rendimiento (costo de oportunidad).
-    discount: Porcentaje de descuento (0 a 100).
-    installments: Cuotas sin interés.
+    Si `installments` es None, 0 o auto, evalúa automáticamente todas las opciones
+    (1, 3, 6, 9, 12, 18, 24 cuotas) y recomienda la mejor combinación para el usuario.
     """
-    
-    # Calcular precio final con descuento aplicado
     final_price = price * (1 - (discount / 100))
-    
-    # Costo de oportunidad mensual (TEM - Tasa Efectiva Mensual aprox)
     tem = (tna / 100) / 12
     
-    # Valor Presente Neto (VPN) del pago en cuotas
-    # Formula VPN cuotas fijas: Pago_cuota * [ (1 - (1+tem)^-n) / tem ]
-    if installments > 1 and tem > 0:
-        cuota = final_price / installments
-        # Asumimos que la primera cuota se paga en el mes 1
-        vpn_credito = cuota * ((1 - (1 + tem)**-installments) / tem)
+    # Lista de cuotas a evaluar si no se especificó una fija
+    if installments and installments > 0:
+        cuotas_a_evaluar = [installments]
     else:
-        vpn_credito = final_price
+        cuotas_a_evaluar = [1, 3, 6, 9, 12, 18, 24]
         
     options = []
     
     for acc in accounts:
         acc_type = acc.type.lower()
+        is_credit = "crédito" in acc_type or "credito" in acc_type or "credit" in acc_type
         
-        if "crédito" in acc_type or "credito" in acc_type or "credit" in acc_type:
-            # Validar límite
+        if is_credit:
+            # Para cuentas de crédito, probar las opciones de cuotas
             if acc.limit >= final_price:
-                # El costo real para el usuario es el VPN (cuanto menor, mejor)
-                options.append({
-                    "account_id": acc.id,
-                    "account_name": acc.name,
-                    "type": acc.type,
-                    "is_viable": True,
-                    "real_cost": round(vpn_credito, 2),
-                    "nominal_cost": round(final_price, 2),
-                    "installments": installments,
-                    "payment_method": "credit",
-                    "reason": f"Pagás en {installments} cuotas. Costo real ajustado por inflación/oportunidad: ${round(vpn_credito, 2)}"
-                })
+                for n_cuotas in cuotas_a_evaluar:
+                    vpn = calculate_vpn(final_price, n_cuotas, tem)
+                    ahorro = final_price - vpn
+                    ahorro_pct = round((ahorro / final_price) * 100, 1) if final_price > 0 else 0
+                    
+                    cuota_mensual = final_price / n_cuotas if n_cuotas > 0 else final_price
+                    
+                    reason = (
+                        f"Te conviene pagar en {n_cuotas} cuotas de ${round(cuota_mensual, 2):,}. "
+                        f"Ajustado por tasa de rendimiento (TNA {tna}%), tu costo real es ${round(vpn, 2):,} "
+                        f"(ahorrás un {ahorro_pct}% por inflación vs contado)."
+                    ) if n_cuotas > 1 else "Pago en 1 cuota con tarjeta de crédito."
+
+                    options.append({
+                        "account_id": acc.id,
+                        "account_name": acc.name,
+                        "type": acc.type,
+                        "is_viable": True,
+                        "real_cost": round(vpn, 2),
+                        "nominal_cost": round(final_price, 2),
+                        "installments": n_cuotas,
+                        "monthly_installment": round(cuota_mensual, 2),
+                        "savings": round(ahorro, 2),
+                        "savings_pct": ahorro_pct,
+                        "payment_method": "credit",
+                        "reason": reason
+                    })
             else:
                 options.append({
                     "account_id": acc.id,
                     "account_name": acc.name,
                     "type": acc.type,
                     "is_viable": False,
-                    "real_cost": round(vpn_credito, 2),
+                    "real_cost": round(final_price, 2),
                     "nominal_cost": round(final_price, 2),
-                    "installments": installments,
+                    "installments": cuotas_a_evaluar[-1],
+                    "monthly_installment": round(final_price, 2),
+                    "savings": 0.0,
+                    "savings_pct": 0.0,
                     "payment_method": "credit",
-                    "reason": "Fondos insuficientes (límite superado)"
+                    "reason": f"Límite disponible superado (Precio: ${round(final_price, 2):,}, Límite: ${round(acc.limit, 2):,})."
                 })
         else:
-            # Débito, Efectivo, Billetera Virtual (se paga todo hoy, VPN = Precio Final)
+            # Débito, Efectivo, Billetera Virtual (se paga todo hoy)
             if acc.balance >= final_price:
                 options.append({
                     "account_id": acc.id,
@@ -74,8 +89,11 @@ def evaluate_payment_options(
                     "real_cost": round(final_price, 2),
                     "nominal_cost": round(final_price, 2),
                     "installments": 1,
+                    "monthly_installment": round(final_price, 2),
+                    "savings": 0.0,
+                    "savings_pct": 0.0,
                     "payment_method": "cash",
-                    "reason": "Pago al contado. No le ganás a la inflación con esta opción."
+                    "reason": "Pago al contado. Pierdes la oportunidad de hacer rendir el dinero en cuotas fijas."
                 })
             else:
                 options.append({
@@ -86,19 +104,23 @@ def evaluate_payment_options(
                     "real_cost": round(final_price, 2),
                     "nominal_cost": round(final_price, 2),
                     "installments": 1,
+                    "monthly_installment": round(final_price, 2),
+                    "savings": 0.0,
+                    "savings_pct": 0.0,
                     "payment_method": "cash",
-                    "reason": "Fondos insuficientes (saldo superado)"
+                    "reason": f"Saldo insuficiente (Precio: ${round(final_price, 2):,}, Saldo: ${round(acc.balance, 2):,})."
                 })
                 
-    # Ordenar opciones: primero las viables, luego por costo real (menor a mayor)
+    # Ordenar opciones: primero las viables, luego por costo real (menor costo real es mejor)
     options.sort(key=lambda x: (not x["is_viable"], x["real_cost"]))
     
     if not options:
         return []
         
-    # Destacar la ganadora
-    options[0]["is_winner"] = options[0]["is_viable"] # Solo gana si es viable
+    # Destacar la ganadora absoluta
+    options[0]["is_winner"] = options[0]["is_viable"]
     for opt in options[1:]:
         opt["is_winner"] = False
         
     return options
+

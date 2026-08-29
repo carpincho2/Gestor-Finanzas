@@ -16,14 +16,14 @@ router = APIRouter(prefix="/api/shopping", tags=["shopping"])
 class AnalyzeUrlRequest(BaseModel):
     url: str
     discount_percentage: Optional[float] = 0.0
-    installments_without_interest: Optional[int] = 1
+    installments_without_interest: Optional[int] = 0 # 0 = Autodetectar mejor cuota
     custom_tna: Optional[float] = 40.0 # Tasa nominal anual
     price: Optional[float] = None       # Precio manual opcional
 
 class AnalyzeBarcodeRequest(BaseModel):
     barcode: str
     discount_percentage: Optional[float] = 0.0
-    installments_without_interest: Optional[int] = 1
+    installments_without_interest: Optional[int] = 0
     custom_tna: Optional[float] = 40.0
 
 @router.get("/search")

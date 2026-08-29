@@ -14,7 +14,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
   final TextEditingController _discountController = TextEditingController(text: '0');
   final TextEditingController _tnaController = TextEditingController(text: '40');
   
-  int _selectedInstallments = 1;
+  int _selectedInstallments = 0;
 
   void _analyzeShopping() {
     FocusScope.of(context).unfocus(); // Cerrar teclado
@@ -100,14 +100,18 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
                               value: _selectedInstallments,
                               dropdownColor: const Color(0xFF1E293B),
                               style: const TextStyle(color: Colors.white),
+                              isExpanded: true,
                               decoration: InputDecoration(
                                 filled: true,
                                 fillColor: const Color(0xFF0F172A),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                               ),
-                              items: [1, 3, 6, 9, 12, 18, 24].map((e) => DropdownMenuItem(
+                              items: [0, 1, 3, 6, 9, 12, 18, 24].map((e) => DropdownMenuItem(
                                 value: e,
-                                child: Text(e == 1 ? '1 pago' : '$e cuotas'),
+                                child: Text(
+                                  e == 0 ? '✨ Autodetectar cuota' : (e == 1 ? '1 pago (Contado)' : 'Hasta $e cuotas'),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               )).toList(),
                               onChanged: (val) {
                                 if (val != null) setState(() => _selectedInstallments = val);

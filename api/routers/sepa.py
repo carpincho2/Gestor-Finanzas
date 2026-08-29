@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
-from services.sepa.comparador import comparar_precios, ResultadoSucursal
+from services.sepa.comparador import comparar_precios, buscar_producto_por_texto, ResultadoSucursal
 
 router = APIRouter(prefix="/precios", tags=["precios"])
 
@@ -56,7 +56,8 @@ class BusquedaPreciosResponse(BaseModel):
 
 @router.get("", response_model=BusquedaPreciosResponse)
 def buscar_precios(
-    ean: str = Query(..., description="EAN/GTIN del producto", min_length=8, max_length=14),
+    ean: str | None = Query(None, description="EAN/GTIN del producto", min_length=8, max_length=14),
+    q: str | None = Query(None, description="Búsqueda por nombre de producto", min_length=2, max_length=100),
     lat: float = Query(..., description="Latitud del usuario", ge=-55.0, le=-21.0),
     lng: float = Query(..., description="Longitud del usuario", ge=-74.0, le=-53.0),
     radio: float = Query(10.0, description="Radio de búsqueda en km", ge=0.5, le=50.0),
@@ -75,6 +76,16 @@ def buscar_precios(
     
     Ordenados por mejor valor total.
     """
+    if not ean and not q:
+        raise HTTPException(status_code=400, detail="Debés proporcionar un EAN o un nombre de producto para buscar.")
+
+    # Si se recibió un texto (nombre), buscar el producto por fuzzy search primero
+    if not ean and q:
+        productos = buscar_producto_por_texto(query=q, db=db, limite=1)
+        if not productos:
+            raise HTTPException(status_code=404, detail=f"No se encontró ningún producto que coincida con '{q}'.")
+        ean = productos[0].ean
+
     busqueda = comparar_precios(ean=ean, lat=lat, lng=lng, radio_km=radio, db=db)
 
     if busqueda is None:

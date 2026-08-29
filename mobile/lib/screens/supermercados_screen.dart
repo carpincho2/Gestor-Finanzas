@@ -40,7 +40,7 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
                     controller: _eanController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: 'Ingresar EAN o Código...',
+                      hintText: 'Nombre del producto o código EAN...',
                       hintStyle: const TextStyle(color: Colors.white54),
                       filled: true,
                       fillColor: const Color(0xFF1E293B),
@@ -50,7 +50,7 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
                       ),
                       prefixIcon: const Icon(Icons.search, color: Colors.white54),
                     ),
-                    keyboardType: TextInputType.number,
+                    keyboardType: TextInputType.text,
                     onSubmitted: (_) => _buscar(),
                   ),
                 ),
@@ -210,7 +210,7 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
                     Icon(Icons.shopping_basket_outlined, size: 64, color: Colors.white24),
                     SizedBox(height: 16),
                     Text(
-                      'Busca un producto por su código\npara encontrar el supermercado más barato',
+                      'Buscá un producto por nombre o código\npara encontrar el supermercado más barato',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white54, fontSize: 14),
                     ),

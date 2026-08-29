@@ -3,6 +3,9 @@ import { showToast } from './utils/utils.js';
 
 export function initShopping() {
   const container = document.getElementById('shoppingView');
+
+  // Evitar re-renderizar si ya existe el formulario (preserva datos del usuario)
+  if (container.querySelector('#shoppingUrl')) return;
   
   container.innerHTML = `
     <div style="max-width: 750px; margin: 0 auto; padding-bottom: 40px;">

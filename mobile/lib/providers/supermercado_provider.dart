@@ -15,7 +15,7 @@ class SupermercadoState {
   SupermercadoState copyWith({bool? isLoading, String? error, SupermercadoResponse? response}) {
     return SupermercadoState(
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error, // Permitir borrar el error pasando null
       response: response ?? this.response,
     );
   }
@@ -25,7 +25,7 @@ class SupermercadoNotifier extends Notifier<SupermercadoState> {
   @override
   SupermercadoState build() => SupermercadoState();
 
-  Future<void> buscarProducto(String ean) async {
+  Future<void> buscarProducto(String query) async {
     state = state.copyWith(isLoading: true, error: null);
     
     try {
@@ -46,9 +46,9 @@ class SupermercadoNotifier extends Notifier<SupermercadoState> {
         desiredAccuracy: LocationAccuracy.high
       );
       
-      // 2. Buscar
+      // 2. Buscar (auto-detectar si es EAN o nombre)
       final service = ref.read(supermercadoServiceProvider);
-      final response = await service.buscarPrecios(ean, position.latitude, position.longitude);
+      final response = await service.buscarPrecios(query, position.latitude, position.longitude);
       
       state = state.copyWith(isLoading: false, response: response);
     } catch (e) {
@@ -60,3 +60,4 @@ class SupermercadoNotifier extends Notifier<SupermercadoState> {
 final supermercadoProvider = NotifierProvider<SupermercadoNotifier, SupermercadoState>(() {
   return SupermercadoNotifier();
 });
+

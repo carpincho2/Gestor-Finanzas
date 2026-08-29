@@ -2,11 +2,11 @@ import { apiFetch } from './api/apiClient.js';
 import { showToast } from './utils/utils.js';
 
 export async function searchSepa() {
-  const eanInput = document.getElementById('sepaSearchInput');
-  const ean = eanInput.value.trim();
+  const input = document.getElementById('sepaSearchInput');
+  const query = input.value.trim();
   
-  if (!ean) {
-    showToast("Por favor, ingresá un código EAN", true);
+  if (!query) {
+    showToast("Por favor, ingresá un código EAN o nombre de producto", true);
     return;
   }
 
@@ -37,7 +37,12 @@ export async function searchSepa() {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
 
-    const res = await apiFetch(`/precios?ean=${ean}&lat=${lat}&lng=${lng}&radio=10`);
+    // Auto-detectar si es EAN (solo dígitos, 8-14 chars) o nombre de producto
+    const isEan = /^\d{8,14}$/.test(query);
+    const paramKey = isEan ? 'ean' : 'q';
+    const encodedQuery = encodeURIComponent(query);
+
+    const res = await apiFetch(`/precios?${paramKey}=${encodedQuery}&lat=${lat}&lng=${lng}&radio=10`);
     
     if (!res || !res.resultados) {
       throw new Error(res?.detail || "No se encontraron resultados.");
@@ -60,9 +65,17 @@ function renderSepaResults(data) {
   const list = document.getElementById('sepaResultsList');
   const count = document.getElementById('sepaResultsCount');
   const wrap = document.getElementById('sepaResultsWrap');
+  const productInfo = document.getElementById('sepaProductInfo');
   
   list.innerHTML = '';
   count.textContent = `${data.total_sucursales} sucursales encontradas`;
+
+  // Mostrar info del producto encontrado
+  if (data.producto) {
+    const nombre = data.producto.nombre || '';
+    const marca = data.producto.marca ? ` — ${data.producto.marca}` : '';
+    productInfo.textContent = `${nombre}${marca}`;
+  }
   
   if (data.resultados.length === 0) {
     list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--muted); font-size:13px;">No hay sucursales con este producto a menos de 10km.</div>';

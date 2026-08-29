@@ -52,8 +52,12 @@ export async function searchSepa() {
     
   } catch (error) {
     let msg = error.message;
-    if (error.code === 1) msg = "Permiso de ubicación denegado. Necesitamos tu ubicación para mostrar supermercados cercanos.";
-    errorEl.textContent = msg;
+    if (error.code === 1) {
+      msg = "Permiso de ubicación denegado. Necesitamos tu ubicación para mostrar supermercados cercanos.";
+    } else if (msg.includes("404") || msg.includes("no encontrado") || msg.includes("coincida")) {
+      msg = `🔍 ${msg} <br/><span style="opacity:0.8; font-size:12px; margin-top:4px; display:inline-block;">Tip: Probá buscar con nombres simples como "leche", "coca", "aceite" o mediante el código EAN.</span>`;
+    }
+    errorEl.innerHTML = msg;
     errorEl.style.display = 'block';
   } finally {
     loading.style.display = 'none';

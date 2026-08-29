@@ -149,17 +149,50 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
             except Exception:
                 pass
 
-    # 6. Manejo de fallbacks si Mercado Libre bloquea la consulta de API
-    if not found and price == 0:
+    # 5.b Respaldo: Scrapear HTML directo si la API pública de ML bloqueó la petición
+    if not found or price == 0:
+        try:
+            html_resp = requests.get(url, headers=headers, timeout=6)
+            if html_resp.status_code == 200:
+                html_text = html_resp.text
+                
+                # Extraer precio de etiquetas og:price:amount, itemprop, schema JSON o HTML de ML
+                price_match = (
+                    re.search(r'property="og:price:amount"\s+content="([\d\.]+)"', html_text) or
+                    re.search(r'itemprop="price"\s+content="([\d\.]+)"', html_text) or
+                    re.search(r'"price":\s*(\d+(?:\.\d+)?)', html_text) or
+                    re.search(r'class="andes-money-amount__fraction"[^>]*>([\d\.]+)', html_text)
+                )
+                if price_match:
+                    raw_val = price_match.group(1).replace('.', '') if (',' in price_match.group(1) or price_match.group(1).count('.') > 1) else price_match.group(1)
+                    try:
+                        parsed_p = float(raw_val)
+                        if parsed_p > 0:
+                            price = parsed_p
+                            found = True
+                    except ValueError:
+                        pass
+                
+                # Extraer título si aún es el genérico
+                title_match = re.search(r'<meta\s+property="og:title"\s+content="([^"]+)"', html_text) or re.search(r'<title>([^<]+)</title>', html_text)
+                if title_match:
+                    clean_t = title_match.group(1).split('|')[0].split('- Mercado')[0].strip()
+                    if len(clean_t) > 3:
+                        title = clean_t
+        except Exception:
+            pass
+
+    # 6. Manejo de fallbacks si Mercado Libre bloquea la consulta de API y HTML
+    if price == 0:
         if not item_id and not slug_title:
             raise HTTPException(
                 status_code=400,
                 detail="No pudimos encontrar el ID de producto en el link. Copiá el link completo de la publicación."
             )
-        # Si pudimos extraer el título pero no el precio (por bloqueo de API de ML)
+        # Si pudimos extraer el título pero no el precio (por bloqueo de API/Cloudflare de ML)
         raise HTTPException(
             status_code=422,
-            detail=f"Identificamos '{title}', pero Mercado Libre requiere ingresar el precio manualmente para calcular las cuotas."
+            detail=f"Identificamos '{title}', pero Mercado Libre requiere ingresar el precio manualmente en el campo 'Precio del producto' para calcular las cuotas."
         )
 
     # 7. Evaluar opciones de pago con la billetera del usuario

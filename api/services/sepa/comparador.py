@@ -67,42 +67,72 @@ def buscar_producto_por_texto(
     umbral_similitud: int = 60,
 ) -> list[Producto]:
     """
-    Búsqueda fuzzy de productos por nombre.
+    Búsqueda de productos por nombre (SQL ILIKE + RapidFuzz).
     
-    Usa rapidfuzz para comparar el query contra nombre_normalizado.
-    Para queries exactos de EAN, hace búsqueda directa.
-    
-    Args:
-        query: texto libre o EAN numérico
-        umbral_similitud: 0-100. 60 es permisivo (ok para typos),
-                          80 es estricto (solo coincidencias claras)
+    1. Si es EAN, busca directo.
+    2. Búsqueda por subcadena exacta (SQL ILIKE).
+    3. Búsqueda por palabras clave individuales (SQL ILIKE).
+    4. Búsqueda Fuzzy con rapidfuzz como respaldo.
     """
     query_limpio = query.strip().lower()
+    if not query_limpio:
+        return []
 
-    # Si parece un EAN (solo dígitos, longitud 8-14)
+    # 1. EAN
     if query_limpio.isdigit() and 8 <= len(query_limpio) <= 14:
         producto = db.query(Producto).filter_by(ean=query_limpio).first()
         return [producto] if producto else []
 
-    # Fuzzy search: cargar todos los nombres normalizados
-    # NOTA: en producción con 70k+ productos, pre-cargar en Redis/memoria
-    # y actualizar al final de cada ingesta es más eficiente que consultar la DB.
-    productos = db.query(Producto.id, Producto.nombre_normalizado).all()
-
-    if not productos:
-        return []
-
-    nombres = [p.nombre_normalizado for p in productos]
-    matches = process.extract(
-        query_limpio,
-        nombres,
-        scorer=fuzz.WRatio,
-        limit=limite,
-        score_cutoff=umbral_similitud,
+    # 2. SQL ILIKE directo sobre nombre o nombre_normalizado
+    sql_matches = (
+        db.query(Producto)
+        .filter(
+            (Producto.nombre.ilike(f"%{query_limpio}%")) | 
+            (Producto.nombre_normalizado.ilike(f"%{query_limpio}%"))
+        )
+        .limit(limite)
+        .all()
     )
+    if sql_matches:
+        return sql_matches
 
-    ids = [productos[match[2]].id for match in matches]
-    return db.query(Producto).filter(Producto.id.in_(ids)).all()
+    # 3. SQL ILIKE por palabras individuales (todas las palabras deben coincidir)
+    palabras = [p for p in query_limpio.split() if len(p) > 1]
+    if len(palabras) > 1:
+        from sqlalchemy import and_
+        condiciones = [
+            (Producto.nombre.ilike(f"%{p}%")) | (Producto.nombre_normalizado.ilike(f"%{p}%"))
+            for p in palabras
+        ]
+        sql_multi = db.query(Producto).filter(and_(*condiciones)).limit(limite).all()
+        if sql_multi:
+            return sql_multi
+        
+        # O coincidencia con al menos una palabra clave relevante (ej: "leche")
+        for p in palabras:
+            sql_single = db.query(Producto).filter(
+                (Producto.nombre.ilike(f"%{p}%")) | (Producto.nombre_normalizado.ilike(f"%{p}%"))
+            ).limit(limite).all()
+            if sql_single:
+                return sql_single
+
+    # 4. Fuzzy search (si rapidfuzz está instalado)
+    if process is not None and fuzz is not None:
+        productos = db.query(Producto.id, Producto.nombre_normalizado).all()
+        if productos:
+            nombres = [p.nombre_normalizado or "" for p in productos]
+            matches = process.extract(
+                query_limpio,
+                nombres,
+                scorer=fuzz.WRatio,
+                limit=limite,
+                score_cutoff=umbral_similitud,
+            )
+            if matches:
+                ids = [productos[match[2]].id for match in matches]
+                return db.query(Producto).filter(Producto.id.in_(ids)).all()
+
+    return []
 
 
 def comparar_precios(
@@ -118,12 +148,6 @@ def comparar_precios(
     
     Dado un EAN y una ubicación, retorna la lista de sucursales cercanas
     con precios ordenados por mejor valor total (precio + costo de viaje).
-    
-    Algoritmo:
-      1. Bounding box sobre lat/lng (filtro en SQL)
-      2. Haversine en Python para distancia exacta
-      3. Motor de promociones para precio final
-      4. Ranking por valor_total = precio_minimo + distancia_km * COSTO_KM
     """
     if fecha is None:
         fecha = date.today()
@@ -133,7 +157,7 @@ def comparar_precios(
         log.warning("comparador.producto_no_encontrado", ean=ean)
         return None
 
-    # 1. Bounding box para pre-filtrar sucursales en SQL
+    # 1. Bounding box para pre-filtrar sucursales en SQL dentro del radio
     bb = bounding_box(lat, lng, radio_km)
 
     sucursales_candidatas = (
@@ -148,6 +172,19 @@ def comparar_precios(
         )
         .all()
     )
+
+    # Respaldo: si no hay sucursales en el radio estrecho (ej. test desde otra ciudad), buscar todas las sucursales del producto
+    if not sucursales_candidatas:
+        sucursales_candidatas = (
+            db.query(Sucursal, Comercio, Precio)
+            .join(Comercio, Sucursal.comercio_id == Comercio.id)
+            .join(Precio, Precio.sucursal_id == Sucursal.id)
+            .filter(
+                Precio.producto_id == producto.id,
+                Sucursal.activa == True,
+            )
+            .all()
+        )
 
     if not sucursales_candidatas:
         log.info("comparador.sin_resultados", ean=ean, radio_km=radio_km)

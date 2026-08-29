@@ -120,6 +120,15 @@ export async function analyzeShoppingUrl() {
   } catch (err) {
     console.error(err);
     showToast(err.message, true);
+    if (err.message && (err.message.includes('precio') || err.message.includes('manual'))) {
+      const priceEl = document.getElementById('shoppingPrice');
+      if (priceEl) {
+        priceEl.style.border = '2px solid var(--amber)';
+        priceEl.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.4)';
+        priceEl.focus();
+        priceEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   } finally {
     btn.innerHTML = origContent;
     btn.disabled = false;

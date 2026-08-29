@@ -112,7 +112,7 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
     session_cookie="flujo_session",
-    max_age=86400 * 30,
+    max_age=86400 * 1, # 1 día (24 horas) para Web
     same_site="lax",
     https_only=IS_PRODUCTION
 )

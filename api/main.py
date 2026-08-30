@@ -80,8 +80,11 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         migrate_schema_columns()
         migrate_plaintext_tokens()
-        from seed_dummy import seed_db
-        seed_db()
+        # seed_dummy solo para desarrollo local, no producción
+        # En producción los datos vienen del pipeline de ingesta SEPA
+        if not IS_PRODUCTION:
+            from seed_dummy import seed_db
+            seed_db()
     except Exception as e:
         print(f"WARNING: No se pudo completar la migración o seed de DB en inicio: {e}")
 

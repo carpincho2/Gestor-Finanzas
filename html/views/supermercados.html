@@ -9,7 +9,7 @@
       <div>
         <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px;">Buscador de Precios SEPA</h2>
         <p style="color: var(--muted); font-size: 13px; margin: 0;">
-          Buscá un producto por su nombre o código EAN para comparar qué supermercados cercanos tienen el precio más bajo en tiempo real.
+          Buscá un producto por su nombre para comparar precios en supermercados cercanos. Cada producto muestra el mejor precio disponible.
         </p>
       </div>
     </div>
@@ -17,7 +17,7 @@
     <div style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
       <div class="form-full" style="flex: 1;">
         <label class="field-label" style="margin-bottom: 8px;">Producto (nombre o código EAN)</label>
-        <input class="field-input" id="sepaSearchInput" type="text" placeholder="Ej: Leche entera, Coca Cola, 7790040001234" style="width: 100%; font-size: 14px; padding: 12px 14px;"/>
+        <input class="field-input" id="sepaSearchInput" type="text" placeholder="Ej: Leche, Coca Cola, Aceite, Arroz..." style="width: 100%; font-size: 14px; padding: 12px 14px;"/>
       </div>
       <button class="btn btn-primary" onclick="searchSepa()" id="sepaSearchBtn" style="padding: 12px 20px; font-size: 14px; font-weight: 600; gap: 8px;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -27,7 +27,7 @@
     
     <div id="sepaLoading" style="display:none; text-align:center; padding:30px; color:var(--muted); font-size:14px;">
       <div class="sc-loading-spinner" style="width:28px; height:28px; margin:0 auto 12px; border-width:3px;"></div>
-      Buscando supermercados cercanos...
+      Buscando productos en supermercados cercanos...
     </div>
     
     <div id="sepaError" style="display:none; color:var(--danger); padding:14px 16px; background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.3); border-radius:10px; margin-top:20px; font-size:13px;">
@@ -35,11 +35,11 @@
     
     <div id="sepaResultsWrap" style="display:none; margin-top: 24px;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <div style="font-size:15px; font-weight:700; color:var(--text);" id="sepaResultsCount">0 sucursales encontradas</div>
-        <div style="font-size:12px; color:var(--muted);" id="sepaProductInfo"></div>
+        <div style="font-size:15px; font-weight:700; color:var(--text);" id="sepaResultsCount">0 productos encontrados</div>
+        <div style="font-size:12px; color:var(--muted);" id="sepaQueryInfo"></div>
       </div>
       
-      <div id="sepaResultsList" style="display:flex; flex-direction:column; gap:12px;">
+      <div id="sepaResultsList" style="display:flex; flex-direction:column; gap:16px;">
         <!-- Resultados dinámicos aquí -->
       </div>
     </div>

@@ -8,11 +8,11 @@ final supermercadoServiceProvider = Provider((ref) => SupermercadoService());
 class SupermercadoState {
   final bool isLoading;
   final String? error;
-  final SupermercadoResponse? response;
+  final BusquedaMultiProductoResponse? response;
   
   SupermercadoState({this.isLoading = false, this.error, this.response});
   
-  SupermercadoState copyWith({bool? isLoading, String? error, SupermercadoResponse? response}) {
+  SupermercadoState copyWith({bool? isLoading, String? error, BusquedaMultiProductoResponse? response}) {
     return SupermercadoState(
       isLoading: isLoading ?? this.isLoading,
       error: error, // Permitir borrar el error pasando null
@@ -46,9 +46,9 @@ class SupermercadoNotifier extends Notifier<SupermercadoState> {
         desiredAccuracy: LocationAccuracy.high
       );
       
-      // 2. Buscar (auto-detectar si es EAN o nombre)
+      // 2. Buscar múltiples productos
       final service = ref.read(supermercadoServiceProvider);
-      final response = await service.buscarPrecios(query, position.latitude, position.longitude);
+      final response = await service.buscarProductos(query, position.latitude, position.longitude);
       
       state = state.copyWith(isLoading: false, response: response);
     } catch (e) {
@@ -60,4 +60,3 @@ class SupermercadoNotifier extends Notifier<SupermercadoState> {
 final supermercadoProvider = NotifierProvider<SupermercadoNotifier, SupermercadoState>(() {
   return SupermercadoNotifier();
 });
-

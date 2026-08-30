@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/supermercado_provider.dart';
+import '../models/supermercado_model.dart';
 
 class SupermercadosScreen extends ConsumerStatefulWidget {
   const SupermercadosScreen({super.key});
@@ -10,11 +11,16 @@ class SupermercadosScreen extends ConsumerStatefulWidget {
 }
 
 class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
-  final _eanController = TextEditingController();
+  final _queryController = TextEditingController();
+  final Set<int> _expandedProducts = {0}; // Auto-expandir el primero
 
   void _buscar() {
-    if (_eanController.text.isNotEmpty) {
-      ref.read(supermercadoProvider.notifier).buscarProducto(_eanController.text);
+    if (_queryController.text.isNotEmpty) {
+      setState(() {
+        _expandedProducts.clear();
+        _expandedProducts.add(0);
+      });
+      ref.read(supermercadoProvider.notifier).buscarProducto(_queryController.text);
     }
   }
 
@@ -31,16 +37,17 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
       ),
       body: Column(
         children: [
+          // Search bar
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _eanController,
+                    controller: _queryController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: 'Nombre del producto o código EAN...',
+                      hintText: 'Buscar producto: leche, coca, aceite...',
                       hintStyle: const TextStyle(color: Colors.white54),
                       filled: true,
                       fillColor: const Color(0xFF1E293B),
@@ -70,6 +77,7 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
             ),
           ),
           
+          // Content
           if (state.isLoading)
             const Expanded(child: Center(child: CircularProgressIndicator(color: Color(0xFF38BDF8))))
           else if (state.error != null)
@@ -85,120 +93,58 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
                 ),
               ),
             )
-          else if (state.response != null)
+          else if (state.response != null && state.response!.productos.isNotEmpty)
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: state.response!.resultados.length,
-                itemBuilder: (context, index) {
-                  final item = state.response!.resultados[index];
-                  return Card(
-                    color: item.esMejorValor ? const Color(0xFF1E293B) : const Color(0xFF0F172A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: item.esMejorValor ? const Color(0xFF10B981) : Colors.white10,
-                        width: item.esMejorValor ? 2 : 1,
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Results header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${state.response!.totalProductos} producto${state.response!.totalProductos != 1 ? 's' : ''}',
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          '"${state.response!.query}"',
+                          style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        ),
+                      ],
                     ),
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                item.comercio,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (item.esMejorValor)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Text(
-                                    'Mejor Opción',
-                                    style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${item.sucursal} • ${item.direccion}',
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'A ${item.distanciaKm.toStringAsFixed(1)} km',
-                            style: const TextStyle(color: Colors.white54, fontSize: 12),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Precio Lista', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                                  Text(
-                                    '\$${item.precios.precioLista.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 14,
-                                      decoration: item.precios.precioLista > item.precios.precioMinimo ? TextDecoration.lineThrough : null,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text('Precio Final', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                                  Text(
-                                    '\$${item.precios.precioMinimo.toStringAsFixed(2)}',
-                                    style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 22, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          if (item.precios.promoBancariaTag != null)
-                            Container(
-                              margin: const EdgeInsets.only(top: 12),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF8B5CF6).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.3)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.local_offer, color: Color(0xFF8B5CF6), size: 16),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Incluye promo ${item.precios.promoBancariaTag} (-${item.precios.ahorroPct}%)',
-                                      style: const TextStyle(color: Color(0xFF8B5CF6), fontSize: 12),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                        ],
-                      ),
+                  ),
+                  // Product list
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: state.response!.productos.length,
+                      itemBuilder: (context, index) {
+                        final producto = state.response!.productos[index];
+                        final isExpanded = _expandedProducts.contains(index);
+                        return _buildProductCard(producto, index, isExpanded);
+                      },
                     ),
-                  );
-                },
+                  ),
+                ],
+              ),
+            )
+          else if (state.response != null && state.response!.productos.isEmpty)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.search_off, size: 64, color: Colors.white24),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No se encontraron productos\npara "${state.response!.query}"',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white54, fontSize: 14),
+                    ),
+                  ],
+                ),
               ),
             )
           else
@@ -210,7 +156,7 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
                     Icon(Icons.shopping_basket_outlined, size: 64, color: Colors.white24),
                     SizedBox(height: 16),
                     Text(
-                      'Buscá un producto por nombre o código\npara encontrar el supermercado más barato',
+                      'Buscá un producto por nombre\npara comparar precios en supermercados',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white54, fontSize: 14),
                     ),
@@ -218,6 +164,175 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductCard(ProductoConPrecios producto, int index, bool isExpanded) {
+    final marca = producto.marca != null ? ' · ${producto.marca}' : '';
+
+    return Card(
+      color: const Color(0xFF1E293B),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: isExpanded ? const Color(0xFF38BDF8) : Colors.white10,
+          width: isExpanded ? 1.5 : 1,
+        ),
+      ),
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          // Product header (tappable)
+          InkWell(
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedProducts.remove(index);
+                } else {
+                  _expandedProducts.add(index);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          producto.nombre,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${producto.totalSucursales} supermercado${producto.totalSucursales != 1 ? 's' : ''}$marca',
+                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('Desde', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                      Text(
+                        '\$${producto.mejorPrecio.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          color: Color(0xFF10B981),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: isExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.expand_more, color: Colors.white54),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Sucursales list (expandable)
+          if (isExpanded)
+            ...producto.sucursales.map((s) => _buildSucursalRow(s)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSucursalRow(SucursalResumen s) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
+        color: s.esMejor ? const Color(0xFF10B981).withOpacity(0.04) : null,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          if (s.esMejor)
+            const Padding(
+              padding: EdgeInsets.only(right: 6),
+              child: Text('🏆', style: TextStyle(fontSize: 13)),
+            ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      s.comercio,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (s.promoTag != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '${s.promoTag} -${s.ahorroPct}%',
+                          style: const TextStyle(color: Color(0xFF8B5CF6), fontSize: 10),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${s.sucursal ?? ''} ${s.direccion != null ? '· ${s.direccion}' : ''} · ${s.distanciaKm.toStringAsFixed(1)} km',
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (s.precioLista > s.precioFinal)
+                Text(
+                  '\$${s.precioLista.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 11,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+              Text(
+                '\$${s.precioFinal.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: s.esMejor ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

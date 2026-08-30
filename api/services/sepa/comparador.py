@@ -241,3 +241,172 @@ def comparar_precios(
         precio_mas_bajo=min(precios_minimos) if precios_minimos else 0,
         mejor_valor=resultados[0] if resultados else None,
     )
+
+
+# ── Búsqueda Multi-Producto ─────────────────────────────────────────
+
+@dataclass
+class SucursalPrecioResumen:
+    """Precio de un producto en una sucursal específica."""
+    sucursal_id: int
+    comercio: str
+    sucursal: str | None
+    direccion: str | None
+    lat: float
+    lng: float
+    distancia_km: float
+    precio_lista: float
+    precio_final: float  # precio_minimo con promos aplicadas
+    ahorro_pct: float
+    promo_tag: str | None
+    es_mejor: bool = False
+
+
+@dataclass
+class ProductoConPrecios:
+    """Un producto con sus precios en distintas sucursales."""
+    ean: str
+    nombre: str
+    marca: str | None
+    mejor_precio: float
+    precio_promedio: float
+    total_sucursales: int
+    sucursales: list[SucursalPrecioResumen]
+
+
+@dataclass
+class ResultadoMultiProducto:
+    """Respuesta del endpoint de búsqueda multi-producto."""
+    query: str
+    total_productos: int
+    productos: list[ProductoConPrecios]
+
+
+def buscar_productos_con_precios(
+    query: str,
+    lat: float,
+    lng: float,
+    radio_km: float = 10.0,
+    db: Session = None,
+    limite_productos: int = 15,
+    limite_sucursales: int = 5,
+    fecha: date | None = None,
+) -> ResultadoMultiProducto:
+    """
+    Búsqueda multi-producto: encuentra todos los productos que coincidan
+    con la query y devuelve, para cada uno, sus mejores precios en
+    sucursales cercanas.
+
+    Args:
+        query: Nombre del producto o EAN.
+        lat, lng: Ubicación del usuario.
+        radio_km: Radio de búsqueda en km.
+        db: Sesión de base de datos.
+        limite_productos: Máximo de productos a devolver.
+        limite_sucursales: Máximo de sucursales por producto.
+        fecha: Fecha para evaluar promos. Default: hoy.
+    """
+    if fecha is None:
+        fecha = date.today()
+
+    # 1. Buscar productos que matcheen la query
+    productos = buscar_producto_por_texto(query=query, db=db, limite=limite_productos)
+
+    if not productos:
+        return ResultadoMultiProducto(query=query, total_productos=0, productos=[])
+
+    # 2. Pre-calcular bounding box (una sola vez para todos los productos)
+    bb = bounding_box(lat, lng, radio_km)
+
+    resultados = []
+
+    for producto in productos:
+        # 3. Buscar sucursales cercanas que tengan este producto
+        sucursales_candidatas = (
+            db.query(Sucursal, Comercio, Precio)
+            .join(Comercio, Sucursal.comercio_id == Comercio.id)
+            .join(Precio, Precio.sucursal_id == Sucursal.id)
+            .filter(
+                Precio.producto_id == producto.id,
+                Sucursal.lat.between(bb.lat_min, bb.lat_max),
+                Sucursal.lng.between(bb.lng_min, bb.lng_max),
+                Sucursal.activa == True,
+            )
+            .all()
+        )
+
+        # Fallback: si no hay en el radio, buscar todas
+        if not sucursales_candidatas:
+            sucursales_candidatas = (
+                db.query(Sucursal, Comercio, Precio)
+                .join(Comercio, Sucursal.comercio_id == Comercio.id)
+                .join(Precio, Precio.sucursal_id == Sucursal.id)
+                .filter(
+                    Precio.producto_id == producto.id,
+                    Sucursal.activa == True,
+                )
+                .limit(limite_sucursales)
+                .all()
+            )
+
+        if not sucursales_candidatas:
+            continue
+
+        # 4. Calcular precio final para cada sucursal
+        sucursales_con_precio = []
+        for sucursal, comercio, precio in sucursales_candidatas:
+            dist = haversine(lat, lng, sucursal.lat, sucursal.lng)
+
+            precios = calcular_precio_final(
+                precio_lista=precio.precio_unitario,
+                precio_promo_a=precio.precio_promo_a,
+                precio_promo_b=precio.precio_promo_b,
+                cadena=comercio.nombre_key,
+                fecha=fecha,
+            )
+
+            sucursales_con_precio.append(SucursalPrecioResumen(
+                sucursal_id=sucursal.id,
+                comercio=comercio.nombre,
+                sucursal=sucursal.nombre,
+                direccion=sucursal.direccion,
+                lat=sucursal.lat,
+                lng=sucursal.lng,
+                distancia_km=round(dist, 2),
+                precio_lista=precios.precio_lista,
+                precio_final=precios.precio_minimo,
+                ahorro_pct=precios.ahorro_pct,
+                promo_tag=precios.promo_bancaria.tag_corto if precios.promo_bancaria else None,
+            ))
+
+        # 5. Ordenar por precio_final y limitar
+        sucursales_con_precio.sort(key=lambda s: s.precio_final)
+        sucursales_con_precio = sucursales_con_precio[:limite_sucursales]
+
+        # Marcar la mejor
+        if sucursales_con_precio:
+            sucursales_con_precio[0].es_mejor = True
+
+        precios_finales = [s.precio_final for s in sucursales_con_precio]
+        mejor = min(precios_finales) if precios_finales else 0
+        promedio = round(sum(precios_finales) / len(precios_finales), 2) if precios_finales else 0
+
+        resultados.append(ProductoConPrecios(
+            ean=producto.ean,
+            nombre=producto.nombre,
+            marca=producto.marca,
+            mejor_precio=mejor,
+            precio_promedio=promedio,
+            total_sucursales=len(sucursales_con_precio),
+            sucursales=sucursales_con_precio,
+        ))
+
+    # 6. Ordenar productos por mejor_precio (más barato primero)
+    resultados.sort(key=lambda p: p.mejor_precio if p.mejor_precio > 0 else float('inf'))
+
+    return ResultadoMultiProducto(
+        query=query,
+        total_productos=len(resultados),
+        productos=resultados,
+    )
+

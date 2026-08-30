@@ -11,12 +11,15 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
-from services.sepa.comparador import comparar_precios, buscar_producto_por_texto, ResultadoSucursal
+from services.sepa.comparador import (
+    comparar_precios, buscar_producto_por_texto, ResultadoSucursal,
+    buscar_productos_con_precios,
+)
 
 router = APIRouter(prefix="/precios", tags=["precios"])
 
 
-# ── Schemas de respuesta ──────────────────────────────────────────
+# ── Schemas de respuesta (endpoint original) ─────────────────────
 
 class PrecioPromoSchema(BaseModel):
     precio_lista: float
@@ -52,7 +55,40 @@ class BusquedaPreciosResponse(BaseModel):
     resultados: list[SucursalPrecioSchema]
 
 
-# ── Endpoint ─────────────────────────────────────────────────────
+# ── Schemas de respuesta (endpoint multi-producto) ───────────────
+
+class SucursalResumenSchema(BaseModel):
+    sucursal_id: int
+    comercio: str
+    sucursal: str | None = None
+    direccion: str | None = None
+    lat: float
+    lng: float
+    distancia_km: float
+    precio_lista: float
+    precio_final: float
+    ahorro_pct: float
+    promo_tag: str | None = None
+    es_mejor: bool = False
+
+
+class ProductoConPreciosSchema(BaseModel):
+    ean: str
+    nombre: str
+    marca: str | None = None
+    mejor_precio: float
+    precio_promedio: float
+    total_sucursales: int
+    sucursales: list[SucursalResumenSchema]
+
+
+class BusquedaMultiProductoResponse(BaseModel):
+    query: str
+    total_productos: int
+    productos: list[ProductoConPreciosSchema]
+
+
+# ── Endpoint original (retro-compatible) ─────────────────────────
 
 @router.get("", response_model=BusquedaPreciosResponse)
 def buscar_precios(
@@ -128,9 +164,66 @@ def buscar_precios(
         resultados=items,
     )
 
+
+# ── Endpoint multi-producto ──────────────────────────────────────
+
+@router.get("/buscar", response_model=BusquedaMultiProductoResponse)
+def buscar_productos(
+    q: str = Query(..., description="Búsqueda por nombre de producto", min_length=2, max_length=100),
+    lat: float = Query(..., description="Latitud del usuario", ge=-55.0, le=-21.0),
+    lng: float = Query(..., description="Longitud del usuario", ge=-74.0, le=-53.0),
+    radio: float = Query(10.0, description="Radio de búsqueda en km", ge=0.5, le=50.0),
+    db: Session = Depends(get_db),
+):
+    """
+    Busca múltiples productos que coincidan con la query y devuelve
+    los mejores precios de cada uno en supermercados cercanos.
+    
+    Ideal para búsquedas generales como "leche", "coca", "aceite".
+    Cada producto muestra hasta 5 sucursales ordenadas por precio.
+    """
+    resultado = buscar_productos_con_precios(
+        query=q, lat=lat, lng=lng, radio_km=radio, db=db,
+    )
+
+    return BusquedaMultiProductoResponse(
+        query=resultado.query,
+        total_productos=resultado.total_productos,
+        productos=[
+            ProductoConPreciosSchema(
+                ean=p.ean,
+                nombre=p.nombre,
+                marca=p.marca,
+                mejor_precio=p.mejor_precio,
+                precio_promedio=p.precio_promedio,
+                total_sucursales=p.total_sucursales,
+                sucursales=[
+                    SucursalResumenSchema(
+                        sucursal_id=s.sucursal_id,
+                        comercio=s.comercio,
+                        sucursal=s.sucursal,
+                        direccion=s.direccion,
+                        lat=s.lat,
+                        lng=s.lng,
+                        distancia_km=s.distancia_km,
+                        precio_lista=s.precio_lista,
+                        precio_final=s.precio_final,
+                        ahorro_pct=s.ahorro_pct,
+                        promo_tag=s.promo_tag,
+                        es_mejor=s.es_mejor,
+                    )
+                    for s in p.sucursales
+                ],
+            )
+            for p in resultado.productos
+        ],
+    )
+
+
 @router.post("/ingesta/trigger", tags=["sistema"])
 def trigger_ingesta():
     """Dispara la ingesta manualmente (útil para primer uso o debug)."""
     from services.sepa.ingestion import trigger_ingesta_background
     trigger_ingesta_background()
     return {"status": "ingesta iniciada en background"}
+

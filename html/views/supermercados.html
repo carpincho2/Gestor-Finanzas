@@ -17,9 +17,9 @@
     <div style="display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px;">
       <div class="form-full" style="flex: 1;">
         <label class="field-label" style="margin-bottom: 8px;">Producto (nombre o código EAN)</label>
-        <input class="field-input" id="sepaSearchInput" type="text" placeholder="Ej: Leche, Coca Cola, Aceite, Arroz..." style="width: 100%; font-size: 14px; padding: 12px 14px;"/>
+        <input class="field-input" id="sepaSearchInput" type="text" placeholder="Ej: Leche, Coca Cola, Aceite, Arroz..." onkeydown="if(event.key==='Enter') searchSepa()" style="width: 100%; height: 46px; font-size: 14px; padding: 0 16px; border-radius: 10px; box-sizing: border-box;"/>
       </div>
-      <button class="btn btn-primary" onclick="searchSepa()" id="sepaSearchBtn" style="padding: 12px 20px; font-size: 14px; font-weight: 600; gap: 8px;">
+      <button class="btn btn-primary" onclick="searchSepa()" id="sepaSearchBtn" style="height: 46px; padding: 0 24px; font-size: 14px; font-weight: 700; gap: 8px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Buscar
       </button>

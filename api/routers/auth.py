@@ -269,9 +269,10 @@ async def google_login(request: Request, payload: GoogleRequest, db: Session = D
     if not credential:
         return JSONResponse(status_code=422, content={"error": "Credencial requerida"})
         
+    import asyncio
     url = f"https://oauth2.googleapis.com/tokeninfo?id_token={requests.utils.quote(credential)}"
     try:
-        response = requests.get(url, timeout=10)
+        response = await asyncio.to_thread(requests.get, url, timeout=10)
     except Exception as e:
         return JSONResponse(status_code=502, content={"error": "No se pudo verificar el token con Google. Verificá tu conexión."})
         

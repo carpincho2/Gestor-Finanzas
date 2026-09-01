@@ -106,8 +106,6 @@ class AuthNotifier extends Notifier<AuthState> {
         serverClientId: '181912655817-l553ttb3c4p8q0q6p7kfon2e5p60bfcu.apps.googleusercontent.com',
       );
 
-      await googleSignIn.signOut();
-
       final googleUser = await googleSignIn.authenticate();
       if (googleUser == null) {
         state = state.copyWith(isLoading: false);

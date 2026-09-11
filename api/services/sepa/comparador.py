@@ -173,18 +173,7 @@ def comparar_precios(
         .all()
     )
 
-    # Respaldo: si no hay sucursales en el radio estrecho (ej. test desde otra ciudad), buscar todas las sucursales del producto
-    if not sucursales_candidatas:
-        sucursales_candidatas = (
-            db.query(Sucursal, Comercio, Precio)
-            .join(Comercio, Sucursal.comercio_id == Comercio.id)
-            .join(Precio, Precio.sucursal_id == Sucursal.id)
-            .filter(
-                Precio.producto_id == producto.id,
-                Sucursal.activa == True,
-            )
-            .all()
-        )
+    # Sin fallback global: si no hay sucursales en el radio, no se muestran resultados lejanos
 
     if not sucursales_candidatas:
         log.info("comparador.sin_resultados", ean=ean, radio_km=radio_km)
@@ -335,19 +324,7 @@ def buscar_productos_con_precios(
             .all()
         )
 
-        # Fallback: si no hay en el radio, buscar todas
-        if not sucursales_candidatas:
-            sucursales_candidatas = (
-                db.query(Sucursal, Comercio, Precio)
-                .join(Comercio, Sucursal.comercio_id == Comercio.id)
-                .join(Precio, Precio.sucursal_id == Sucursal.id)
-                .filter(
-                    Precio.producto_id == producto.id,
-                    Sucursal.activa == True,
-                )
-                .limit(limite_sucursales)
-                .all()
-            )
+        # Sin fallback global: solo se muestran sucursales dentro del radio
 
         if not sucursales_candidatas:
             continue
@@ -356,6 +333,8 @@ def buscar_productos_con_precios(
         sucursales_con_precio = []
         for sucursal, comercio, precio in sucursales_candidatas:
             dist = haversine(lat, lng, sucursal.lat, sucursal.lng)
+            if dist > radio_km:
+                continue  # Filtro estricto: descartar sucursales fuera del radio
 
             precios = calcular_precio_final(
                 precio_lista=precio.precio_unitario,

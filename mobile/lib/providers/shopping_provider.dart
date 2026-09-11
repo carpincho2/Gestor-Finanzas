@@ -26,6 +26,7 @@ class ShoppingNotifier extends Notifier<ShoppingState> {
 
   Future<void> analyzeUrl({
     required String url,
+    double? price,
     required int installments,
     required double discount,
     required double tna,
@@ -34,12 +35,17 @@ class ShoppingNotifier extends Notifier<ShoppingState> {
 
     try {
       final api = ApiService();
-      final response = await api.post('/api/shopping/analyze-url', {
+      final body = {
         'url': url,
         'installments_without_interest': installments,
         'discount_percentage': discount,
         'custom_tna': tna,
-      });
+      };
+      if (price != null && price > 0) {
+        body['price'] = price;
+      }
+
+      final response = await api.post('/api/shopping/analyze-url', body);
 
       if (response['ok'] == true) {
         state = state.copyWith(isLoading: false, data: response);
@@ -47,7 +53,7 @@ class ShoppingNotifier extends Notifier<ShoppingState> {
         state = state.copyWith(isLoading: false, error: response['error'] ?? 'Error desconocido');
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: e.toString().replaceAll('Exception: ', ''));
     }
   }
 }

@@ -11,6 +11,7 @@ class ShoppingScreen extends ConsumerStatefulWidget {
 
 class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
   final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   final TextEditingController _discountController = TextEditingController(text: '0');
   final TextEditingController _tnaController = TextEditingController(text: '40');
   
@@ -25,11 +26,18 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
       return;
     }
 
+    final priceText = _priceController.text.trim();
+    double? price;
+    if (priceText.isNotEmpty) {
+      price = double.tryParse(priceText.replaceAll('.', '').replaceAll(',', '.'));
+    }
+
     final discount = double.tryParse(_discountController.text) ?? 0.0;
     final tna = double.tryParse(_tnaController.text) ?? 40.0;
 
     ref.read(shoppingProvider.notifier).analyzeUrl(
       url: url,
+      price: price,
       installments: _selectedInstallments,
       discount: discount,
       tna: tna,
@@ -80,6 +88,30 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
                     decoration: InputDecoration(
                       hintText: 'https://articulo.mercadolibre...',
                       hintStyle: const TextStyle(color: Colors.white30),
+                      filled: true,
+                      fillColor: const Color(0xFF0F172A),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      const Text('Precio del producto (\$)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 6),
+                      Text('(Opcional / Autodetectado)', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _priceController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Ej: 194799 (Autodetectado o manual)',
+                      hintStyle: const TextStyle(color: Colors.white30),
+                      prefixText: '\$ ',
+                      prefixStyle: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
                       filled: true,
                       fillColor: const Color(0xFF0F172A),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),

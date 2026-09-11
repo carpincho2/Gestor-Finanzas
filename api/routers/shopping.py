@@ -108,15 +108,27 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
     try:
         parsed = urlparse(url)
         path_parts = [p for p in parsed.path.split('/') if p and p != 'p']
-        if path_parts and not path_parts[0].startswith('MLA'):
+        if path_parts:
             raw_slug = unquote(path_parts[0])
-            clean_slug = re.sub(r'[\-_]+', ' ', raw_slug).strip()
-            if len(clean_slug) > 4:
+            clean_slug = re.sub(r'^ML[A-Z]-?\d+-?', '', raw_slug, flags=re.IGNORECASE)
+            clean_slug = re.sub(r'_JM$', '', clean_slug, flags=re.IGNORECASE)
+            clean_slug = re.sub(r'[\-_]+', ' ', clean_slug).strip()
+            if len(clean_slug) > 3:
                 slug_title = clean_slug.title()
     except Exception:
         pass
 
-    raw_price = payload.price or 0.0
+    # 4.b Extraer precio de los parámetros de la URL si viniera adjunto
+    query_price = None
+    try:
+        parsed_query = urlparse(url).query
+        price_param = re.search(r'(?:price|precio|p)=([\d\.]+)', parsed_query, re.IGNORECASE)
+        if price_param:
+            query_price = float(price_param.group(1).replace('.', ''))
+    except Exception:
+        pass
+
+    raw_price = payload.price or query_price or 0.0
     # Corregir caso donde el usuario ingresa 194.799 pensando que son 194 mil pesos (separador de miles argentino)
     if 0 < raw_price < 1000 and round(raw_price * 1000, 2) >= 1000 and round(raw_price * 1000, 3) == float(f"{raw_price * 1000:.3f}"):
         price = float(round(raw_price * 1000, 2))

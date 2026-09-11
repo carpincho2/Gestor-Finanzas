@@ -151,9 +151,9 @@ def _purge_fake_stores_and_ensure_seed(db: Session):
             db.query(Sucursal).filter(Sucursal.id.in_(fake_ids)).delete(synchronize_session=False)
             db.commit()
 
-        # 2. Verificar si faltan las sucursales reales de Mar del Plata
+        # 2. Verificar si faltan o si están desactualizadas las sucursales reales de Mar del Plata
         mdp = db.query(Sucursal).filter(Sucursal.sepa_id == "S4").first()
-        if not mdp:
+        if not mdp or mdp.nombre != "Disco Constitución":
             from seed_dummy import seed_db
             seed_db()
     except Exception as e:

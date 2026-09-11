@@ -135,6 +135,32 @@ def buscar_producto_por_texto(
     return []
 
 
+def _purge_fake_stores_and_ensure_seed(db: Session):
+    """
+    Elimina cualquier sucursal inventada (sepa_id 'LOC_%') que haya quedado guardada
+    en la DB en invocaciones anteriores y asegura que las sucursales reales estén cargadas.
+    """
+    if db is None:
+        return
+    try:
+        # 1. Eliminar sucursales fake
+        fake_sucs = db.query(Sucursal).filter(Sucursal.sepa_id.like("LOC_%")).all()
+        if fake_sucs:
+            fake_ids = [s.id for s in fake_sucs]
+            db.query(Precio).filter(Precio.sucursal_id.in_(fake_ids)).delete(synchronize_session=False)
+            db.query(Sucursal).filter(Sucursal.id.in_(fake_ids)).delete(synchronize_session=False)
+            db.commit()
+
+        # 2. Verificar si faltan las sucursales reales de Mar del Plata
+        mdp = db.query(Sucursal).filter(Sucursal.sepa_id == "S4").first()
+        if not mdp:
+            from seed_dummy import seed_db
+            seed_db()
+    except Exception as e:
+        log.error("comparador.purge_error", error=str(e))
+        db.rollback()
+
+
 def comparar_precios(
     ean: str,
     lat: float,
@@ -151,6 +177,8 @@ def comparar_precios(
     """
     if fecha is None:
         fecha = date.today()
+
+    _purge_fake_stores_and_ensure_seed(db)
 
     producto = db.query(Producto).filter_by(ean=ean).first()
     if producto is None:
@@ -315,6 +343,8 @@ def buscar_productos_con_precios(
     """
     if fecha is None:
         fecha = date.today()
+
+    _purge_fake_stores_and_ensure_seed(db)
 
     # 1. Buscar productos que matcheen la query
     productos = buscar_producto_por_texto(query=query, db=db, limite=limite_productos)

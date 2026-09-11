@@ -7,183 +7,61 @@ from models import Comercio, Sucursal, Producto, Precio
 
 
 def seed_db():
-    """Inserta datos de prueba si no existen. Idempotente."""
+    """Inserta datos de prueba si no existen o completa sucursales/precios faltantes (MDP, etc.). Idempotente."""
     db = SessionLocal()
-
     try:
-        # Check if dummy data exists
-        existing = db.query(Comercio).filter(Comercio.cuit == "30-11111111-1").first()
-        if existing:
-            # Verificar si faltan sucursales de MDP (upgrade del seed)
-            mdp_sucursal = db.query(Sucursal).filter(Sucursal.sepa_id == "S4").first()
-            if mdp_sucursal:
-                print("Datos de prueba ya existen y están completos (incluye MDP).")
-                return
-            else:
-                print("Seed sin sucursales de Mar del Plata. Agregando...")
-                _seed_mar_del_plata(db)
-                return
-
-        print("Insertando datos de prueba SEPA...")
-
         from datetime import datetime
 
-        # ── Comercios ────────────────────────────────────────────
-        c1 = Comercio(sepa_id="C1", cuit="30-11111111-1", nombre="Supermercado Disco", nombre_key="disco")
-        c2 = Comercio(sepa_id="C2", cuit="30-22222222-2", nombre="Supermercado Coto", nombre_key="coto")
-        c3 = Comercio(sepa_id="C3", cuit="30-33333333-3", nombre="Carrefour", nombre_key="carrefour")
-        c4 = Comercio(sepa_id="C4", cuit="30-44444444-4", nombre="Toledo", nombre_key="toledo")
-        db.add_all([c1, c2, c3, c4])
-        db.commit()
-
-        # ── Sucursales CABA ──────────────────────────────────────
-        s1 = Sucursal(sepa_id="S1", comercio_id=c1.id, nombre="Disco Centro", lat=-34.604, lng=-58.380, direccion="Av. Corrientes 1000", localidad="CABA", provincia="CABA", activa=True)
-        s2 = Sucursal(sepa_id="S2", comercio_id=c2.id, nombre="Coto Obelisco", lat=-34.602, lng=-58.382, direccion="Av. 9 de Julio 1200", localidad="CABA", provincia="CABA", activa=True)
-        s3 = Sucursal(sepa_id="S3", comercio_id=c1.id, nombre="Disco Belgrano", lat=-34.700, lng=-58.400, direccion="Av. Cabildo 500", localidad="CABA", provincia="CABA", activa=True)
-
-        # ── Sucursales Mar del Plata ─────────────────────────────
-        s4 = Sucursal(sepa_id="S4", comercio_id=c3.id, nombre="Carrefour Constitución", lat=-38.0055, lng=-57.5426, direccion="Av. Constitución 6020", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s5 = Sucursal(sepa_id="S5", comercio_id=c2.id, nombre="Coto Mar del Plata", lat=-37.9977, lng=-57.5483, direccion="Av. Colón 3100", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s6 = Sucursal(sepa_id="S6", comercio_id=c4.id, nombre="Toledo Centro", lat=-37.9838, lng=-57.5507, direccion="San Martín 2600", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s7 = Sucursal(sepa_id="S7", comercio_id=c1.id, nombre="Disco Mar del Plata", lat=-37.9950, lng=-57.5550, direccion="Av. Independencia 1800", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s8 = Sucursal(sepa_id="S8", comercio_id=c3.id, nombre="Carrefour Güemes", lat=-37.9890, lng=-57.5730, direccion="Güemes 3200", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-
-        db.add_all([s1, s2, s3, s4, s5, s6, s7, s8])
-        db.commit()
-
-        # ── Productos ────────────────────────────────────────────
-        p1 = Producto(ean="7790040001234", nombre="Leche Entera La Serenisima 1L", nombre_normalizado="leche entera la serenisima 1l", marca="La Serenisima")
-        p2 = Producto(ean="7790040001241", nombre="Leche Deslactosada La Serenisima 1L", nombre_normalizado="leche deslactosada la serenisima 1l", marca="La Serenisima")
-        p3 = Producto(ean="7790895000456", nombre="Coca Cola Sabor Original 2.25L", nombre_normalizado="coca cola sabor original 2.25l", marca="Coca Cola")
-        p4 = Producto(ean="7790070008012", nombre="Aceite de Girasol Natura 900ml", nombre_normalizado="aceite de girasol natura 900ml", marca="Natura")
-        p5 = Producto(ean="7790250052487", nombre="Yerba Mate Taragüi 1Kg", nombre_normalizado="yerba mate taragui 1kg", marca="Taragüi")
-        p6 = Producto(ean="7790580391607", nombre="Galletitas Terrabusi Variedad 400g", nombre_normalizado="galletitas terrabusi variedad 400g", marca="Terrabusi")
-        p7 = Producto(ean="7790895001231", nombre="Coca Cola Zero 1.5L", nombre_normalizado="coca cola zero 1.5l", marca="Coca Cola")
-        p8 = Producto(ean="7790040001258", nombre="Leche Descremada La Serenisima 1L", nombre_normalizado="leche descremada la serenisima 1l", marca="La Serenisima")
-        p9 = Producto(ean="7791290007895", nombre="Fideos Matarazzo Spaghetti 500g", nombre_normalizado="fideos matarazzo spaghetti 500g", marca="Matarazzo")
-        p10 = Producto(ean="7790310982150", nombre="Arroz Gallo Oro 1Kg", nombre_normalizado="arroz gallo oro 1kg", marca="Gallo")
-        db.add_all([p1, p2, p3, p4, p5, p6, p7, p8, p9, p10])
-        db.commit()
-
-        # ── Precios ──────────────────────────────────────────────
-        now = datetime.now()
-        precios = [
-            # === CABA ===
-            # Leche Entera
-            Precio(sucursal_id=s1.id, producto_id=p1.id, precio_unitario=950.0, precio_promo_a=900.0, fecha_vigencia=now),
-            Precio(sucursal_id=s2.id, producto_id=p1.id, precio_unitario=900.0, precio_promo_a=850.0, fecha_vigencia=now),
-            Precio(sucursal_id=s3.id, producto_id=p1.id, precio_unitario=1050.0, fecha_vigencia=now),
-            # Leche Deslactosada
-            Precio(sucursal_id=s1.id, producto_id=p2.id, precio_unitario=1100.0, precio_promo_a=1000.0, fecha_vigencia=now),
-            Precio(sucursal_id=s2.id, producto_id=p2.id, precio_unitario=1050.0, precio_promo_a=980.0, fecha_vigencia=now),
-            # Coca Cola 2.25L
-            Precio(sucursal_id=s1.id, producto_id=p3.id, precio_unitario=2800.0, precio_promo_a=2500.0, fecha_vigencia=now),
-            Precio(sucursal_id=s2.id, producto_id=p3.id, precio_unitario=2700.0, precio_promo_a=2400.0, fecha_vigencia=now),
-            # Aceite
-            Precio(sucursal_id=s1.id, producto_id=p4.id, precio_unitario=1800.0, fecha_vigencia=now),
-
-            # === MAR DEL PLATA ===
-            # Leche Entera
-            Precio(sucursal_id=s4.id, producto_id=p1.id, precio_unitario=920.0, precio_promo_a=870.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p1.id, precio_unitario=960.0, precio_promo_a=910.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p1.id, precio_unitario=890.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p1.id, precio_unitario=940.0, precio_promo_a=880.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p1.id, precio_unitario=950.0, fecha_vigencia=now),
-            # Leche Deslactosada
-            Precio(sucursal_id=s4.id, producto_id=p2.id, precio_unitario=1080.0, precio_promo_a=990.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p2.id, precio_unitario=1120.0, precio_promo_a=1020.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p2.id, precio_unitario=1050.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p2.id, precio_unitario=1100.0, precio_promo_a=1010.0, fecha_vigencia=now),
-            # Leche Descremada
-            Precio(sucursal_id=s4.id, producto_id=p8.id, precio_unitario=980.0, precio_promo_a=920.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p8.id, precio_unitario=1000.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p8.id, precio_unitario=950.0, precio_promo_a=900.0, fecha_vigencia=now),
-            # Coca Cola 2.25L
-            Precio(sucursal_id=s4.id, producto_id=p3.id, precio_unitario=2750.0, precio_promo_a=2450.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p3.id, precio_unitario=2850.0, precio_promo_a=2550.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p3.id, precio_unitario=2600.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p3.id, precio_unitario=2780.0, precio_promo_a=2480.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p3.id, precio_unitario=2700.0, precio_promo_a=2380.0, fecha_vigencia=now),
-            # Coca Cola Zero 1.5L
-            Precio(sucursal_id=s4.id, producto_id=p7.id, precio_unitario=2200.0, precio_promo_a=1980.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p7.id, precio_unitario=2300.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p7.id, precio_unitario=2100.0, precio_promo_a=1890.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p7.id, precio_unitario=2250.0, fecha_vigencia=now),
-            # Aceite Natura
-            Precio(sucursal_id=s4.id, producto_id=p4.id, precio_unitario=1750.0, precio_promo_a=1600.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p4.id, precio_unitario=1820.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p4.id, precio_unitario=1680.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p4.id, precio_unitario=1790.0, precio_promo_a=1650.0, fecha_vigencia=now),
-            # Yerba Taragüi
-            Precio(sucursal_id=s4.id, producto_id=p5.id, precio_unitario=3200.0, precio_promo_a=2900.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p5.id, precio_unitario=3350.0, precio_promo_a=3050.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p5.id, precio_unitario=3100.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p5.id, precio_unitario=3250.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p5.id, precio_unitario=3180.0, precio_promo_a=2850.0, fecha_vigencia=now),
-            # Galletitas Terrabusi
-            Precio(sucursal_id=s4.id, producto_id=p6.id, precio_unitario=1500.0, precio_promo_a=1350.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p6.id, precio_unitario=1580.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p6.id, precio_unitario=1450.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p6.id, precio_unitario=1520.0, precio_promo_a=1380.0, fecha_vigencia=now),
-            # Fideos Matarazzo
-            Precio(sucursal_id=s4.id, producto_id=p9.id, precio_unitario=1200.0, precio_promo_a=1080.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p9.id, precio_unitario=1250.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p9.id, precio_unitario=1150.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p9.id, precio_unitario=1220.0, precio_promo_a=1100.0, fecha_vigencia=now),
-            # Arroz Gallo
-            Precio(sucursal_id=s4.id, producto_id=p10.id, precio_unitario=1400.0, precio_promo_a=1260.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p10.id, precio_unitario=1480.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p10.id, precio_unitario=1350.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p10.id, precio_unitario=1420.0, precio_promo_a=1280.0, fecha_vigencia=now),
+        # ── 1. Comercios ─────────────────────────────────────────
+        comercios_def = [
+            ("C1", "30-11111111-1", "Supermercado Disco", "disco"),
+            ("C2", "30-22222222-2", "Supermercado Coto", "coto"),
+            ("C3", "30-33333333-3", "Carrefour", "carrefour"),
+            ("C4", "30-44444444-4", "Toledo", "toledo"),
         ]
-        db.add_all(precios)
+        comercios_map = {}
+        for sepa_id, cuit, nombre, nombre_key in comercios_def:
+            c = db.query(Comercio).filter((Comercio.cuit == cuit) | (Comercio.sepa_id == sepa_id)).first()
+            if not c:
+                c = Comercio(sepa_id=sepa_id, cuit=cuit, nombre=nombre, nombre_key=nombre_key)
+                db.add(c)
+                db.flush()
+            comercios_map[sepa_id] = c
         db.commit()
 
-        total_p = db.query(Producto).count()
-        total_pr = db.query(Precio).count()
-        total_s = db.query(Sucursal).count()
-        print(f"Datos de prueba insertados: {total_p} productos, {total_s} sucursales, {total_pr} precios.")
-
-    except Exception as e:
-        db.rollback()
-        print(f"ERROR en seed_db: {e}")
-    finally:
-        db.close()
-
-
-def _seed_mar_del_plata(db):
-    """Agrega sucursales y precios de Mar del Plata a un seed existente."""
-    from datetime import datetime
-
-    try:
-        # Crear comercios nuevos si no existen
-        c3 = db.query(Comercio).filter(Comercio.cuit == "30-33333333-3").first()
-        if not c3:
-            c3 = Comercio(sepa_id="C3", cuit="30-33333333-3", nombre="Carrefour", nombre_key="carrefour")
-            db.add(c3)
-            db.commit()
-
-        c4 = db.query(Comercio).filter(Comercio.cuit == "30-44444444-4").first()
-        if not c4:
-            c4 = Comercio(sepa_id="C4", cuit="30-44444444-4", nombre="Toledo", nombre_key="toledo")
-            db.add(c4)
-            db.commit()
-
-        # Obtener comercios existentes
-        c1 = db.query(Comercio).filter(Comercio.cuit == "30-11111111-1").first()  # Disco
-        c2 = db.query(Comercio).filter(Comercio.cuit == "30-22222222-2").first()  # Coto
-
-        # Crear sucursales de Mar del Plata
-        s4 = Sucursal(sepa_id="S4", comercio_id=c3.id, nombre="Carrefour Constitución", lat=-38.0055, lng=-57.5426, direccion="Av. Constitución 6020", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s5 = Sucursal(sepa_id="S5", comercio_id=c2.id, nombre="Coto Mar del Plata", lat=-37.9977, lng=-57.5483, direccion="Av. Colón 3100", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s6 = Sucursal(sepa_id="S6", comercio_id=c4.id, nombre="Toledo Centro", lat=-37.9838, lng=-57.5507, direccion="San Martín 2600", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s7 = Sucursal(sepa_id="S7", comercio_id=c1.id, nombre="Disco Mar del Plata", lat=-37.9950, lng=-57.5550, direccion="Av. Independencia 1800", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        s8 = Sucursal(sepa_id="S8", comercio_id=c3.id, nombre="Carrefour Güemes", lat=-37.9890, lng=-57.5730, direccion="Güemes 3200", localidad="Mar del Plata", provincia="Buenos Aires", activa=True)
-        db.add_all([s4, s5, s6, s7, s8])
+        # ── 2. Sucursales ─────────────────────────────────────────
+        sucursales_def = [
+            # CABA
+            ("S1", comercios_map["C1"].id, "Disco Centro", -34.604, -58.380, "Av. Corrientes 1000", "CABA", "CABA"),
+            ("S2", comercios_map["C2"].id, "Coto Obelisco", -34.602, -58.382, "Av. 9 de Julio 1200", "CABA", "CABA"),
+            ("S3", comercios_map["C1"].id, "Disco Belgrano", -34.700, -58.400, "Av. Cabildo 500", "CABA", "CABA"),
+            # Mar del Plata
+            ("S4", comercios_map["C3"].id, "Carrefour Constitución", -38.0055, -57.5426, "Av. Constitución 6020", "Mar del Plata", "Buenos Aires"),
+            ("S5", comercios_map["C2"].id, "Coto Mar del Plata", -37.9977, -57.5483, "Av. Colón 3100", "Mar del Plata", "Buenos Aires"),
+            ("S6", comercios_map["C4"].id, "Toledo Centro", -37.9838, -57.5507, "San Martín 2600", "Mar del Plata", "Buenos Aires"),
+            ("S7", comercios_map["C1"].id, "Disco Mar del Plata", -37.9950, -57.5550, "Av. Independencia 1800", "Mar del Plata", "Buenos Aires"),
+            ("S8", comercios_map["C3"].id, "Carrefour Güemes", -37.9890, -57.5730, "Güemes 3200", "Mar del Plata", "Buenos Aires"),
+        ]
+        sucursales_map = {}
+        for sepa_id, com_id, nombre, lat, lng, direccion, localidad, provincia in sucursales_def:
+            s = db.query(Sucursal).filter(Sucursal.sepa_id == sepa_id).first()
+            if not s:
+                s = Sucursal(
+                    sepa_id=sepa_id, comercio_id=com_id, nombre=nombre,
+                    lat=lat, lng=lng, direccion=direccion,
+                    localidad=localidad, provincia=provincia, activa=True
+                )
+                db.add(s)
+                db.flush()
+            sucursales_map[sepa_id] = s
         db.commit()
 
-        # Crear productos nuevos si no existen
-        productos_nuevos = [
+        # ── 3. Productos ─────────────────────────────────────────
+        productos_def = [
+            ("7790040001234", "Leche Entera La Serenisima 1L", "leche entera la serenisima 1l", "La Serenisima"),
+            ("7790040001241", "Leche Deslactosada La Serenisima 1L", "leche deslactosada la serenisima 1l", "La Serenisima"),
+            ("7790895000456", "Coca Cola Sabor Original 2.25L", "coca cola sabor original 2.25l", "Coca Cola"),
+            ("7790070008012", "Aceite de Girasol Natura 900ml", "aceite de girasol natura 900ml", "Natura"),
             ("7790250052487", "Yerba Mate Taragüi 1Kg", "yerba mate taragui 1kg", "Taragüi"),
             ("7790580391607", "Galletitas Terrabusi Variedad 400g", "galletitas terrabusi variedad 400g", "Terrabusi"),
             ("7790895001231", "Coca Cola Zero 1.5L", "coca cola zero 1.5l", "Coca Cola"),
@@ -191,94 +69,113 @@ def _seed_mar_del_plata(db):
             ("7791290007895", "Fideos Matarazzo Spaghetti 500g", "fideos matarazzo spaghetti 500g", "Matarazzo"),
             ("7790310982150", "Arroz Gallo Oro 1Kg", "arroz gallo oro 1kg", "Gallo"),
         ]
-        for ean, nombre, norm, marca in productos_nuevos:
-            if not db.query(Producto).filter_by(ean=ean).first():
-                db.add(Producto(ean=ean, nombre=nombre, nombre_normalizado=norm, marca=marca))
+        productos_map = {}
+        for ean, nombre, norm, marca in productos_def:
+            p = db.query(Producto).filter(Producto.ean == ean).first()
+            if not p:
+                p = Producto(ean=ean, nombre=nombre, nombre_normalizado=norm, marca=marca)
+                db.add(p)
+                db.flush()
+            productos_map[ean] = p
         db.commit()
 
-        # Obtener todos los productos por EAN
-        def get_prod(ean):
-            return db.query(Producto).filter_by(ean=ean).first()
-
-        p1 = get_prod("7790040001234")  # Leche Entera
-        p2 = get_prod("7790040001241")  # Leche Deslactosada
-        p3 = get_prod("7790895000456")  # Coca Cola 2.25L
-        p4 = get_prod("7790070008012")  # Aceite Natura
-        p5 = get_prod("7790250052487")  # Yerba Taragüi
-        p6 = get_prod("7790580391607")  # Galletitas Terrabusi
-        p7 = get_prod("7790895001231")  # Coca Cola Zero
-        p8 = get_prod("7790040001258")  # Leche Descremada
-        p9 = get_prod("7791290007895")  # Fideos Matarazzo
-        p10 = get_prod("7790310982150")  # Arroz Gallo
-
+        # ── 4. Precios ───────────────────────────────────────────
         now = datetime.now()
-        precios_mdp = [
-            # Leche Entera
-            Precio(sucursal_id=s4.id, producto_id=p1.id, precio_unitario=920.0, precio_promo_a=870.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p1.id, precio_unitario=960.0, precio_promo_a=910.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p1.id, precio_unitario=890.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p1.id, precio_unitario=940.0, precio_promo_a=880.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p1.id, precio_unitario=950.0, fecha_vigencia=now),
-            # Leche Deslactosada
-            Precio(sucursal_id=s4.id, producto_id=p2.id, precio_unitario=1080.0, precio_promo_a=990.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p2.id, precio_unitario=1120.0, precio_promo_a=1020.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p2.id, precio_unitario=1050.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p2.id, precio_unitario=1100.0, precio_promo_a=1010.0, fecha_vigencia=now),
-            # Leche Descremada
-            Precio(sucursal_id=s4.id, producto_id=p8.id, precio_unitario=980.0, precio_promo_a=920.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p8.id, precio_unitario=1000.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p8.id, precio_unitario=950.0, precio_promo_a=900.0, fecha_vigencia=now),
-            # Coca Cola 2.25L
-            Precio(sucursal_id=s4.id, producto_id=p3.id, precio_unitario=2750.0, precio_promo_a=2450.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p3.id, precio_unitario=2850.0, precio_promo_a=2550.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p3.id, precio_unitario=2600.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p3.id, precio_unitario=2780.0, precio_promo_a=2480.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p3.id, precio_unitario=2700.0, precio_promo_a=2380.0, fecha_vigencia=now),
-            # Coca Cola Zero
-            Precio(sucursal_id=s4.id, producto_id=p7.id, precio_unitario=2200.0, precio_promo_a=1980.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p7.id, precio_unitario=2300.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p7.id, precio_unitario=2100.0, precio_promo_a=1890.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p7.id, precio_unitario=2250.0, fecha_vigencia=now),
-            # Aceite Natura
-            Precio(sucursal_id=s4.id, producto_id=p4.id, precio_unitario=1750.0, precio_promo_a=1600.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p4.id, precio_unitario=1820.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p4.id, precio_unitario=1680.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p4.id, precio_unitario=1790.0, precio_promo_a=1650.0, fecha_vigencia=now),
-            # Yerba Taragüi
-            Precio(sucursal_id=s4.id, producto_id=p5.id, precio_unitario=3200.0, precio_promo_a=2900.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p5.id, precio_unitario=3350.0, precio_promo_a=3050.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p5.id, precio_unitario=3100.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p5.id, precio_unitario=3250.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p5.id, precio_unitario=3180.0, precio_promo_a=2850.0, fecha_vigencia=now),
-            # Galletitas Terrabusi
-            Precio(sucursal_id=s4.id, producto_id=p6.id, precio_unitario=1500.0, precio_promo_a=1350.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p6.id, precio_unitario=1580.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p6.id, precio_unitario=1450.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p6.id, precio_unitario=1520.0, precio_promo_a=1380.0, fecha_vigencia=now),
-            # Fideos Matarazzo
-            Precio(sucursal_id=s4.id, producto_id=p9.id, precio_unitario=1200.0, precio_promo_a=1080.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p9.id, precio_unitario=1250.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p9.id, precio_unitario=1150.0, fecha_vigencia=now),
-            Precio(sucursal_id=s7.id, producto_id=p9.id, precio_unitario=1220.0, precio_promo_a=1100.0, fecha_vigencia=now),
-            # Arroz Gallo
-            Precio(sucursal_id=s4.id, producto_id=p10.id, precio_unitario=1400.0, precio_promo_a=1260.0, fecha_vigencia=now),
-            Precio(sucursal_id=s5.id, producto_id=p10.id, precio_unitario=1480.0, fecha_vigencia=now),
-            Precio(sucursal_id=s6.id, producto_id=p10.id, precio_unitario=1350.0, fecha_vigencia=now),
-            Precio(sucursal_id=s8.id, producto_id=p10.id, precio_unitario=1420.0, precio_promo_a=1280.0, fecha_vigencia=now),
+        precios_def = [
+            # CABA
+            ("S1", "7790040001234", 950.0, 900.0, None),
+            ("S2", "7790040001234", 900.0, 850.0, None),
+            ("S3", "7790040001234", 1050.0, None, None),
+            ("S1", "7790040001241", 1100.0, 1000.0, None),
+            ("S2", "7790040001241", 1050.0, 980.0, None),
+            ("S1", "7790895000456", 2800.0, 2500.0, None),
+            ("S2", "7790895000456", 2700.0, 2400.0, None),
+            ("S1", "7790070008012", 1800.0, None, None),
+
+            # Mar del Plata
+            ("S4", "7790040001234", 920.0, 870.0, None),
+            ("S5", "7790040001234", 960.0, 910.0, None),
+            ("S6", "7790040001234", 890.0, None, None),
+            ("S7", "7790040001234", 940.0, 880.0, None),
+            ("S8", "7790040001234", 950.0, None, None),
+
+            ("S4", "7790040001241", 1080.0, 990.0, None),
+            ("S5", "7790040001241", 1120.0, 1020.0, None),
+            ("S6", "7790040001241", 1050.0, None, None),
+            ("S7", "7790040001241", 1100.0, 1010.0, None),
+
+            ("S4", "7790040001258", 980.0, 920.0, None),
+            ("S5", "7790040001258", 1000.0, None, None),
+            ("S6", "7790040001258", 950.0, 900.0, None),
+
+            ("S4", "7790895000456", 2750.0, 2450.0, None),
+            ("S5", "7790895000456", 2850.0, 2550.0, None),
+            ("S6", "7790895000456", 2600.0, None, None),
+            ("S7", "7790895000456", 2780.0, 2480.0, None),
+            ("S8", "7790895000456", 2700.0, 2380.0, None),
+
+            ("S4", "7790895001231", 2200.0, 1980.0, None),
+            ("S5", "7790895001231", 2300.0, None, None),
+            ("S6", "7790895001231", 2100.0, 1890.0, None),
+            ("S7", "7790895001231", 2250.0, None, None),
+
+            ("S4", "7790070008012", 1750.0, 1600.0, None),
+            ("S5", "7790070008012", 1820.0, None, None),
+            ("S6", "7790070008012", 1680.0, None, None),
+            ("S7", "7790070008012", 1790.0, 1650.0, None),
+
+            ("S4", "7790250052487", 3200.0, 2900.0, None),
+            ("S5", "7790250052487", 3350.0, 3050.0, None),
+            ("S6", "7790250052487", 3100.0, None, None),
+            ("S7", "7790250052487", 3250.0, None, None),
+            ("S8", "7790250052487", 3180.0, 2850.0, None),
+
+            ("S4", "7790580391607", 1500.0, 1350.0, None),
+            ("S5", "7790580391607", 1580.0, None, None),
+            ("S6", "7790580391607", 1450.0, None, None),
+            ("S8", "7790580391607", 1520.0, 1380.0, None),
+
+            ("S4", "7791290007895", 1200.0, 1080.0, None),
+            ("S5", "7791290007895", 1250.0, None, None),
+            ("S6", "7791290007895", 1150.0, None, None),
+            ("S7", "7791290007895", 1220.0, 1100.0, None),
+
+            ("S4", "7790310982150", 1400.0, 1260.0, None),
+            ("S5", "7790310982150", 1480.0, None, None),
+            ("S6", "7790310982150", 1350.0, None, None),
+            ("S8", "7790310982150", 1420.0, 1280.0, None),
         ]
-        db.add_all(precios_mdp)
+
+        for s_sepa_id, p_ean, unit, promo_a, promo_b in precios_def:
+            suc = sucursales_map.get(s_sepa_id)
+            prod = productos_map.get(p_ean)
+            if suc and prod:
+                p_obj = db.query(Precio).filter_by(sucursal_id=suc.id, producto_id=prod.id).first()
+                if not p_obj:
+                    db.add(Precio(
+                        sucursal_id=suc.id,
+                        producto_id=prod.id,
+                        precio_unitario=unit,
+                        precio_promo_a=promo_a,
+                        precio_promo_b=promo_b,
+                        fecha_vigencia=now,
+                    ))
         db.commit()
 
         total_p = db.query(Producto).count()
         total_pr = db.query(Precio).count()
         total_s = db.query(Sucursal).count()
-        print(f"MDP seed completado: {total_p} productos, {total_s} sucursales, {total_pr} precios.")
-
+        print(f"Seed DB completado exitosamente: {total_p} productos, {total_s} sucursales, {total_pr} precios.")
     except Exception as e:
         db.rollback()
-        print(f"ERROR en _seed_mar_del_plata: {e}")
+        print(f"ERROR en seed_db: {e}")
     finally:
         db.close()
+
+
+if __name__ == "__main__":
+    seed_db()
+
 
 
 if __name__ == "__main__":

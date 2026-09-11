@@ -227,3 +227,13 @@ def trigger_ingesta():
     from services.sepa.ingestion import trigger_ingesta_background
     trigger_ingesta_background()
     return {"status": "ingesta iniciada en background"}
+
+
+@router.post("/seed", tags=["sistema"])
+@router.get("/seed", tags=["sistema"])
+def seed_database():
+    """Fuerza la ejecución del seed idempotente de la DB."""
+    from seed_dummy import seed_db
+    seed_db()
+    return {"status": "seed ejecutado exitosamente"}
+

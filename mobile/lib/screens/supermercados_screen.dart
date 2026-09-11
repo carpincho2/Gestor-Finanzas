@@ -75,7 +75,30 @@ class _SupermercadosScreenState extends ConsumerState<SupermercadosScreen> {
                 ),
               ],
             ),
-          ),
+          // Location Banner Badge
+          if (state.ubicacionTexto != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16.0).copyWith(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Color(0xFF38BDF8), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tu ubicación: ${state.ubicacionTexto}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           
           // Content
           if (state.isLoading)

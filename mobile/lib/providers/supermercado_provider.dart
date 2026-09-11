@@ -70,10 +70,24 @@ class SupermercadoNotifier extends Notifier<SupermercadoState> {
       );
 
       String ubiLabel = "${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}";
-      if (position.latitude >= -38.1 && position.latitude <= -37.8 && position.longitude >= -57.7 && position.longitude <= -57.4) {
-        ubiLabel = "Mar del Plata ($ubiLabel)";
-      } else if (position.latitude >= -34.7 && position.latitude <= -34.5 && position.longitude >= -58.5 && position.longitude <= -58.3) {
-        ubiLabel = "CABA ($ubiLabel)";
+      try {
+        final url = Uri.parse(
+          'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json&zoom=10&accept-language=es'
+        );
+        final res = await http.get(url, headers: {'User-Agent': 'GestorFinanzasApp/1.0'}).timeout(const Duration(seconds: 4));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          final address = data['address'];
+          if (address != null) {
+            final city = address['city'] ?? address['town'] ?? address['village'] ?? address['county'] ?? address['state'] ?? '';
+            final stateName = address['state'] ?? '';
+            if (city.toString().isNotEmpty) {
+              ubiLabel = "$city${stateName.toString().isNotEmpty && stateName != city ? ', $stateName' : ''} (${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)})";
+            }
+          }
+        }
+      } catch (_) {
+        // Fallback a coordenadas en caso de timeout
       }
       
       state = state.copyWith(

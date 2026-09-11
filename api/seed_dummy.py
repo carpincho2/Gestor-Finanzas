@@ -12,12 +12,13 @@ def seed_db():
     try:
         from datetime import datetime
 
-        # ── 0. Limpiar sucursales inventadas (LOC_...) si se hubieran creado previamente ──
-        fake_sucs = db.query(Sucursal).filter(Sucursal.sepa_id.like("LOC_%")).all()
-        if fake_sucs:
-            fake_ids = [s.id for s in fake_sucs]
-            db.query(Precio).filter(Precio.sucursal_id.in_(fake_ids)).delete(synchronize_session=False)
-            db.query(Sucursal).filter(Sucursal.id.in_(fake_ids)).delete(synchronize_session=False)
+        # ── 0. Limpiar sucursales obsoletas o inventadas que no pertenezcan al catálogo real ──
+        valid_sepa_ids = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12", "S13", "S14", "S15", "S16"]
+        invalid_sucs = db.query(Sucursal).filter(~Sucursal.sepa_id.in_(valid_sepa_ids)).all()
+        if invalid_sucs:
+            inv_ids = [s.id for s in invalid_sucs]
+            db.query(Precio).filter(Precio.sucursal_id.in_(inv_ids)).delete(synchronize_session=False)
+            db.query(Sucursal).filter(Sucursal.id.in_(inv_ids)).delete(synchronize_session=False)
             db.commit()
 
         # ── 1. Comercios ─────────────────────────────────────────

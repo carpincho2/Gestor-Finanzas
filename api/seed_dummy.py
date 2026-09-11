@@ -12,14 +12,10 @@ def seed_db():
     try:
         from datetime import datetime
 
-        # ── 0. Limpiar sucursales obsoletas o inventadas que no pertenezcan al catálogo real ──
-        valid_sepa_ids = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12", "S13", "S14", "S15", "S16"]
-        invalid_sucs = db.query(Sucursal).filter(~Sucursal.sepa_id.in_(valid_sepa_ids)).all()
-        if invalid_sucs:
-            inv_ids = [s.id for s in invalid_sucs]
-            db.query(Precio).filter(Precio.sucursal_id.in_(inv_ids)).delete(synchronize_session=False)
-            db.query(Sucursal).filter(Sucursal.id.in_(inv_ids)).delete(synchronize_session=False)
-            db.commit()
+        # ── 0. Limpiar sucursales y precios antiguos de prueba para reiniciar catálogo limpio ──
+        db.query(Precio).delete(synchronize_session=False)
+        db.query(Sucursal).delete(synchronize_session=False)
+        db.commit()
 
         # ── 1. Comercios ─────────────────────────────────────────
         comercios_def = [
@@ -45,13 +41,14 @@ def seed_db():
             ("S2", comercios_map["C2"].id, "Coto Obelisco", -34.602, -58.382, "Av. 9 de Julio 1200", "CABA", "CABA"),
             ("S3", comercios_map["C1"].id, "Disco Belgrano", -34.700, -58.400, "Av. Cabildo 500", "CABA", "CABA"),
             # Mar del Plata (Ubicaciones Reales Verificadas)
-            ("S4", comercios_map["C1"].id, "Disco Constitución", -38.0055, -57.5426, "Av. Constitución 6050", "Mar del Plata", "Buenos Aires"),
-            ("S5", comercios_map["C3"].id, "Carrefour Catamarca", -37.9991, -57.5510, "Catamarca 2058", "Mar del Plata", "Buenos Aires"),
-            ("S6", comercios_map["C4"].id, "Toledo Rivadavia", -37.9998, -57.5488, "Rivadavia 3050", "Mar del Plata", "Buenos Aires"),
-            ("S7", comercios_map["C3"].id, "Carrefour Luro", -37.9948, -57.5510, "Av. Luro 3150", "Mar del Plata", "Buenos Aires"),
+            ("S4", comercios_map["C4"].id, "Toledo Constitución", -37.9865, -57.5555, "Av. Constitución 4850", "Mar del Plata", "Buenos Aires"),
+            ("S5", comercios_map["C3"].id, "Carrefour Market Catamarca", -37.9991, -57.5510, "Catamarca 2038", "Mar del Plata", "Buenos Aires"),
+            ("S6", comercios_map["C4"].id, "Toledo Jujuy", -37.9995, -57.5520, "Jujuy 1900", "Mar del Plata", "Buenos Aires"),
+            ("S7", comercios_map["C3"].id, "Carrefour Hiper Luro", -37.9840, -57.5760, "Av. Pedro Luro 5851", "Mar del Plata", "Buenos Aires"),
             ("S8", comercios_map["C1"].id, "Disco Güemes", -38.0145, -57.5408, "Güemes 3250", "Mar del Plata", "Buenos Aires"),
-            ("S15", comercios_map["C3"].id, "Carrefour Champagnat", -37.9860, -57.5750, "Av. Champagnat 1695", "Mar del Plata", "Buenos Aires"),
-            ("S16", comercios_map["C4"].id, "Toledo Colón", -38.0051, -57.5401, "Av. Colón 1660", "Mar del Plata", "Buenos Aires"),
+            ("S15", comercios_map["C4"].id, "Toledo Colón", -38.0051, -57.5401, "Av. Colón 1640", "Mar del Plata", "Buenos Aires"),
+            ("S16", comercios_map["C4"].id, "Toledo Güemes", -38.0120, -57.5422, "Güemes 2850", "Mar del Plata", "Buenos Aires"),
+            ("S17", comercios_map["C2"].id, "Vea San Martín", -37.9985, -57.5458, "San Martín 2560", "Mar del Plata", "Buenos Aires"),
             # Córdoba
             ("S9", comercios_map["C3"].id, "Carrefour Colón", -31.3980, -64.2250, "Av. Colón 4000", "Córdoba", "Córdoba"),
             ("S10", comercios_map["C2"].id, "Coto Olmos", -31.4130, -64.1810, "Av. Emilio Olmos 200", "Córdoba", "Córdoba"),
@@ -64,26 +61,13 @@ def seed_db():
         ]
         sucursales_map = {}
         for sepa_id, com_id, nombre, lat, lng, direccion, localidad, provincia in sucursales_def:
-            s = db.query(Sucursal).filter(Sucursal.sepa_id == sepa_id).first()
-            if not s:
-                s = Sucursal(
-                    sepa_id=sepa_id, comercio_id=com_id, nombre=nombre,
-                    lat=lat, lng=lng, direccion=direccion,
-                    localidad=localidad, provincia=provincia, activa=True
-                )
-                db.add(s)
-                db.flush()
-            else:
-                # Actualizar datos de sucursal existente para corregir nombres y direcciones reales
-                s.comercio_id = com_id
-                s.nombre = nombre
-                s.lat = lat
-                s.lng = lng
-                s.direccion = direccion
-                s.localidad = localidad
-                s.provincia = provincia
-                s.activa = True
-                db.flush()
+            s = Sucursal(
+                sepa_id=sepa_id, comercio_id=com_id, nombre=nombre,
+                lat=lat, lng=lng, direccion=direccion,
+                localidad=localidad, provincia=provincia, activa=True
+            )
+            db.add(s)
+            db.flush()
             sucursales_map[sepa_id] = s
         db.commit()
 
@@ -131,6 +115,7 @@ def seed_db():
             ("S8", "7790040001234", 950.0, None, None),
             ("S15", "7790040001234", 880.0, 830.0, None),
             ("S16", "7790040001234", 910.0, None, None),
+            ("S17", "7790040001234", 905.0, 855.0, None),
 
             ("S4", "7790040001241", 1080.0, 990.0, None),
             ("S5", "7790040001241", 1120.0, 1020.0, None),

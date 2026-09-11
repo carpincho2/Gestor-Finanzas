@@ -7,10 +7,18 @@ from models import Comercio, Sucursal, Producto, Precio
 
 
 def seed_db():
-    """Inserta datos de prueba si no existen o completa sucursales/precios faltantes (MDP, etc.). Idempotente."""
+    """Inserta datos de prueba si no existen o completa sucursales/precios faltantes. Idempotente."""
     db = SessionLocal()
     try:
         from datetime import datetime
+
+        # ── 0. Limpiar sucursales inventadas (LOC_...) si se hubieran creado previamente ──
+        fake_sucs = db.query(Sucursal).filter(Sucursal.sepa_id.like("LOC_%")).all()
+        if fake_sucs:
+            fake_ids = [s.id for s in fake_sucs]
+            db.query(Precio).filter(Precio.sucursal_id.in_(fake_ids)).delete(synchronize_session=False)
+            db.query(Sucursal).filter(Sucursal.id.in_(fake_ids)).delete(synchronize_session=False)
+            db.commit()
 
         # ── 1. Comercios ─────────────────────────────────────────
         comercios_def = [
@@ -29,7 +37,7 @@ def seed_db():
             comercios_map[sepa_id] = c
         db.commit()
 
-        # ── 2. Sucursales ─────────────────────────────────────────
+        # ── 2. Sucursales Reales ──────────────────────────────────
         sucursales_def = [
             # CABA
             ("S1", comercios_map["C1"].id, "Disco Centro", -34.604, -58.380, "Av. Corrientes 1000", "CABA", "CABA"),
@@ -41,6 +49,15 @@ def seed_db():
             ("S6", comercios_map["C4"].id, "Toledo Centro", -37.9838, -57.5507, "San Martín 2600", "Mar del Plata", "Buenos Aires"),
             ("S7", comercios_map["C1"].id, "Disco Mar del Plata", -37.9950, -57.5550, "Av. Independencia 1800", "Mar del Plata", "Buenos Aires"),
             ("S8", comercios_map["C3"].id, "Carrefour Güemes", -37.9890, -57.5730, "Güemes 3200", "Mar del Plata", "Buenos Aires"),
+            # Córdoba
+            ("S9", comercios_map["C3"].id, "Carrefour Colón", -31.3980, -64.2250, "Av. Colón 4000", "Córdoba", "Córdoba"),
+            ("S10", comercios_map["C2"].id, "Coto Olmos", -31.4130, -64.1810, "Av. Emilio Olmos 200", "Córdoba", "Córdoba"),
+            ("S11", comercios_map["C1"].id, "Disco Nueva Córdoba", -31.4250, -64.1870, "Av. Hipólito Yrigoyen 400", "Córdoba", "Córdoba"),
+            # Rosario
+            ("S12", comercios_map["C2"].id, "Coto Alto Rosario", -32.9280, -60.6650, "Junín 501", "Rosario", "Santa Fe"),
+            ("S13", comercios_map["C3"].id, "Carrefour Pellegrini", -32.9520, -60.6690, "Av. Pellegrini 3250", "Rosario", "Santa Fe"),
+            # Mendoza
+            ("S14", comercios_map["C3"].id, "Carrefour Las Heras", -32.8870, -68.8410, "Av. Las Heras 350", "Mendoza", "Mendoza"),
         ]
         sucursales_map = {}
         for sepa_id, com_id, nombre, lat, lng, direccion, localidad, provincia in sucursales_def:
@@ -144,6 +161,22 @@ def seed_db():
             ("S5", "7790310982150", 1480.0, None, None),
             ("S6", "7790310982150", 1350.0, None, None),
             ("S8", "7790310982150", 1420.0, 1280.0, None),
+
+            # Córdoba
+            ("S9", "7790040001234", 930.0, 880.0, None),
+            ("S10", "7790040001234", 910.0, 860.0, None),
+            ("S11", "7790040001234", 945.0, None, None),
+            ("S9", "7790895000456", 2740.0, 2440.0, None),
+            ("S10", "7790895000456", 2700.0, 2400.0, None),
+
+            # Rosario
+            ("S12", "7790040001234", 915.0, 865.0, None),
+            ("S13", "7790040001234", 935.0, 885.0, None),
+            ("S12", "7790895000456", 2720.0, 2420.0, None),
+
+            # Mendoza
+            ("S14", "7790040001234", 925.0, 875.0, None),
+            ("S14", "7790895000456", 2760.0, 2460.0, None),
         ]
 
         for s_sepa_id, p_ean, unit, promo_a, promo_b in precios_def:

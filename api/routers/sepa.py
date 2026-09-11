@@ -227,36 +227,3 @@ def trigger_ingesta():
     from services.sepa.ingestion import trigger_ingesta_background
     trigger_ingesta_background()
     return {"status": "ingesta iniciada en background"}
-
-
-@router.get("/debug/status", tags=["sistema"])
-def debug_db_status(db: Session = Depends(get_db)):
-    """Endpoint temporal de diagnóstico para verificar el estado de la DB."""
-    from models import Comercio, Sucursal, Producto, Precio
-    
-    productos = db.query(Producto).all()
-    comercios = db.query(Comercio).count()
-    sucursales = db.query(Sucursal).count()
-    precios = db.query(Precio).count()
-    
-    # Intentar ejecutar seed si no hay datos
-    seed_result = None
-    if not productos:
-        try:
-            from seed_dummy import seed_db
-            seed_db()
-            seed_result = "seed ejecutado"
-            productos = db.query(Producto).all()
-            comercios = db.query(Comercio).count()
-            sucursales = db.query(Sucursal).count()
-            precios = db.query(Precio).count()
-        except Exception as e:
-            seed_result = f"seed falló: {str(e)}"
-    
-    return {
-        "comercios": comercios,
-        "sucursales": sucursales,
-        "productos": [{"id": p.id, "ean": p.ean, "nombre": p.nombre} for p in productos],
-        "total_precios": precios,
-        "seed_result": seed_result,
-    }

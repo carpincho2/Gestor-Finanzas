@@ -128,6 +128,7 @@ function setPage(el, page) {
     hideAll();
     const el = document.getElementById('supermercadosView');
     if (el) el.style.display = '';
+    if (window.detectLocation) window.detectLocation();
   } else if (page === 'shopping') {
     hideAll();
     const el = document.getElementById('shoppingView');

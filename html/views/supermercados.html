@@ -24,6 +24,24 @@
         </button>
       </div>
     </div>
+
+    <!-- Banner de ubicación detectada -->
+    <div id="sepaLocationBanner" style="
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; margin-bottom: 16px;
+      background: rgba(0, 229, 160, 0.08);
+      border: 1px solid rgba(0, 229, 160, 0.2);
+      border-radius: 10px;
+      font-size: 13px; color: var(--muted);
+      transition: all 0.3s ease;
+    ">
+      <svg width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+        <circle cx="12" cy="10" r="3"></circle>
+      </svg>
+      <span id="sepaLocationText">Detectando ubicación...</span>
+      <span id="sepaLocationCoords" style="font-size: 11px; opacity: 0.6; margin-left: auto;"></span>
+    </div>
     
     <div id="sepaLoading" style="display:none; text-align:center; padding:30px; color:var(--muted); font-size:14px;">
       <div class="sc-loading-spinner" style="width:28px; height:28px; margin:0 auto 12px; border-width:3px;"></div>

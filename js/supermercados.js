@@ -1,6 +1,69 @@
 import { apiFetch } from './api/apiClient.js';
 import { showToast } from './utils/utils.js';
 
+// Cache de ubicación
+let cachedLat = null;
+let cachedLng = null;
+
+/**
+ * Detecta la ubicación del usuario al cargar la página y muestra
+ * la ciudad en el banner. Usa Nominatim (OpenStreetMap) para geocodificación inversa.
+ */
+export function detectLocation() {
+  const textEl = document.getElementById('sepaLocationText');
+  const coordsEl = document.getElementById('sepaLocationCoords');
+  const banner = document.getElementById('sepaLocationBanner');
+
+  if (!textEl || !banner) return;
+
+  // Si ya tenemos ubicación cacheada, no volver a pedir
+  if (cachedLat !== null && cachedLng !== null && textEl.innerHTML.includes('📍')) return;
+
+  if (!navigator.geolocation) {
+    textEl.textContent = '⚠ Tu navegador no soporta geolocalización';
+    banner.style.borderColor = 'rgba(244,63,94,0.3)';
+    banner.style.background = 'rgba(244,63,94,0.08)';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      cachedLat = pos.coords.latitude;
+      cachedLng = pos.coords.longitude;
+
+      if (coordsEl) {
+        coordsEl.textContent = `(${cachedLat.toFixed(4)}, ${cachedLng.toFixed(4)})`;
+      }
+
+      // Geocodificación inversa con Nominatim
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${cachedLat}&lon=${cachedLng}&format=json&zoom=10&accept-language=es`
+        );
+        const data = await resp.json();
+        const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state || 'Ubicación desconocida';
+        const state = data.address?.state || '';
+        textEl.innerHTML = `📍 Tu ubicación: <strong style="color:var(--text);">${city}</strong>${state && state !== city ? `, ${state}` : ''}`;
+      } catch {
+        textEl.innerHTML = `📍 Ubicación detectada: <strong style="color:var(--text);">${cachedLat.toFixed(4)}, ${cachedLng.toFixed(4)}</strong>`;
+      }
+    },
+    (err) => {
+      if (err.code === 1) {
+        textEl.textContent = '⚠ Permiso de ubicación denegado. Activá la ubicación para ver precios cercanos.';
+      } else {
+        textEl.textContent = '⚠ No se pudo detectar tu ubicación.';
+      }
+      banner.style.borderColor = 'rgba(244,63,94,0.3)';
+      banner.style.background = 'rgba(244,63,94,0.08)';
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+  );
+}
+
+// Detectar ubicación al cargar el módulo
+detectLocation();
+
 export async function searchSepa() {
   const input = document.getElementById('sepaSearchInput');
   const query = input.value.trim();
@@ -21,21 +84,27 @@ export async function searchSepa() {
   btn.disabled = true;
 
   try {
-    // Check location permission and get coordinates
-    if (!navigator.geolocation) {
-      throw new Error("Tu navegador no soporta geolocalización.");
+    let lat = cachedLat;
+    let lng = cachedLng;
+
+    // Si no hay cache, pedir ubicación de nuevo
+    if (lat === null || lng === null) {
+      if (!navigator.geolocation) {
+        throw new Error("Tu navegador no soporta geolocalización.");
+      }
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
+      });
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+      cachedLat = lat;
+      cachedLng = lng;
     }
 
-    const pos = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      });
-    });
-
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
 
     // Auto-detectar si es EAN o nombre
     const isEan = /^\d{8,14}$/.test(query);

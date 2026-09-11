@@ -8,6 +8,7 @@ from models import Comercio, Sucursal, Producto, Precio
 
 def seed_db():
     """Inserta datos de prueba si no existen o completa sucursales/precios faltantes. Idempotente."""
+    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         from datetime import datetime
@@ -22,7 +23,8 @@ def seed_db():
             ("C1", "30-11111111-1", "Supermercado Disco", "disco"),
             ("C2", "30-22222222-2", "Supermercado Coto", "coto"),
             ("C3", "30-33333333-3", "Carrefour", "carrefour"),
-            ("C4", "30-44444444-4", "Toledo", "toledo"),
+            ("C4", "30-44444444-4", "Supermercados Toledo", "toledo"),
+            ("C5", "30-55555555-5", "Supermercado Vea", "vea"),
         ]
         comercios_map = {}
         for sepa_id, cuit, nombre, nombre_key in comercios_def:
@@ -30,6 +32,10 @@ def seed_db():
             if not c:
                 c = Comercio(sepa_id=sepa_id, cuit=cuit, nombre=nombre, nombre_key=nombre_key)
                 db.add(c)
+                db.flush()
+            else:
+                c.nombre = nombre
+                c.nombre_key = nombre_key
                 db.flush()
             comercios_map[sepa_id] = c
         db.commit()
@@ -41,14 +47,15 @@ def seed_db():
             ("S2", comercios_map["C2"].id, "Coto Obelisco", -34.602, -58.382, "Av. 9 de Julio 1200", "CABA", "CABA"),
             ("S3", comercios_map["C1"].id, "Disco Belgrano", -34.700, -58.400, "Av. Cabildo 500", "CABA", "CABA"),
             # Mar del Plata (Ubicaciones Reales Verificadas)
-            ("S4", comercios_map["C4"].id, "Toledo Constitución", -37.9865, -57.5555, "Av. Constitución 4850", "Mar del Plata", "Buenos Aires"),
-            ("S5", comercios_map["C3"].id, "Carrefour Market Catamarca", -37.9991, -57.5510, "Catamarca 2038", "Mar del Plata", "Buenos Aires"),
-            ("S6", comercios_map["C4"].id, "Toledo Jujuy", -37.9995, -57.5520, "Jujuy 1900", "Mar del Plata", "Buenos Aires"),
-            ("S7", comercios_map["C3"].id, "Carrefour Hiper Luro", -37.9840, -57.5760, "Av. Pedro Luro 5851", "Mar del Plata", "Buenos Aires"),
-            ("S8", comercios_map["C1"].id, "Disco Güemes", -38.0145, -57.5408, "Güemes 3250", "Mar del Plata", "Buenos Aires"),
-            ("S15", comercios_map["C4"].id, "Toledo Colón", -38.0051, -57.5401, "Av. Colón 1640", "Mar del Plata", "Buenos Aires"),
-            ("S16", comercios_map["C4"].id, "Toledo Güemes", -38.0120, -57.5422, "Güemes 2850", "Mar del Plata", "Buenos Aires"),
-            ("S17", comercios_map["C2"].id, "Vea San Martín", -37.9985, -57.5458, "San Martín 2560", "Mar del Plata", "Buenos Aires"),
+            ("S4", comercios_map["C1"].id, "Disco Constitución", -37.9678, -57.5602, "Av. Constitución 4850", "Mar del Plata", "Buenos Aires"),
+            ("S5", comercios_map["C3"].id, "Carrefour Market Catamarca", -37.9995, -57.5492, "Catamarca 2038", "Mar del Plata", "Buenos Aires"),
+            ("S6", comercios_map["C4"].id, "Toledo Jujuy", -37.9982, -57.5518, "Jujuy 1900", "Mar del Plata", "Buenos Aires"),
+            ("S7", comercios_map["C3"].id, "Carrefour Hiper Luro", -37.9835, -57.5768, "Av. Pedro Luro 5851", "Mar del Plata", "Buenos Aires"),
+            ("S8", comercios_map["C1"].id, "Disco Güemes", -38.0138, -57.5412, "Güemes 3250", "Mar del Plata", "Buenos Aires"),
+            ("S15", comercios_map["C4"].id, "Toledo Colón", -38.0048, -57.5405, "Av. Colón 1640", "Mar del Plata", "Buenos Aires"),
+            ("S16", comercios_map["C4"].id, "Toledo Güemes", -38.0102, -57.5420, "Güemes 2834", "Mar del Plata", "Buenos Aires"),
+            ("S17", comercios_map["C5"].id, "Vea San Martín", -37.9992, -57.5475, "San Martín 2560", "Mar del Plata", "Buenos Aires"),
+            ("S18", comercios_map["C4"].id, "Hiper Toledo Constitución", -37.9592, -57.5775, "Av. Constitución 6600", "Mar del Plata", "Buenos Aires"),
             # Córdoba
             ("S9", comercios_map["C3"].id, "Carrefour Colón", -31.3980, -64.2250, "Av. Colón 4000", "Córdoba", "Córdoba"),
             ("S10", comercios_map["C2"].id, "Coto Olmos", -31.4130, -64.1810, "Av. Emilio Olmos 200", "Córdoba", "Córdoba"),
@@ -116,6 +123,7 @@ def seed_db():
             ("S15", "7790040001234", 880.0, 830.0, None),
             ("S16", "7790040001234", 910.0, None, None),
             ("S17", "7790040001234", 905.0, 855.0, None),
+            ("S18", "7790040001234", 895.0, 840.0, None),
 
             ("S4", "7790040001241", 1080.0, 990.0, None),
             ("S5", "7790040001241", 1120.0, 1020.0, None),

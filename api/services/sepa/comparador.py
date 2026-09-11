@@ -135,19 +135,7 @@ def buscar_producto_por_texto(
     return []
 
 
-def _purge_fake_stores_and_ensure_seed(db: Session):
-    """
-    Elimina cualquier sucursal obsoleta o inventada y asegura la carga de sucursales reales actualizadas.
-    """
-    if db is None:
-        return
-    try:
-        from seed_dummy import seed_db
-        seed_db()
-        db.expire_all()
-    except Exception as e:
-        log.error("comparador.purge_error", error=str(e))
-        db.rollback()
+
 
 
 def comparar_precios(
@@ -166,8 +154,6 @@ def comparar_precios(
     """
     if fecha is None:
         fecha = date.today()
-
-    _purge_fake_stores_and_ensure_seed(db)
 
     producto = db.query(Producto).filter_by(ean=ean).first()
     if producto is None:
@@ -191,9 +177,9 @@ def comparar_precios(
         .all()
     )
 
-    # Si no hay sucursales en el radio estricto, ampliar hasta 25km para encontrar sucursales reales de la zona
-    if not sucursales_candidatas and eff_radio < 25.0:
-        eff_radio = 25.0
+    # Si no hay sucursales en el radio estricto, ampliar hasta 35km para encontrar sucursales reales de la zona
+    if not sucursales_candidatas:
+        eff_radio = 35.0
         bb = bounding_box(lat, lng, eff_radio)
         sucursales_candidatas = (
             db.query(Sucursal, Comercio, Precio)
@@ -207,8 +193,6 @@ def comparar_precios(
             )
             .all()
         )
-
-    # Sin fallback global: si no hay sucursales en el radio, no se muestran resultados lejanos
 
     if not sucursales_candidatas:
         log.info("comparador.sin_resultados", ean=ean, radio_km=radio_km)
@@ -224,7 +208,7 @@ def comparar_precios(
     for sucursal, comercio, precio in sucursales_candidatas:
         # 2. Distancia exacta con Haversine
         dist = haversine(lat, lng, sucursal.lat, sucursal.lng)
-        if dist > radio_km:
+        if dist > eff_radio:
             continue   # descarte del bounding box que quedó fuera del círculo
 
         # 3. Precio final con promociones
@@ -333,8 +317,6 @@ def buscar_productos_con_precios(
     if fecha is None:
         fecha = date.today()
 
-    _purge_fake_stores_and_ensure_seed(db)
-
     # 1. Buscar productos que matcheen la query
     productos = buscar_producto_por_texto(query=query, db=db, limite=limite_productos)
 
@@ -348,6 +330,7 @@ def buscar_productos_con_precios(
     resultados = []
 
     for producto in productos:
+        prod_eff_radio = eff_radio
         # 3. Buscar sucursales cercanas que tengan este producto
         sucursales_candidatas = (
             db.query(Sucursal, Comercio, Precio)
@@ -362,9 +345,10 @@ def buscar_productos_con_precios(
             .all()
         )
 
-        # Si no hay sucursales en radio estricto, ampliar a 25km para encontrar sucursales reales cercanas
-        if not sucursales_candidatas and eff_radio < 25.0:
-            bb_exp = bounding_box(lat, lng, 25.0)
+        # Si no hay sucursales en radio estricto, ampliar a 35km para encontrar sucursales reales cercanas
+        if not sucursales_candidatas:
+            prod_eff_radio = max(radio_km, 35.0)
+            bb_exp = bounding_box(lat, lng, prod_eff_radio)
             sucursales_candidatas = (
                 db.query(Sucursal, Comercio, Precio)
                 .join(Comercio, Sucursal.comercio_id == Comercio.id)
@@ -378,8 +362,6 @@ def buscar_productos_con_precios(
                 .all()
             )
 
-        # Sin fallback global: solo se muestran sucursales dentro del radio
-
         if not sucursales_candidatas:
             continue
 
@@ -387,8 +369,8 @@ def buscar_productos_con_precios(
         sucursales_con_precio = []
         for sucursal, comercio, precio in sucursales_candidatas:
             dist = haversine(lat, lng, sucursal.lat, sucursal.lng)
-            if dist > radio_km:
-                continue  # Filtro estricto: descartar sucursales fuera del radio
+            if dist > prod_eff_radio:
+                continue  # Descartar sucursales fuera del radio efectivo
 
             precios = calcular_precio_final(
                 precio_lista=precio.precio_unitario,

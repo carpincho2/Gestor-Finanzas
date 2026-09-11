@@ -1,3 +1,5 @@
+from typing import List, Dict, Any
+
 def calculate_vpn(final_price: float, installments: int, tem: float) -> float:
     if installments > 1 and tem > 0:
         cuota = final_price / installments

@@ -30,13 +30,14 @@ export function initShopping() {
         <div style="margin-bottom: 20px;">
           <label class="field-label" style="margin-bottom: 8px;">Link de Mercado Libre</label>
           <input type="text" id="shoppingUrl" class="field-input" placeholder="Ej: https://articulo.mercadolibre.com.ar/MLA-..." style="width: 100%; font-size: 14px; padding: 12px 14px;">
+          <div id="shoppingTitlePreview" style="display: none; margin-top: 8px; padding: 8px 12px; background: rgba(0, 229, 160, 0.1); border: 1px solid rgba(0, 229, 160, 0.25); border-radius: 8px; color: var(--accent); font-size: 12px; font-weight: 600;"></div>
         </div>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
           
           <div>
-            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--muted);">(Opcional)</span></label>
-            <input type="text" id="shoppingPrice" inputmode="decimal" class="field-input" placeholder="Autodetectado o ej: 194799" style="width: 100%;">
+            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--accent); font-weight: 600;">(Ingresalo para calcular cuotas)</span></label>
+            <input type="text" id="shoppingPrice" inputmode="decimal" class="field-input" placeholder="Ej: 194799" style="width: 100%; border: 1px solid var(--accent); font-weight: 600;">
           </div>
 
           <div>
@@ -79,6 +80,38 @@ export function initShopping() {
       
     </div>
   `;
+
+  const inputEl = container.querySelector('#shoppingUrl');
+  const previewBadge = container.querySelector('#shoppingTitlePreview');
+  if (inputEl) {
+    inputEl.addEventListener('input', () => {
+      const val = inputEl.value.trim();
+      if (!val) {
+        if (previewBadge) previewBadge.style.display = 'none';
+        return;
+      }
+      try {
+        const u = new URL(val);
+        const parts = u.pathname.split('/').filter(p => p && p !== 'p');
+        if (parts.length > 0) {
+          let clean = decodeURIComponent(parts[0])
+            .replace(/^ML[A-Z]-?\d+-?/i, '')
+            .replace(/_JM$/i, '')
+            .replace(/[\-_]+/g, ' ')
+            .trim();
+          if (clean.length > 3) {
+            clean = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+            if (previewBadge) {
+              previewBadge.textContent = `📦 Producto: ${clean}`;
+              previewBadge.style.display = 'block';
+            }
+            return;
+          }
+        }
+      } catch (e) {}
+      if (previewBadge) previewBadge.style.display = 'none';
+    });
+  }
 }
 
 export async function analyzeShoppingUrl() {

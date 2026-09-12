@@ -14,8 +14,61 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _discountController = TextEditingController(text: '0');
   final TextEditingController _tnaController = TextEditingController(text: '40');
+  final FocusNode _priceFocusNode = FocusNode();
   
   int _selectedInstallments = 0;
+  String? _detectedSlugTitle;
+
+  @override
+  void initState() {
+    super.initState();
+    _urlController.addListener(_onUrlChanged);
+  }
+
+  @override
+  void dispose() {
+    _urlController.removeListener(_onUrlChanged);
+    _urlController.dispose();
+    _priceController.dispose();
+    _discountController.dispose();
+    _tnaController.dispose();
+    _priceFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onUrlChanged() {
+    final text = _urlController.text.trim();
+    if (text.isEmpty) {
+      if (_detectedSlugTitle != null) {
+        setState(() => _detectedSlugTitle = null);
+      }
+      return;
+    }
+
+    try {
+      final uri = Uri.tryParse(text);
+      if (uri != null && uri.pathSegments.isNotEmpty) {
+        final seg = uri.pathSegments.firstWhere((s) => s != 'p', orElse: () => uri.pathSegments.first);
+        final raw = Uri.decodeComponent(seg);
+        var clean = raw.replaceAll(RegExp(r'^ML[A-Z]-?\d+-?', caseSensitive: false), '')
+                       .replaceAll(RegExp(r'_JM$', caseSensitive: false), '')
+                       .replaceAll(RegExp(r'[\-_]+'), ' ')
+                       .trim();
+        if (clean.length > 3) {
+          final words = clean.split(' ').where((w) => w.isNotEmpty).map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase());
+          final title = words.join(' ');
+          if (title != _detectedSlugTitle) {
+            setState(() => _detectedSlugTitle = title);
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+
+    if (_detectedSlugTitle != null) {
+      setState(() => _detectedSlugTitle = null);
+    }
+  }
 
   void _analyzeShopping() {
     FocusScope.of(context).unfocus(); // Cerrar teclado
@@ -47,6 +100,15 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(shoppingProvider);
+
+    // Auto-enfocar el campo de precio si se requiere precio manual
+    if (state.error != null && (state.error!.contains('Precio') || state.error!.contains('precio'))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_priceFocusNode.hasFocus) {
+          _priceFocusNode.requestFocus();
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A), // Slate 900
@@ -93,28 +155,58 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                     ),
                   ),
+                  
+                  if (_detectedSlugTitle != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF38BDF8).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Color(0xFF38BDF8), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Producto: $_detectedSlugTitle',
+                              style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
 
                   Row(
                     children: [
                       const Text('Precio del producto (\$)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 6),
-                      Text('(Opcional / Autodetectado)', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+                      Text('(Ingresalo para calcular cuotas)', style: TextStyle(color: const Color(0xFF38BDF8).withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.w500)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _priceController,
+                    focusNode: _priceFocusNode,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
-                      hintText: 'Ej: 194799 (Autodetectado o manual)',
-                      hintStyle: const TextStyle(color: Colors.white30),
+                      hintText: 'Ej: 194799',
+                      hintStyle: const TextStyle(color: Colors.white30, fontWeight: FontWeight.normal),
                       prefixText: '\$ ',
-                      prefixStyle: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
+                      prefixStyle: const TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold, fontSize: 16),
                       filled: true,
                       fillColor: const Color(0xFF0F172A),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF38BDF8), width: 1.5)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF38BDF8), width: 2)),
                     ),
                   ),
                   const SizedBox(height: 16),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import '../providers/shopping_provider.dart';
 
 class ShoppingScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,8 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
   
   int _selectedInstallments = 0;
   String? _detectedSlugTitle;
+  bool _isFetchingPrice = false;
+  String? _lastFetchedUrl;
 
   @override
   void initState() {
@@ -40,7 +43,10 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
     final text = _urlController.text.trim();
     if (text.isEmpty) {
       if (_detectedSlugTitle != null) {
-        setState(() => _detectedSlugTitle = null);
+        setState(() {
+          _detectedSlugTitle = null;
+          _lastFetchedUrl = null;
+        });
       }
       return;
     }
@@ -60,13 +66,59 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
           if (title != _detectedSlugTitle) {
             setState(() => _detectedSlugTitle = title);
           }
-          return;
         }
       }
     } catch (_) {}
 
-    if (_detectedSlugTitle != null) {
-      setState(() => _detectedSlugTitle = null);
+    // Auto-fetch price from client side if link changed
+    if (text != _lastFetchedUrl && text.contains('mercadolibre')) {
+      _lastFetchedUrl = text;
+      _fetchPriceFromUrl(text);
+    }
+  }
+
+  Future<void> _fetchPriceFromUrl(String urlText) async {
+    final uri = Uri.tryParse(urlText);
+    if (uri == null || !uri.hasScheme) return;
+
+    if (mounted) setState(() => _isFetchingPrice = true);
+
+    try {
+      final headers = {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'es-AR,es;q=0.9',
+      };
+
+      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 4));
+      if (response.statusCode == 200) {
+        final html = response.body;
+
+        final ogMatch = RegExp(r'property="og:price:amount"\s+content="([\d\.]+)"', caseSensitive: false).firstMatch(html) ??
+                        RegExp(r'content="([\d\.]+)"\s+property="og:price:amount"', caseSensitive: false).firstMatch(html) ??
+                        RegExp(r'property="product:price:amount"\s+content="([\d\.]+)"', caseSensitive: false).firstMatch(html);
+
+        final fracMatch = RegExp(r'class="andes-money-amount__fraction"[^>]*>([\d\.]+)', caseSensitive: false).firstMatch(html);
+        final jsonPriceMatch = RegExp(r'"price":\s*(\d+(?:\.\d+)?)', caseSensitive: false).firstMatch(html);
+
+        String? rawVal = ogMatch?.group(1) ?? fracMatch?.group(1) ?? jsonPriceMatch?.group(1);
+
+        if (rawVal != null) {
+          final cleanVal = rawVal.replaceAll('.', '').replaceAll(',', '.');
+          final parsed = double.tryParse(cleanVal);
+          if (parsed != null && parsed > 0 && mounted) {
+            setState(() {
+              _priceController.text = parsed.toInt().toString();
+              _isFetchingPrice = false;
+            });
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => _isFetchingPrice = false);
     }
   }
 

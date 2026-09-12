@@ -60,6 +60,12 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
         WalletConnection.status == "active"
     ).first()
     
+    if not wallet:
+        wallet = db.query(WalletConnection).filter(
+            WalletConnection.provider == "mercadopago",
+            WalletConnection.status == "active"
+        ).first()
+
     if wallet and wallet.access_token_encrypted:
         try:
             from security import token_crypto
@@ -214,6 +220,21 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
                             title = clean_t
             except Exception:
                 pass
+
+    # 5.c Búsqueda por título en la API de Mercado Libre si tenemos el nombre pero nos faltó el precio
+    if price == 0 and title and title != "Producto Mercado Libre":
+        try:
+            from urllib.parse import quote
+            search_api = f"https://api.mercadolibre.com/sites/MLA/search?q={quote(title)}&limit=1"
+            search_resp = requests.get(search_api, headers=headers, timeout=5)
+            if search_resp.status_code == 200:
+                s_data = search_resp.json()
+                s_results = s_data.get("results", [])
+                if s_results and s_results[0].get("price"):
+                    price = float(s_results[0]["price"])
+                    found = True
+        except Exception:
+            pass
 
     # 6. Manejo de fallbacks si Mercado Libre bloquea la consulta de API y HTML
     if price == 0:

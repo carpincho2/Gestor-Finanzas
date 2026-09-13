@@ -42,10 +42,10 @@ def seed_db():
 
         # ── 2. Sucursales Reales Verificadas ──────────────────────
         sucursales_def = [
-            # CABA
-            ("S1", comercios_map["C1"].id, "Disco Centro", -34.604, -58.380, "Av. Corrientes 1000", "CABA", "CABA"),
-            ("S2", comercios_map["C2"].id, "Coto Obelisco", -34.602, -58.382, "Av. 9 de Julio 1200", "CABA", "CABA"),
-            ("S3", comercios_map["C1"].id, "Disco Belgrano", -34.700, -58.400, "Av. Cabildo 500", "CABA", "CABA"),
+            # CABA (Verificadas en Google Maps 2026-09)
+            ("S1", comercios_map["C1"].id, "Disco Callao", -34.5987, -58.3924, "Av. Callao 1080", "CABA", "CABA"),
+            ("S2", comercios_map["C2"].id, "Coto Viamonte", -34.5999, -58.3878, "Viamonte 1571", "CABA", "CABA"),
+            ("S3", comercios_map["C1"].id, "Disco Belgrano", -34.5636, -58.4407, "Gorostiaga 1632", "CABA", "CABA"),
             # Mar del Plata (Ubicaciones Reales Verificadas)
             ("S4", comercios_map["C1"].id, "Disco Constitución", -37.9678, -57.5602, "Av. Constitución 4850", "Mar del Plata", "Buenos Aires"),
             ("S5", comercios_map["C3"].id, "Carrefour Market Catamarca", -37.9995, -57.5492, "Catamarca 2038", "Mar del Plata", "Buenos Aires"),
@@ -54,17 +54,17 @@ def seed_db():
             ("S8", comercios_map["C1"].id, "Disco Güemes", -38.0138, -57.5412, "Güemes 3250", "Mar del Plata", "Buenos Aires"),
             ("S15", comercios_map["C4"].id, "Toledo Colón", -38.0048, -57.5405, "Av. Colón 1640", "Mar del Plata", "Buenos Aires"),
             ("S16", comercios_map["C4"].id, "Toledo Güemes", -38.0102, -57.5420, "Güemes 2834", "Mar del Plata", "Buenos Aires"),
-            ("S17", comercios_map["C5"].id, "Vea San Martín", -37.9992, -57.5475, "San Martín 2560", "Mar del Plata", "Buenos Aires"),
+            ("S17", comercios_map["C5"].id, "Vea Colón", -38.0060, -57.5448, "Av. Colón 3502", "Mar del Plata", "Buenos Aires"),
             ("S18", comercios_map["C4"].id, "Hiper Toledo Constitución", -37.9592, -57.5775, "Av. Constitución 6600", "Mar del Plata", "Buenos Aires"),
-            # Córdoba
-            ("S9", comercios_map["C3"].id, "Carrefour Colón", -31.3980, -64.2250, "Av. Colón 4000", "Córdoba", "Córdoba"),
-            ("S10", comercios_map["C2"].id, "Coto Olmos", -31.4130, -64.1810, "Av. Emilio Olmos 200", "Córdoba", "Córdoba"),
-            ("S11", comercios_map["C1"].id, "Disco Nueva Córdoba", -31.4250, -64.1870, "Av. Hipólito Yrigoyen 400", "Córdoba", "Córdoba"),
+            # Córdoba (Verificadas en Google Maps 2026-09)
+            ("S9", comercios_map["C3"].id, "Carrefour Colón", -31.3920, -64.2310, "Av. Colón 4880", "Córdoba", "Córdoba"),
+            ("S10", comercios_map["C3"].id, "Carrefour N. Córdoba", -31.4180, -64.1890, "Bv. San Juan 400", "Córdoba", "Córdoba"),
+            ("S11", comercios_map["C1"].id, "Disco Nueva Córdoba", -31.4230, -64.1850, "José M. Estrada 66", "Córdoba", "Córdoba"),
             # Rosario
             ("S12", comercios_map["C2"].id, "Coto Alto Rosario", -32.9280, -60.6650, "Junín 501", "Rosario", "Santa Fe"),
-            ("S13", comercios_map["C3"].id, "Carrefour Pellegrini", -32.9520, -60.6690, "Av. Pellegrini 3250", "Rosario", "Santa Fe"),
+            ("S13", comercios_map["C3"].id, "Carrefour Pellegrini", -32.9510, -60.6520, "Av. Pellegrini 3198", "Rosario", "Santa Fe"),
             # Mendoza
-            ("S14", comercios_map["C3"].id, "Carrefour Las Heras", -32.8870, -68.8410, "Av. Las Heras 350", "Mendoza", "Mendoza"),
+            ("S14", comercios_map["C3"].id, "Carrefour Guaymallén", -32.8900, -68.7800, "Acceso Este 3280", "Guaymallén", "Mendoza"),
         ]
         sucursales_map = {}
         for sepa_id, com_id, nombre, lat, lng, direccion, localidad, provincia in sucursales_def:

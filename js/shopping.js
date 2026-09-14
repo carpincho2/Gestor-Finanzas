@@ -123,12 +123,14 @@ export function initShopping() {
 /**
  * Obtiene el precio de un producto de MercadoLibre directamente desde el navegador del usuario.
  * Esto evita el bloqueo que ML hace a IPs de datacenters (como Render).
- * Replica la lógica de shopping_screen.dart (Flutter) que ya funciona en mobile.
+ *
+ * IMPORTANTE: Solo usa las APIs JSON de ML (api.mercadolibre.com) que tienen CORS habilitado.
+ * NO intenta scrapear HTML porque las páginas de ML (articulo.mercadolibre.com.ar) bloquean CORS.
  *
  * Estrategia:
- *   1. Extraer item_id del link (MLA-123456789)
- *   2. Intentar API pública de ML: /items/{id} (JSON directo, rápido)
- *   3. Fallback: scrapear HTML de la publicación buscando og:price:amount o andes-money-amount
+ *   1. API /items/{id} — items individuales
+ *   2. API /products/{id} — catálogo (URLs tipo /p/MLA...)
+ *   3. API /sites/MLA/search?q={titulo} — búsqueda por nombre extraído del slug
  */
 async function fetchPriceFromClient(urlText) {
   const priceEl = document.getElementById('shoppingPrice');
@@ -137,7 +139,7 @@ async function fetchPriceFromClient(urlText) {
   // Si el usuario ya ingresó un precio manualmente, no pisar
   if (priceEl.value.trim() && !priceEl.dataset.autoFilled) return;
 
-  // Mostrar indicador de carga en el campo de precio
+  // Mostrar indicador de carga
   priceEl.placeholder = '⏳ Buscando precio...';
   priceEl.style.border = '1px solid var(--accent)';
 
@@ -145,63 +147,81 @@ async function fetchPriceFromClient(urlText) {
     let price = 0;
     let title = null;
 
-    // 1. Extraer item_id del link
-    const itemMatch = urlText.match(/ML[A-Z]-?\d{6,}/i);
-    const itemId = itemMatch ? itemMatch[0].replace('-', '').toUpperCase() : null;
+    // 1. Extraer item_id del link (soporta MLA-123456789, MLA123456789, pdp_filters, wid)
+    let itemId = null;
+    const queryMatch = urlText.match(/(?:item_id|wid)(?:%3A|=)(MLA-?\d+)/i);
+    const catalogMatch = urlText.match(/\/p\/(ML[A-Z]-?\d+)/i);
+    const generalMatch = urlText.match(/(ML[A-Z]-?\d{6,})/i);
+    
+    if (queryMatch) itemId = queryMatch[1].replace(/-/g, '').toUpperCase();
+    else if (catalogMatch) itemId = catalogMatch[1].replace(/-/g, '').toUpperCase();
+    else if (generalMatch) itemId = generalMatch[1].replace(/-/g, '').toUpperCase();
 
-    // 2. Intentar API pública de ML (JSON)
+    // 2. Intentar API /items/{id} (funciona para publicaciones individuales)
     if (itemId) {
       try {
-        const apiResp = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
+        const resp = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
           signal: AbortSignal.timeout(5000)
         });
-        if (apiResp.ok) {
-          const data = await apiResp.json();
+        if (resp.ok) {
+          const data = await resp.json();
           if (data.price && data.price > 0) {
             price = data.price;
             title = data.title;
           }
         }
-      } catch (_) { /* API bloqueada o timeout, continuar al fallback */ }
+      } catch (_) {}
     }
 
-    // 3. Fallback: scrapear HTML de la publicación
-    if (price === 0) {
+    // 3. Intentar API /products/{id} (funciona para URLs de catálogo /p/MLA...)
+    if (price === 0 && itemId) {
       try {
-        const htmlResp = await fetch(urlText, {
+        const resp = await fetch(`https://api.mercadolibre.com/products/${itemId}`, {
           signal: AbortSignal.timeout(5000)
         });
-        if (htmlResp.ok) {
-          const html = await htmlResp.text();
-
-          // Buscar precio en meta tags y HTML (misma lógica que shopping_screen.dart)
-          const priceMatch =
-            html.match(/property="og:price:amount"\s+content="([\d\.]+)"/i) ||
-            html.match(/content="([\d\.]+)"\s+property="og:price:amount"/i) ||
-            html.match(/property="product:price:amount"\s+content="([\d\.]+)"/i) ||
-            html.match(/class="andes-money-amount__fraction"[^>]*>([\d\.]+)/i) ||
-            html.match(/"price":\s*"?(\d+(?:\.\d+)?)"?/);
-
-          if (priceMatch) {
-            let rawVal = priceMatch[1];
-            // Si tiene múltiples puntos (separador de miles), limpiar
-            if ((rawVal.match(/\./g) || []).length > 1 || rawVal.includes(',')) {
-              rawVal = rawVal.replace(/\./g, '');
-            }
-            const parsed = parseFloat(rawVal);
-            if (parsed > 0) price = parsed;
-          }
-
-          // Extraer título si lo encontramos
-          if (!title) {
-            const titleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) ||
-                               html.match(/<title>([^<]+)<\/title>/i);
-            if (titleMatch) {
-              title = titleMatch[1].split('|')[0].split('- Mercado')[0].trim();
-            }
+        if (resp.ok) {
+          const data = await resp.json();
+          const buyBox = data.buy_box_winner || {};
+          const p = buyBox.price || data.price;
+          if (p && p > 0) {
+            price = p;
+            title = data.name || data.title;
           }
         }
-      } catch (_) { /* Fetch bloqueado por CORS o timeout */ }
+      } catch (_) {}
+    }
+
+    // 4. Fallback: Buscar por título del slug en la API de búsqueda de ML
+    if (price === 0) {
+      let slugTitle = null;
+      try {
+        const u = new URL(urlText);
+        const parts = u.pathname.split('/').filter(p => p && p !== 'p');
+        if (parts.length > 0) {
+          let clean = decodeURIComponent(parts[0])
+            .replace(/^ML[A-Z]-?\d+-?/i, '')
+            .replace(/_JM$/i, '')
+            .replace(/[\-_]+/g, ' ')
+            .trim();
+          if (clean.length > 3) slugTitle = clean;
+        }
+      } catch (_) {}
+
+      if (slugTitle) {
+        try {
+          const resp = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(slugTitle)}&limit=1`, {
+            signal: AbortSignal.timeout(5000)
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const results = data.results || [];
+            if (results.length > 0 && results[0].price > 0) {
+              price = results[0].price;
+              title = results[0].title;
+            }
+          }
+        } catch (_) {}
+      }
     }
 
     // 4. Autocompletar el campo si encontramos precio

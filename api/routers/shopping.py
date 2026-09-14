@@ -145,8 +145,13 @@ async def analyze_url(payload: AnalyzeUrlRequest, user_id: int = Depends(get_cur
     currency_id = "ARS"
     found = False
 
-    # 5. Intentar consultar las APIs de Mercado Libre (Items y Productos)
-    if item_id:
+    # Si el frontend ya resolvió el precio (fetch client-side), no perder tiempo
+    # llamando a la API de ML desde el servidor (que además bloquea IPs de datacenter)
+    if price > 0:
+        found = True
+
+    # 5. Intentar consultar las APIs de Mercado Libre (Items y Productos) — solo si no hay precio aún
+    if not found and item_id:
         # Intentar en /items/
         try:
             resp = requests.get(f"https://api.mercadolibre.com/items/{item_id}", headers=headers, timeout=6)

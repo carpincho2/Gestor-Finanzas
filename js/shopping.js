@@ -83,6 +83,8 @@ export function initShopping() {
 
   const inputEl = container.querySelector('#shoppingUrl');
   const previewBadge = container.querySelector('#shoppingTitlePreview');
+  let lastFetchedUrl = '';
+
   if (inputEl) {
     inputEl.addEventListener('input', () => {
       const val = inputEl.value.trim();
@@ -105,14 +107,140 @@ export function initShopping() {
               previewBadge.textContent = `📦 Producto: ${clean}`;
               previewBadge.style.display = 'block';
             }
-            return;
           }
         }
       } catch (e) {}
-      if (previewBadge) previewBadge.style.display = 'none';
+
+      // Auto-fetch precio desde el navegador del usuario (evita bloqueo de ML a IPs de datacenter)
+      if (val.includes('mercadolibre') && val !== lastFetchedUrl) {
+        lastFetchedUrl = val;
+        fetchPriceFromClient(val);
+      }
     });
   }
 }
+
+/**
+ * Obtiene el precio de un producto de MercadoLibre directamente desde el navegador del usuario.
+ * Esto evita el bloqueo que ML hace a IPs de datacenters (como Render).
+ * Replica la lógica de shopping_screen.dart (Flutter) que ya funciona en mobile.
+ *
+ * Estrategia:
+ *   1. Extraer item_id del link (MLA-123456789)
+ *   2. Intentar API pública de ML: /items/{id} (JSON directo, rápido)
+ *   3. Fallback: scrapear HTML de la publicación buscando og:price:amount o andes-money-amount
+ */
+async function fetchPriceFromClient(urlText) {
+  const priceEl = document.getElementById('shoppingPrice');
+  if (!priceEl) return;
+
+  // Si el usuario ya ingresó un precio manualmente, no pisar
+  if (priceEl.value.trim() && !priceEl.dataset.autoFilled) return;
+
+  // Mostrar indicador de carga en el campo de precio
+  priceEl.placeholder = '⏳ Buscando precio...';
+  priceEl.style.border = '1px solid var(--accent)';
+
+  try {
+    let price = 0;
+    let title = null;
+
+    // 1. Extraer item_id del link
+    const itemMatch = urlText.match(/ML[A-Z]-?\d{6,}/i);
+    const itemId = itemMatch ? itemMatch[0].replace('-', '').toUpperCase() : null;
+
+    // 2. Intentar API pública de ML (JSON)
+    if (itemId) {
+      try {
+        const apiResp = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
+          signal: AbortSignal.timeout(5000)
+        });
+        if (apiResp.ok) {
+          const data = await apiResp.json();
+          if (data.price && data.price > 0) {
+            price = data.price;
+            title = data.title;
+          }
+        }
+      } catch (_) { /* API bloqueada o timeout, continuar al fallback */ }
+    }
+
+    // 3. Fallback: scrapear HTML de la publicación
+    if (price === 0) {
+      try {
+        const htmlResp = await fetch(urlText, {
+          signal: AbortSignal.timeout(5000)
+        });
+        if (htmlResp.ok) {
+          const html = await htmlResp.text();
+
+          // Buscar precio en meta tags y HTML (misma lógica que shopping_screen.dart)
+          const priceMatch =
+            html.match(/property="og:price:amount"\s+content="([\d\.]+)"/i) ||
+            html.match(/content="([\d\.]+)"\s+property="og:price:amount"/i) ||
+            html.match(/property="product:price:amount"\s+content="([\d\.]+)"/i) ||
+            html.match(/class="andes-money-amount__fraction"[^>]*>([\d\.]+)/i) ||
+            html.match(/"price":\s*"?(\d+(?:\.\d+)?)"?/);
+
+          if (priceMatch) {
+            let rawVal = priceMatch[1];
+            // Si tiene múltiples puntos (separador de miles), limpiar
+            if ((rawVal.match(/\./g) || []).length > 1 || rawVal.includes(',')) {
+              rawVal = rawVal.replace(/\./g, '');
+            }
+            const parsed = parseFloat(rawVal);
+            if (parsed > 0) price = parsed;
+          }
+
+          // Extraer título si lo encontramos
+          if (!title) {
+            const titleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/i) ||
+                               html.match(/<title>([^<]+)<\/title>/i);
+            if (titleMatch) {
+              title = titleMatch[1].split('|')[0].split('- Mercado')[0].trim();
+            }
+          }
+        }
+      } catch (_) { /* Fetch bloqueado por CORS o timeout */ }
+    }
+
+    // 4. Autocompletar el campo si encontramos precio
+    if (price > 0) {
+      priceEl.value = Math.round(price).toString();
+      priceEl.dataset.autoFilled = 'true';
+      priceEl.style.border = '2px solid var(--green)';
+      priceEl.style.boxShadow = '0 0 10px rgba(0, 229, 160, 0.3)';
+      priceEl.placeholder = 'Ej: 194799';
+
+      // Actualizar preview con título real si lo obtuvimos
+      const previewBadge = document.getElementById('shoppingTitlePreview');
+      if (previewBadge && title && title.length > 3) {
+        previewBadge.textContent = `📦 ${title}`;
+        previewBadge.style.display = 'block';
+      }
+
+      // Quitar estilo verde después de 3 segundos
+      setTimeout(() => {
+        priceEl.style.border = '1px solid var(--accent)';
+        priceEl.style.boxShadow = 'none';
+      }, 3000);
+    } else {
+      priceEl.placeholder = 'Ingresá el precio manualmente';
+      priceEl.style.border = '1px solid var(--accent)';
+    }
+  } catch (err) {
+    console.warn('Auto-fetch precio falló:', err.message);
+    priceEl.placeholder = 'Ingresá el precio manualmente';
+    priceEl.style.border = '1px solid var(--accent)';
+  }
+}
+
+// Limpiar flag de auto-fill cuando el usuario edita el precio manualmente
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.id === 'shoppingPrice') {
+    delete e.target.dataset.autoFilled;
+  }
+});
 
 export async function analyzeShoppingUrl() {
   const urlEl = document.getElementById('shoppingUrl');

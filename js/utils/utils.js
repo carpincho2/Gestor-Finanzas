@@ -16,6 +16,25 @@ export function formatCurrency(amount) {
   });
 }
 
+export function escHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+export function formatDate(str) {
+  if (!str) return '—';
+  const parts = str.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+  return str;
+}
+
+export function formatDateLong(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T00:00:00');
+  if (isNaN(d.getTime())) return str;
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 // Inicialización de shortcuts globales
 export function initGlobalShortcuts(callbacks) {
   document.addEventListener('keydown', (e) => {

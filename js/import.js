@@ -1,5 +1,5 @@
 import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
-import { showToast, formatCurrency } from './utils/utils.js';
+import { showToast, formatCurrency, escHtml } from './utils/utils.js';
 import { apiFetch } from './api/apiClient.js';
 // (Imports cruzados inyectados por refactor)
 
@@ -11,9 +11,32 @@ let importRawRows = [];
 let importHeaders = [];
 
 function openImportModal(accountId) {
-  importTargetAccountId = accountId;
   if (!document.getElementById('importModalOverlay')) {
     injectImportModal();
+  }
+
+  // Rellenar selector de cuentas
+  const accSel = document.getElementById('importAccountSelect');
+  if (accSel) {
+    if (!state.accounts || state.accounts.length === 0) {
+      accSel.innerHTML = '<option value="">(Sin cuentas registradas - creá una primero)</option>';
+      importTargetAccountId = null;
+    } else {
+      const typeIcons = { 'bank': '🏦', 'cash': '💵', 'crypto': '₿', 'digital': '📱' };
+      accSel.innerHTML = state.accounts.map(a => 
+        `<option value="${a.id}">${typeIcons[a.type] || '💳'} ${escHtml(a.name)} ($${(a.balance || 0).toLocaleString('es-AR')})</option>`
+      ).join('');
+
+      if (accountId && state.accounts.some(a => a.id === accountId)) {
+        accSel.value = accountId;
+        importTargetAccountId = accountId;
+      } else {
+        importTargetAccountId = state.accounts[0].id;
+        accSel.value = importTargetAccountId;
+      }
+    }
+  } else {
+    importTargetAccountId = accountId;
   }
   
   const fileInput = document.getElementById('importFileInput');
@@ -33,15 +56,21 @@ function injectImportModal() {
     <div class="modal-overlay" id="importModalOverlay">
       <div class="modal" style="max-width:800px; width:90%; padding:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <h2 style="margin:0;font-size:20px;">Importar Movimientos</h2>
+          <h2 style="margin:0;font-size:20px;">Importar Movimientos (Excel / CSV)</h2>
           <button onclick="closeImportModal()" style="background:transparent;border:none;color:var(--text);font-size:20px;cursor:pointer;">×</button>
         </div>
+
+        <div style="margin-bottom:16px;">
+          <label class="field-label" style="margin-bottom:6px;">Cuenta donde se guardarán los movimientos:</label>
+          <select class="field-select" id="importAccountSelect" onchange="importTargetAccountId = parseInt(this.value)" style="width:100%;">
+          </select>
+        </div>
         
-        <div id="importFileSelectArea" style="text-align:center; padding:40px 20px; border:2px dashed var(--border); border-radius:12px; margin-bottom:20px;">
+        <div id="importFileSelectArea" style="text-align:center; padding:36px 20px; border:2px dashed var(--border); border-radius:12px; margin-bottom:20px;">
           <svg width="40" height="40" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom:16px;margin:auto;">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
           </svg>
-          <div style="margin-bottom:16px; color:var(--text);">Seleccioná tu archivo Excel (.xlsx) o CSV descargado del banco</div>
+          <div style="margin-bottom:16px; color:var(--text); font-weight:600;">Seleccioná tu archivo Excel (.xlsx) o CSV descargado del banco</div>
           <input type="file" id="importFileInput" accept=".xlsx, .csv" style="display:none;" onchange="handleImportFileSelect(event)">
           <div style="display:flex;justify-content:center;">
              <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="justify-content:center;">Seleccionar Archivo</button>
@@ -194,6 +223,15 @@ function buildMappingUI() {
 }
 
 async function executeImport() {
+  const accSel = document.getElementById('importAccountSelect');
+  if (accSel && accSel.value) {
+    importTargetAccountId = parseInt(accSel.value);
+  }
+  if (!importTargetAccountId) {
+    showToast("Por favor seleccioná una cuenta de destino", true);
+    return;
+  }
+
   const colDate = document.getElementById('importColDate').value;
   const colDesc = document.getElementById('importColDesc').value;
   const colAmount = document.getElementById('importColAmount').value;

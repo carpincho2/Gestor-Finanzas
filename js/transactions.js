@@ -92,6 +92,8 @@ function setType(type) {
   const incBtn = document.getElementById('typeIncBtn');
   const catSelect = document.getElementById('qCat');
 
+  if (!expBtn || !incBtn || !catSelect) return;
+
   if (type === 'expense') {
     expBtn.classList.add('active-expense');
     incBtn.classList.remove('active-income');
@@ -117,6 +119,11 @@ function setType(type) {
     `;
   }
   initCustomSelects(catSelect.parentNode);
+}
+
+/** Inicializa el Quick Add con las categorías correctas para el tipo actual */
+function initQuickAdd() {
+  setType(state.currentType || 'expense');
 }
 
 function quickAdd() {
@@ -609,3 +616,4 @@ window.saveEdit = saveEdit;
 window.renderStats = renderStats;
 window.openModal = openModal;
 window.syncTxFilterUI = syncTxFilterUI;
+window.initQuickAdd = initQuickAdd;

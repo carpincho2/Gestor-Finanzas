@@ -1,5 +1,5 @@
 import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
-import { showToast, formatCurrency } from './utils/utils.js';
+import { showToast, formatCurrency, escHtml, formatDate, formatDateLong } from './utils/utils.js';
 import { apiFetch } from './api/apiClient.js';
 // (Imports cruzados inyectados por refactor)
 
@@ -13,6 +13,7 @@ let ovDonutChart = null;
 let gmSelectedColor = '#00e5a0';
 let gmSelectedEmoji = '🎯';
 
+const GOAL_COLORS = ['#00e5a0', '#00c8ff', '#a855f7', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16'];
 const GOAL_EMOJIS = ['🎯', '✈️', '🏠', '🚗', '💰', '📚', '💻', '🏖️', '💍', '🎓', '🏋️', '🎸', '📈', '💊', '🛍️', '🐾'];
 const GOAL_CAT_EMOJIS = { 'Viaje': '✈️', 'Ahorro': '💰', 'Hogar': '🏠', 'Vehículo': '🚗', 'Educación': '📚', 'Tecnología': '💻', 'Inversión': '📈', 'Salud': '💊', 'Otro': '🎯' };
 
@@ -351,7 +352,7 @@ function openGoalModal(id) {
   `).join('');
 
   // Build color grid
-  document.getElementById('gmColorGrid').innerHTML = BM_COLORS.map(c => `
+  document.getElementById('gmColorGrid').innerHTML = GOAL_COLORS.map(c => `
     <div class="bv-color-swatch ${c === gmSelectedColor ? 'selected' : ''}" style="background:${c};" onclick="selectGmColor('${c}')"></div>
   `).join('');
 
@@ -373,7 +374,7 @@ function openGoalModal(id) {
     document.getElementById('gmEmojiGrid').innerHTML = GOAL_EMOJIS.map(e => `
       <button class="ov-emoji-btn ${e === gmSelectedEmoji ? 'active' : ''}" onclick="selectGmEmoji('${e}')">${e}</button>
     `).join('');
-    document.getElementById('gmColorGrid').innerHTML = BM_COLORS.map(c => `
+    document.getElementById('gmColorGrid').innerHTML = GOAL_COLORS.map(c => `
       <div class="bv-color-swatch ${c === gmSelectedColor ? 'selected' : ''}" style="background:${c};" onclick="selectGmColor('${c}')"></div>
     `).join('');
   } else {
@@ -455,7 +456,7 @@ async function saveGoal() {
         });
         showToast('Objetivo creado');
       }
-      await loadUserData();
+      if (window.loadUserData) await window.loadUserData();
       renderObjetivosView();
     } catch (err) {
       console.error("Error al guardar objetivo:", err);
@@ -539,7 +540,7 @@ async function saveContrib() {
           note: note || null
         })
       });
-      await loadUserData();
+      if (window.loadUserData) await window.loadUserData();
       renderObjetivosView();
       openContribModal(contribGoalId);
       showToast(`Aportado $${amount.toLocaleString('es-AR')}`);
@@ -568,7 +569,7 @@ async function deleteContrib(goalId, contribId) {
       await apiFetch(`/goals/${goalId}/contributions/${contribId}`, {
         method: 'DELETE'
       });
-      await loadUserData();
+      if (window.loadUserData) await window.loadUserData();
       renderObjetivosView();
       openContribModal(goalId);
       showToast('Aporte eliminado');
@@ -609,7 +610,7 @@ async function doDeleteGoal() {
       await apiFetch(`/goals/${editingGoalId}`, {
         method: 'DELETE'
       });
-      await loadUserData();
+      if (window.loadUserData) await window.loadUserData();
       renderObjetivosView();
       showToast('Objetivo eliminado');
     } catch (err) {

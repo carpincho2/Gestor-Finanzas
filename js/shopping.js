@@ -134,20 +134,40 @@ export function initShopping() {
  */
 async function fetchPriceFromClient(urlText) {
   const priceEl = document.getElementById('shoppingPrice');
+  const previewBadge = document.getElementById('shoppingTitlePreview');
   if (!priceEl) return;
 
   // Si el usuario ya ingresó un precio manualmente, no pisar
   if (priceEl.value.trim() && !priceEl.dataset.autoFilled) return;
 
-  // Mostrar indicador de carga
-  priceEl.placeholder = '⏳ Buscando precio...';
-  priceEl.style.border = '1px solid var(--accent)';
-
   try {
     let price = 0;
     let title = null;
 
-    // 1. Extraer item_id del link (soporta MLA-123456789, MLA123456789, pdp_filters, wid)
+    // 1. Extraer título limpio del slug
+    try {
+      const u = new URL(urlText);
+      // Chequear si viene parámetro de precio en la URL (?price= o &p=)
+      const qp = u.searchParams.get('price') || u.searchParams.get('precio') || u.searchParams.get('p');
+      if (qp) {
+        const pNum = parseFloat(qp.replace(/[^0-9.]/g, ''));
+        if (pNum > 0) price = pNum;
+      }
+
+      const parts = u.pathname.split('/').filter(p => p && p !== 'p');
+      if (parts.length > 0) {
+        let clean = decodeURIComponent(parts[0])
+          .replace(/^ML[A-Z]-?\d+-?/i, '')
+          .replace(/_JM$/i, '')
+          .replace(/[\-_]+/g, ' ')
+          .trim();
+        if (clean.length > 3) {
+          title = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+        }
+      }
+    } catch (_) {}
+
+    // 2. Extraer item_id del link (soporta MLA-123456789, MLA123456789, pdp_filters, wid)
     let itemId = null;
     const queryMatch = urlText.match(/(?:item_id|wid)(?:%3A|=)(MLA-?\d+)/i);
     const catalogMatch = urlText.match(/\/p\/(ML[A-Z]-?\d+)/i);
@@ -157,101 +177,47 @@ async function fetchPriceFromClient(urlText) {
     else if (catalogMatch) itemId = catalogMatch[1].replace(/-/g, '').toUpperCase();
     else if (generalMatch) itemId = generalMatch[1].replace(/-/g, '').toUpperCase();
 
-    // 2. Intentar API /items/{id} (funciona para publicaciones individuales)
-    if (itemId) {
+    // 3. Intento ultra-rápido de consulta a API pública (timeout de 1.5s)
+    if (price === 0 && itemId) {
       try {
         const resp = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
-          signal: AbortSignal.timeout(5000)
+          signal: AbortSignal.timeout(1500)
         });
         if (resp.ok) {
           const data = await resp.json();
           if (data.price && data.price > 0) {
             price = data.price;
-            title = data.title;
+            if (data.title) title = data.title;
           }
         }
       } catch (_) {}
     }
 
-    // 3. Intentar API /products/{id} (funciona para URLs de catálogo /p/MLA...)
-    if (price === 0 && itemId) {
-      try {
-        const resp = await fetch(`https://api.mercadolibre.com/products/${itemId}`, {
-          signal: AbortSignal.timeout(5000)
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          const buyBox = data.buy_box_winner || {};
-          const p = buyBox.price || data.price;
-          if (p && p > 0) {
-            price = p;
-            title = data.name || data.title;
-          }
-        }
-      } catch (_) {}
+    // 4. Mostrar feedback al usuario
+    if (previewBadge && title) {
+      previewBadge.innerHTML = `📦 Producto: <strong>${title}</strong>` + 
+        (price > 0 
+          ? ` <span style="margin-left:8px;color:var(--text);font-weight:700;">($${Math.round(price).toLocaleString('es-AR')})</span>` 
+          : `<div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:3px;">Por seguridad antibots de Mercado Libre, ingresá el precio abajo para calcular cuotas vs inflación.</div>`);
+      previewBadge.style.display = 'block';
     }
 
-    // 4. Fallback: Buscar por título del slug en la API de búsqueda de ML
-    if (price === 0) {
-      let slugTitle = null;
-      try {
-        const u = new URL(urlText);
-        const parts = u.pathname.split('/').filter(p => p && p !== 'p');
-        if (parts.length > 0) {
-          let clean = decodeURIComponent(parts[0])
-            .replace(/^ML[A-Z]-?\d+-?/i, '')
-            .replace(/_JM$/i, '')
-            .replace(/[\-_]+/g, ' ')
-            .trim();
-          if (clean.length > 3) slugTitle = clean;
-        }
-      } catch (_) {}
-
-      if (slugTitle) {
-        try {
-          const resp = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(slugTitle)}&limit=1`, {
-            signal: AbortSignal.timeout(5000)
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            const results = data.results || [];
-            if (results.length > 0 && results[0].price > 0) {
-              price = results[0].price;
-              title = results[0].title;
-            }
-          }
-        } catch (_) {}
-      }
-    }
-
-    // 4. Autocompletar el campo si encontramos precio
     if (price > 0) {
       priceEl.value = Math.round(price).toString();
       priceEl.dataset.autoFilled = 'true';
       priceEl.style.border = '2px solid var(--green)';
       priceEl.style.boxShadow = '0 0 10px rgba(0, 229, 160, 0.3)';
-      priceEl.placeholder = 'Ej: 194799';
-
-      // Actualizar preview con título real si lo obtuvimos
-      const previewBadge = document.getElementById('shoppingTitlePreview');
-      if (previewBadge && title && title.length > 3) {
-        previewBadge.textContent = `📦 ${title}`;
-        previewBadge.style.display = 'block';
-      }
-
-      // Quitar estilo verde después de 3 segundos
       setTimeout(() => {
         priceEl.style.border = '1px solid var(--accent)';
         priceEl.style.boxShadow = 'none';
       }, 3000);
     } else {
-      priceEl.placeholder = 'Ingresá el precio manualmente';
-      priceEl.style.border = '1px solid var(--accent)';
+      priceEl.placeholder = 'Ingresá el precio (ej: 194799)';
+      priceEl.style.border = '2px solid var(--accent)';
+      priceEl.focus();
     }
   } catch (err) {
-    console.warn('Auto-fetch precio falló:', err.message);
-    priceEl.placeholder = 'Ingresá el precio manualmente';
-    priceEl.style.border = '1px solid var(--accent)';
+    priceEl.placeholder = 'Ingresá el precio (ej: 194799)';
   }
 }
 
@@ -269,7 +235,7 @@ export async function analyzeShoppingUrl() {
   let priceStr = (document.getElementById('shoppingPrice')?.value || '').trim();
   let priceVal = null;
   if (priceStr) {
-    // Sanitizar punto de miles si fue ingresado como 194.799
+    // Sanitizar separadores de miles y decimales
     if (priceStr.includes('.') && !priceStr.includes(',')) {
       const parts = priceStr.split('.');
       if (parts.length > 1 && parts[parts.length - 1].length === 3) {
@@ -289,6 +255,17 @@ export async function analyzeShoppingUrl() {
     showToast('Por favor, ingresá un link válido de Mercado Libre', true);
     return;
   }
+
+  if (!priceVal || priceVal <= 0) {
+    showToast('⚠️ Ingresá el precio del producto para calcular las opciones de pago', true);
+    const priceEl = document.getElementById('shoppingPrice');
+    if (priceEl) {
+      priceEl.style.border = '2px solid var(--amber)';
+      priceEl.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.4)';
+      priceEl.focus();
+    }
+    return;
+  }
   
   const btn = document.getElementById('shoppingAnalyzeBtn');
   const origContent = btn.innerHTML;
@@ -296,40 +273,129 @@ export async function analyzeShoppingUrl() {
   btn.disabled = true;
   document.getElementById('shoppingResultsContainer').style.display = 'none';
 
+  // Extraer título para fallback
+  let detectedTitle = "Producto Mercado Libre";
+  try {
+    const previewEl = document.getElementById('shoppingTitlePreview');
+    if (previewEl && previewEl.textContent) {
+      detectedTitle = previewEl.textContent.replace('📦 Producto:', '').trim();
+    }
+  } catch (_) {}
+
   try {
     const bodyPayload = {
       url: url,
       installments_without_interest: selectedInstallments,
       discount_percentage: discount,
-      custom_tna: tna
+      custom_tna: tna,
+      price: priceVal
     };
-    if (priceVal && priceVal > 0) {
-      bodyPayload.price = priceVal;
+
+    let data = null;
+    if (IS_SERVER) {
+      try {
+        data = await apiFetch('/shopping/analyze-url', {
+          method: 'POST',
+          body: JSON.stringify(bodyPayload)
+        });
+      } catch (apiErr) {
+        console.warn("Backend /shopping/analyze-url no disponible, usando cálculo local:", apiErr);
+      }
     }
 
-    const data = await apiFetch('/shopping/analyze-url', {
-      method: 'POST',
-      body: JSON.stringify(bodyPayload)
-    });
+    if (!data) {
+      data = localEvaluateShopping(url, detectedTitle, priceVal, selectedInstallments, discount, tna);
+    }
     
     renderShoppingResults(data);
     
   } catch (err) {
     console.error(err);
-    showToast(err.message, true);
-    if (err.message && (err.message.includes('precio') || err.message.includes('manual'))) {
-      const priceEl = document.getElementById('shoppingPrice');
-      if (priceEl) {
-        priceEl.style.border = '2px solid var(--amber)';
-        priceEl.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.4)';
-        priceEl.focus();
-        priceEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
+    showToast(err.message || 'Error al analizar el producto', true);
   } finally {
     btn.innerHTML = origContent;
     btn.disabled = false;
   }
+}
+
+/** Motor de cálculo local de VPN y opciones de pago */
+function localEvaluateShopping(url, title, price, installments, discount, tna) {
+  const finalPrice = price * (1 - (discount / 100));
+  const tem = (tna / 100) / 12;
+  const cuotas = installments > 0 ? [installments] : [1, 3, 6, 9, 12, 18, 24];
+  
+  const options = [];
+  const accounts = state.accounts || [];
+
+  if (accounts.length === 0) {
+    for (const n of cuotas) {
+      const vpn = (n > 1 && tem > 0) ? (finalPrice / n) * ((1 - Math.pow(1 + tem, -n)) / tem) : finalPrice;
+      const ahorro = finalPrice - vpn;
+      const ahorroPct = finalPrice > 0 ? Math.round((ahorro / finalPrice) * 1000) / 10 : 0;
+      options.push({
+        account_name: n > 1 ? `Tarjeta de Crédito (${n} cuotas)` : 'Efectivo / Débito',
+        type: n > 1 ? 'Crédito' : 'Contado',
+        nominal_cost: finalPrice,
+        real_cost: Math.round(vpn * 100) / 100,
+        installments: n,
+        monthly_installment: Math.round((finalPrice / n) * 100) / 100,
+        inflation_adjusted_savings: Math.round(ahorro * 100) / 100,
+        reason: n > 1 
+          ? `Pagando en ${n} cuotas de $${Math.round(finalPrice / n).toLocaleString('es-AR')}, tu costo real ajustado por inflación (${tna}% TNA) es $${Math.round(vpn).toLocaleString('es-AR')} (ahorro del ${ahorroPct}% vs contado).`
+          : `Pago al contado de $${Math.round(finalPrice).toLocaleString('es-AR')}.`
+      });
+    }
+  } else {
+    for (const acc of accounts) {
+      const accType = (acc.type || '').toLowerCase();
+      const isCredit = accType.includes('crédit') || accType.includes('credit') || (acc.limit && acc.limit > 0);
+      
+      if (isCredit) {
+        if (!acc.limit || acc.limit >= finalPrice) {
+          for (const n of cuotas) {
+            const vpn = (n > 1 && tem > 0) ? (finalPrice / n) * ((1 - Math.pow(1 + tem, -n)) / tem) : finalPrice;
+            const ahorro = finalPrice - vpn;
+            const ahorroPct = finalPrice > 0 ? Math.round((ahorro / finalPrice) * 1000) / 10 : 0;
+            options.push({
+              account_name: `${acc.name} (${n} ${n > 1 ? 'cuotas' : 'pago'})`,
+              type: 'Tarjeta de Crédito',
+              nominal_cost: finalPrice,
+              real_cost: Math.round(vpn * 100) / 100,
+              installments: n,
+              monthly_installment: Math.round((finalPrice / n) * 100) / 100,
+              inflation_adjusted_savings: Math.round(ahorro * 100) / 100,
+              reason: n > 1
+                ? `Te conviene pagar en ${n} cuotas de $${Math.round(finalPrice / n).toLocaleString('es-AR')}. Ajustado por rendimiento (${tna}% TNA), tu costo real es $${Math.round(vpn).toLocaleString('es-AR')} (ahorro del ${ahorroPct}% por inflación vs contado).`
+                : `Pago en 1 cuota con tu tarjeta ${acc.name}.`
+            });
+          }
+        }
+      } else {
+        options.push({
+          account_name: acc.name,
+          type: accType.includes('cash') || accType.includes('efectivo') ? 'Efectivo' : 'Débito / Cuenta',
+          nominal_cost: finalPrice,
+          real_cost: finalPrice,
+          installments: 1,
+          monthly_installment: finalPrice,
+          inflation_adjusted_savings: 0,
+          reason: `Pago directo con ${acc.name}. Sin cuotas, abonás el valor nominal al instante.`
+        });
+      }
+    }
+  }
+
+  options.sort((a, b) => a.real_cost - b.real_cost);
+  if (options.length > 0) options[0].is_winner = true;
+
+  return {
+    item: {
+      title: title || 'Producto Mercado Libre',
+      price: price,
+      permalink: url
+    },
+    recommendation: options
+  };
 }
 
 function renderShoppingResults(data) {

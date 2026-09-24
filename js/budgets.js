@@ -56,7 +56,10 @@ const BM_COLORS = [
 ];
 
 let bmSelectedColor = BM_COLORS[0];
+let bmSelectedIcon = '📦';
 let bmEditingId = null;
+
+const BUDGET_EMOJIS = ['🛒', '🍕', '🚗', '🏠', '🎬', '💊', '🛍️', '📚', '📦', '🍔', '☕', '🏋️', '💡', '🎮', '🐾', '✈️'];
 
 function saveBudgets() {
   localStorage.setItem(userKey('flujo_budgets'), JSON.stringify(state.budgets));
@@ -319,6 +322,12 @@ function renderBvTip(spentByCat) {
 function openBudgetModal(id) {
   bmEditingId = id || null;
   bmSelectedColor = BM_COLORS[0];
+  bmSelectedIcon = '📦';
+
+  // Build emoji grid
+  document.getElementById('bmEmojiGrid').innerHTML = BUDGET_EMOJIS.map(e => `
+    <button class="ov-emoji-btn ${e === bmSelectedIcon ? 'active' : ''}" onclick="selectBmEmoji('${e}')">${e}</button>
+  `).join('');
 
   // Build color grid
   const grid = document.getElementById('bmColorGrid');
@@ -334,19 +343,26 @@ function openBudgetModal(id) {
     if (!b) return;
     document.getElementById('budgetModalTitle').textContent = 'Editar Presupuesto';
     document.getElementById('bmSaveBtn').textContent = 'Guardar cambios';
-    const hasCat = ['Alimentación', 'Transporte', 'Entretenimiento', 'Salud', 'Hogar', 'Ropa', 'Otros'].includes(b.cat);
+    document.getElementById('bmName').value = b.name || b.cat;
     document.getElementById('bmCat').value = b.cat;
     updateCustomSelectDisplay(document.getElementById('bmCat'));
-    if (!hasCat) {
+    const isCustomCat = !['Supermercado / Almacén', 'Salidas / Restaurantes', 'Transporte', 'Hogar / Servicios', 'Entretenimiento / Suscripciones', 'Salud / Farmacia', 'Compras / Ropa', 'Educación', 'Otros'].includes(b.cat);
+    if (isCustomCat) {
+      document.getElementById('bmCat').value = 'custom';
+      updateCustomSelectDisplay(document.getElementById('bmCat'));
       document.getElementById('bmCustomWrap').style.display = '';
-      document.getElementById('bmCustomName').value = b.name;
+      document.getElementById('bmCustomName').value = b.cat;
     } else {
       document.getElementById('bmCustomWrap').style.display = 'none';
     }
     document.getElementById('bmLimit').value = b.limit;
-    document.getElementById('bmIcon').value = b.icon || '';
     document.getElementById('bmNotes').value = b.notes || '';
     bmSelectedColor = b.color;
+    bmSelectedIcon = b.icon || '📦';
+    // Update emoji grid selection
+    document.getElementById('bmEmojiGrid').innerHTML = BUDGET_EMOJIS.map(e => `
+      <button class="ov-emoji-btn ${e === bmSelectedIcon ? 'active' : ''}" onclick="selectBmEmoji('${e}')">${e}</button>
+    `).join('');
     // Update swatch selection
     grid.querySelectorAll('.bv-color-swatch').forEach(sw => {
       sw.classList.toggle('selected', sw.style.background === b.color || sw.style.backgroundColor === b.color);
@@ -354,12 +370,12 @@ function openBudgetModal(id) {
   } else {
     document.getElementById('budgetModalTitle').textContent = 'Nuevo Presupuesto';
     document.getElementById('bmSaveBtn').textContent = 'Crear Presupuesto';
-    document.getElementById('bmCat').value = 'Alimentación';
+    document.getElementById('bmName').value = '';
+    document.getElementById('bmCat').value = 'Supermercado / Almacén';
     updateCustomSelectDisplay(document.getElementById('bmCat'));
     document.getElementById('bmCustomWrap').style.display = 'none';
     document.getElementById('bmCustomName').value = '';
     document.getElementById('bmLimit').value = '';
-    document.getElementById('bmIcon').value = '';
     document.getElementById('bmNotes').value = '';
   }
 
@@ -373,12 +389,25 @@ function selectBmColor(color) {
   });
 }
 
+function selectBmEmoji(e) {
+  bmSelectedIcon = e;
+  document.querySelectorAll('#bmEmojiGrid .ov-emoji-btn').forEach(b => b.classList.toggle('active', b.textContent === e));
+}
+
 function onBmCatChange() {
   const val = document.getElementById('bmCat').value;
   document.getElementById('bmCustomWrap').style.display = val === 'custom' ? '' : 'none';
-  // Auto-fill icon
-  const icons = { 'Alimentación': '🍔', 'Transporte': '🚗', 'Entretenimiento': '🎬', 'Salud': '💊', 'Hogar': '🏠', 'Ropa': '👕', 'Otros': '📦' };
-  if (icons[val]) document.getElementById('bmIcon').value = icons[val];
+  // Auto-fill icon and name
+  const icons = { 'Supermercado / Almacén': '🛒', 'Salidas / Restaurantes': '🍕', 'Transporte': '🚗', 'Hogar / Servicios': '🏠', 'Entretenimiento / Suscripciones': '🎬', 'Salud / Farmacia': '💊', 'Compras / Ropa': '🛍️', 'Educación': '📚', 'Otros': '📦' };
+  if (icons[val]) {
+    bmSelectedIcon = icons[val];
+    document.querySelectorAll('#bmEmojiGrid .ov-emoji-btn').forEach(b => b.classList.toggle('active', b.textContent === icons[val]));
+  }
+  // Auto-fill name from category if name is empty
+  const nameEl = document.getElementById('bmName');
+  if (nameEl && !nameEl.value.trim() && val !== 'custom') {
+    nameEl.value = val;
+  }
 }
 
 function closeBudgetModal(e) {
@@ -389,13 +418,16 @@ function closeBudgetModal(e) {
 }
 
 async function saveBudget() {
+  const nameInput = document.getElementById('bmName').value.trim();
   const catSel = document.getElementById('bmCat').value;
   const cat = catSel === 'custom' ? document.getElementById('bmCustomName').value.trim() : catSel;
   const limit = parseFloat(document.getElementById('bmLimit').value);
-  const icon = document.getElementById('bmIcon').value.trim() || '📦';
+  const icon = bmSelectedIcon || '📦';
   const notes = document.getElementById('bmNotes').value.trim();
+  const name = nameInput || cat;
 
-  if (!cat) { showToast('⚠️ Ingresá un nombre de categoría', true); return; }
+  if (!name) { showToast('⚠️ Ingresá un nombre para el presupuesto', true); return; }
+  if (!cat) { showToast('⚠️ Seleccioná una categoría', true); return; }
   if (!limit || limit <= 0) { showToast('⚠️ Ingresá un límite válido', true); return; }
 
   if (IS_SERVER) {
@@ -517,3 +549,5 @@ window.renderBvCards = renderBvCards;
 window.saveBudgets = saveBudgets;
 window.saveBudget = saveBudget;
 window.selectBmColor = selectBmColor;
+window.selectBmEmoji = selectBmEmoji;
+window.BM_COLORS = BM_COLORS;

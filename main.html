@@ -455,10 +455,15 @@
 
 <!-- ===== BUDGET MODAL ===== -->
 <div class="modal-overlay" id="budgetModalOverlay" onclick="closeBudgetModal(event)">
-  <div class="modal" style="width:480px;">
+  <div class="modal" style="width:500px;">
     <div class="modal-title" id="budgetModalTitle">Nuevo Presupuesto</div>
 
-    <div class="form-row">
+    <div class="form-full">
+      <label class="field-label">Nombre del presupuesto</label>
+      <input class="field-input" id="bmName" type="text" placeholder="Ej: Supermercado, Salidas, Gimnasio…"/>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
       <div>
         <label class="field-label">Categoría</label>
         <select class="field-select" id="bmCat" onchange="onBmCatChange()">
@@ -475,20 +480,19 @@
         </select>
       </div>
       <div id="bmCustomWrap" style="display:none;">
-        <label class="field-label">Nombre personalizado</label>
+        <label class="field-label">Categoría personalizada</label>
         <input class="field-input" id="bmCustomName" type="text" placeholder="Ej: Gimnasio"/>
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
-      <div>
-        <label class="field-label">Límite mensual ($)</label>
-        <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
-      </div>
-      <div>
-        <label class="field-label">Ícono</label>
-        <input class="field-input" id="bmIcon" type="text" placeholder="🎯" style="font-size:18px;text-align:center;" maxlength="2"/>
-      </div>
+    <div class="form-full" style="margin-top:12px;">
+      <label class="field-label">Límite mensual ($)</label>
+      <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Ícono</label>
+      <div class="ov-emoji-grid" id="bmEmojiGrid"></div>
     </div>
 
     <div style="margin-top:14px;">

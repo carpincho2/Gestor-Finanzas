@@ -71,3 +71,29 @@ Crea una función de evaluación en Python que use métricas financieras formale
 4. UI en pesos argentinos (ARS) con formato `$ ###.###,##`.
 
 Por favor, genera el código paso a paso: Modelos y Endpoints (FastAPI), Motor Matemático (Python), y UI/Services (Flutter).
+```
+
+---
+
+## 5. ANÁLISIS TÉCNICO: FACTIBILIDAD DE OBTENCIÓN AUTOMÁTICA DE PRECIOS DE MERCADO LIBRE
+
+### A. Diagnóstico de la Situación Técnica
+1. **APIs Públicas de Mercado Libre (`api.mercadolibre.com`):**
+   - Desde 2024, Mercado Libre cerró los accesos anónimos a sus endpoints de items (`/items/{id}`) y búsqueda (`/sites/MLA/search`).
+   - Cualquier petición HTTP sin un token de desarrollador OAuth aprobado recibe un error **`HTTP 403 Forbidden`** con el código de política interna `PA_UNAUTHORIZED_RESULT_FROM_POLICIES` ("At least one policy returned UNAUTHORIZED").
+2. **Scraping HTML (`articulo.mercadolibre.com.ar`):**
+   - El dominio web está protegido por Akamai Bot Manager y Cloudflare WAF.
+   - Peticiones procedentes de servidores cloud (Render, AWS, GCP, etc.) o clientes automatizados son redirigidas de inmediato con **`HTTP 302 Found`** a `https://www.mercadolibre.com.ar/gz/account-verification` (desafío de verificación de cuenta / CAPTCHA).
+3. **Restricción CORS en el Navegador:**
+   - Intentar hacer un `fetch` directo desde JavaScript a las páginas web de Mercado Libre es bloqueado por la política de seguridad Same-Origin (CORS) del navegador.
+
+### B. Solución y Rediseño de la Experiencia (Arquitectura Híbrida)
+Dado que un bot scraping sin proxies residenciales ni credenciales corporativas no es viable ni confiable en producción, se implementó el **Enfoque Híbrido "Simulador de Compras Inteligente"**:
+1. **Extracción Inmediata de Metadata desde la URL:**
+   - El frontend y backend analizan el slug de la URL (`/MLA-xxxx-nombre-del-producto...`) y extraen el nombre limpio del producto en 0 milisegundos sin depender de peticiones externas.
+   - Muestra instantáneamente el badge: `📦 Producto: {Nombre Detectado}`.
+2. **Foco Directo en el Precio:**
+   - En lugar de dejar al usuario esperando 15 segundos con un spinner de carga que terminará en error 403, la interfaz le solicita el precio con foco automático: `💡 Por seguridad de Mercado Libre, ingresá el precio publicado para calcular cuotas vs inflación`.
+3. **Motor Local de Recomendación Financiera (VPN):**
+   - Si el backend está offline o no disponible, el frontend ejecuta localmente la misma fórmula de Valor Presente Neto ($VPN = \text{Cuota} \times \frac{1 - (1 + \text{TEM})^{-n}}{\text{TEM}}$).
+   - Compara las tarjetas de crédito del usuario en 1, 3, 6, 9, 12, 18 y 24 cuotas contra el rendimiento de una TNA de referencia (40%), destacando cuál opción le gana a la inflación.

@@ -55,12 +55,14 @@
   font-size:13px;
   outline:none;
   transition:border-color .18s;
+  color-scheme: dark;
 }
 
 .field-input:focus, .field-select:focus { border-color: var(--accent); }
 .field-select option { 
-  background-color: var(--surface); 
-  color: var(--text); 
+  background-color: #12141c; 
+  color: #f1f5f9; 
+  padding: 8px;
 }
 
 /* ===== TRANSACTIONS VIEW ===== */

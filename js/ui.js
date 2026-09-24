@@ -89,6 +89,7 @@ function setPage(el, page) {
     document.getElementById('dashboardView').style.display = '';
     document.getElementById('pageDate').style.display = '';
     renderAll();
+    if (window.initQuickAdd) window.initQuickAdd();
   } else if (page === 'transacciones') {
     hideAll();
     document.getElementById('txView').style.display = '';

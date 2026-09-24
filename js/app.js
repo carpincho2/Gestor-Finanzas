@@ -91,6 +91,8 @@ export async function loadUserData() {
 
 export async function init() {
   await loadViews();
+  if (window.initCustomSelects) window.initCustomSelects();
+  if (window.initQuickAdd) window.initQuickAdd();
   await loadUserData();
 
   if (!IS_SERVER) {
@@ -124,6 +126,8 @@ export async function init() {
 
   setDate();
   if (window.renderAll) window.renderAll();
+  if (window.initQuickAdd) window.initQuickAdd();
+  if (window.initCustomSelects) window.initCustomSelects();
   
   initGlobalShortcuts({
     aiSendMessage: window.aiSendMessage,

@@ -3,6 +3,7 @@ uvicorn[standard]==0.29.0
 sqlalchemy==2.0.30
 alembic==1.13.1
 psycopg2-binary==2.9.9      # PostgreSQL
+psycopg[binary]>=3.1.18
 aiosqlite==0.20.0            # SQLite para desarrollo local
 pandas==2.2.2
 requests==2.32.2

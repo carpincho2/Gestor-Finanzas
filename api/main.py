@@ -161,15 +161,15 @@ async def favicon():
 
 @app.get("/", response_class=FileResponse)
 async def serve_index():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+    return FileResponse(os.path.join(BASE_DIR, "index.html"), headers={"Cache-Control": "no-cache, must-revalidate"})
 
 @app.get("/index.html", response_class=FileResponse)
 async def serve_index_html():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"))
+    return FileResponse(os.path.join(BASE_DIR, "index.html"), headers={"Cache-Control": "no-cache, must-revalidate"})
 
 @app.get("/main.html", response_class=FileResponse)
 async def serve_main():
-    return FileResponse(os.path.join(BASE_DIR, "main.html"))
+    return FileResponse(os.path.join(BASE_DIR, "main.html"), headers={"Cache-Control": "no-cache, must-revalidate"})
 
 if __name__ == "__main__":
     import uvicorn

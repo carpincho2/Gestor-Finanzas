@@ -16,6 +16,21 @@ export function formatCurrency(amount) {
   });
 }
 
+export function getCurrencySymbol(curr) {
+  if (curr === 'USD') return 'US$';
+  if (curr === 'EUR') return '€';
+  return '$';
+}
+
+export function formatMoney(amount, curr = 'ARS') {
+  const sym = getCurrencySymbol(curr);
+  const formatted = Math.abs(amount || 0).toLocaleString('es-AR', {
+    minimumFractionDigits: curr === 'ARS' ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+  return `${(amount || 0) < 0 ? '-' : ''}${sym} ${formatted}`;
+}
+
 export function escHtml(s) {
   if (s === null || s === undefined) return '';
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -75,3 +90,9 @@ export function initGlobalShortcuts(callbacks) {
     }
   });
 }
+
+window.getCurrencySymbol = getCurrencySymbol;
+window.formatMoney = formatMoney;
+window.formatCurrency = formatCurrency;
+window.escHtml = escHtml;
+

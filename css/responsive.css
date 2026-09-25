@@ -190,6 +190,7 @@
   .acc-card-balance { font-size: 20px; margin-top: 14px; }
   .cv-worth-total { font-size: 22px; }
   .cv-transfer-row { grid-template-columns: 1fr; gap: 10px; }
+  .cv-cross-grid { grid-template-columns: 1fr; gap: 10px; }
   .cv-arrow-btn { width: 100%; justify-content: center; }
 
   /* Scanner */

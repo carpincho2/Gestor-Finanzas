@@ -31,25 +31,55 @@
             <div class="cv-transfer-row">
               <div>
                 <label class="field-label">Desde</label>
-                <select class="field-select" id="cvTransferFrom"></select>
+                <select class="field-select" id="cvTransferFrom" onchange="onTransferAccountsChanged()"></select>
               </div>
-              <button class="cv-arrow-btn" onclick="swapTransfer()">⇄</button>
+              <button class="cv-arrow-btn" type="button" onclick="swapTransfer()" title="Invertir cuentas">⇄</button>
               <div>
                 <label class="field-label">Hacia</label>
-                <select class="field-select" id="cvTransferTo"></select>
+                <select class="field-select" id="cvTransferTo" onchange="onTransferAccountsChanged()"></select>
               </div>
             </div>
+
             <div class="form-row" style="margin-bottom:10px;">
               <div>
-                <label class="field-label">Monto ($)</label>
-                <input class="field-input" id="cvTransferAmount" type="number" min="1" placeholder="0"/>
+                <label class="field-label" id="cvTransferAmountLabel">Monto a transferir ($)</label>
+                <input class="field-input" id="cvTransferAmount" type="number" min="0.01" step="any" placeholder="0.00" oninput="onTransferAmountChanged()"/>
               </div>
               <div>
                 <label class="field-label">Descripción</label>
                 <input class="field-input" id="cvTransferDesc" type="text" placeholder="Ej: Paso a ahorro"/>
               </div>
             </div>
-            <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doTransfer()">
+
+            <!-- Bloque de conversión multidivisa (activo si las monedas difieren) -->
+            <div id="cvCrossCurrencyBox" class="cv-cross-box" style="display:none;">
+              <div class="cv-cross-header">
+                <div class="cv-cross-tag" id="cvCrossTag">
+                  <span class="cv-cross-icon">💱</span>
+                  <span id="cvCrossPairText">Conversión USD → ARS</span>
+                </div>
+                <button type="button" class="cv-fetch-rate-btn" id="cvFetchRateBtn" onclick="fetchSuggestedExchangeRate()" title="Consultar cotización del mercado">
+                  ⚡ Cotización sugerida
+                </button>
+              </div>
+
+              <div class="cv-cross-grid">
+                <div>
+                  <label class="field-label" id="cvTransferRateLabel">Cotización (1 USD = ARS)</label>
+                  <input class="field-input" id="cvTransferRate" type="number" min="0.0001" step="any" placeholder="1300" oninput="onTransferRateChanged()"/>
+                </div>
+                <div>
+                  <label class="field-label" id="cvTransferAmountToLabel">Monto a recibir (ARS)</label>
+                  <input class="field-input" id="cvTransferAmountTo" type="number" min="0.01" step="any" placeholder="0.00" oninput="onTransferAmountToChanged()"/>
+                </div>
+              </div>
+
+              <div class="cv-cross-summary" id="cvCrossSummary">
+                💡 Ingresá el monto y la cotización para calcular el destino.
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="cvTransferBtn" style="width:100%;justify-content:center;margin-top:10px;" onclick="doTransfer()">
               Transferir
             </button>
           </div>

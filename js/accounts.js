@@ -1,5 +1,5 @@
 import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
-import { showToast, formatCurrency } from './utils/utils.js';
+import { showToast, formatCurrency, escHtml, getCurrencySymbol, formatMoney } from './utils/utils.js';
 import { apiFetch } from './api/apiClient.js';
 // (Imports cruzados inyectados por refactor)
 
@@ -54,15 +54,25 @@ function renderCuentasView() {
 
 /* Net worth */
 function renderCvWorth() {
-  const total = state.accounts.reduce((s, a) => s + a.balance, 0);
-  document.getElementById('cvNetWorth').textContent = '$' + total.toLocaleString('es-AR');
+  const arsTotal = state.accounts.filter(a => (a.currency || 'ARS') === 'ARS').reduce((s, a) => s + a.balance, 0);
+  const usdTotal = state.accounts.filter(a => a.currency === 'USD').reduce((s, a) => s + a.balance, 0);
+  const eurTotal = state.accounts.filter(a => a.currency === 'EUR').reduce((s, a) => s + a.balance, 0);
+
+  let netWorthText = '$' + arsTotal.toLocaleString('es-AR');
+  const extras = [];
+  if (usdTotal !== 0) extras.push(`US$ ${usdTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  if (eurTotal !== 0) extras.push(`€ ${eurTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  if (extras.length > 0) {
+    netWorthText += ` + ${extras.join(' + ')}`;
+  }
+  document.getElementById('cvNetWorth').textContent = netWorthText;
 
   document.getElementById('cvWorthBreakdown').innerHTML = state.accounts.map(a => `
     <div class="cv-worth-chip">
       <div class="cv-worth-chip-dot" style="background:${ACC_TYPE_COLORS[a.type]};"></div>
       <span style="color:var(--muted);">${escHtml(a.name)}</span>
       <span style="color:${a.balance < 0 ? 'var(--danger)' : 'var(--text)'}; font-weight:600;">
-        $${a.balance.toLocaleString('es-AR')}
+        ${formatMoney(a.balance, a.currency || 'ARS')}
       </span>
     </div>
   `).join('');
@@ -102,9 +112,9 @@ function renderCvCards() {
         <div class="acc-card-type">${ACC_TYPE_ICONS[a.type]} ${ACC_TYPE_LABELS[a.type]}${a.currency !== 'ARS' ? ' · ' + a.currency : ''}</div>
         <div class="acc-card-name">${escHtml(a.name)}</div>
         <div class="acc-card-bank">${escHtml(a.bank || '—')}</div>
-        <div class="acc-card-balance">$${a.balance.toLocaleString('es-AR')}</div>
+        <div class="acc-card-balance">${formatMoney(a.balance, a.currency || 'ARS')}</div>
         <div class="acc-card-change">
-          ${a.type === 'tarjeta' && a.limit ? `Disponible: $${(a.limit + a.balance).toLocaleString('es-AR')}` : `Este mes: +$${mInc.toLocaleString('es-AR')} / -$${mExp.toLocaleString('es-AR')}`}
+          ${a.type === 'tarjeta' && a.limit ? `Disponible: ${formatMoney(a.limit + a.balance, a.currency || 'ARS')}` : `Este mes: +${formatMoney(mInc, a.currency || 'ARS')} / -${formatMoney(mExp, a.currency || 'ARS')}`}
         </div>
       </div>
     `;
@@ -144,7 +154,7 @@ function renderCvDetail() {
   const monthOut = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
   const color = ACC_TYPE_COLORS[a.type];
-  const fmt = n => '$' + n.toLocaleString('es-AR');
+  const fmt = n => formatMoney(n, a.currency || 'ARS');
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
@@ -160,7 +170,7 @@ function renderCvDetail() {
     <div style="background:${color}12;border:1px solid ${color}30;border-radius:10px;padding:14px 16px;margin-bottom:16px;text-align:center;">
       <div style="font-size:11px;font-family:var(--font-mono);color:${color};letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Saldo actual</div>
       <div style="font-size:28px;font-weight:800;letter-spacing:-1.5px;color:${a.balance < 0 ? 'var(--danger)' : color};">
-        ${fmt(a.balance)}
+        ${formatMoney(a.balance, a.currency || 'ARS')}
       </div>
       ${a.currency !== 'ARS' ? `<div style="font-size:10px;font-family:var(--font-mono);color:var(--muted);margin-top:2px;">${a.currency}</div>` : ''}
     </div>
@@ -677,96 +687,345 @@ function renderCvTxList() {
   `).join('');
 }
 
-/* Transfer selects */
+/* Transfer selects & Multi-currency engine */
+function getConversionRateType(currFrom, currTo) {
+  if ((currFrom === 'USD' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'USD')) return 'USD_ARS';
+  if ((currFrom === 'EUR' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'EUR')) return 'EUR_ARS';
+  return 'DIRECT';
+}
+
 function renderCvTransferSelects() {
   const fromEl = document.getElementById('cvTransferFrom');
   const toEl = document.getElementById('cvTransferTo');
-  const opts = state.accounts.map(a => `<option value="${a.id}">${ACC_TYPE_ICONS[a.type]} ${escHtml(a.name)} ($${a.balance.toLocaleString('es-AR')})</option>`).join('');
+  if (!fromEl || !toEl) return;
+
+  const opts = state.accounts.map(a => {
+    const sym = getCurrencySymbol(a.currency);
+    const curr = a.currency || 'ARS';
+    return `<option value="${a.id}">${ACC_TYPE_ICONS[a.type]} ${escHtml(a.name)} (${sym} ${a.balance.toLocaleString('es-AR')} ${curr})</option>`;
+  }).join('');
+
   fromEl.innerHTML = opts;
   toEl.innerHTML = opts;
   if (state.accounts.length > 1) toEl.selectedIndex = 1;
-  initCustomSelects(document.getElementById('cvTransferFrom').parentNode);
-  initCustomSelects(document.getElementById('cvTransferTo').parentNode);
+
+  initCustomSelects(fromEl.parentNode);
+  initCustomSelects(toEl.parentNode);
+
+  onTransferAccountsChanged();
+}
+
+function onTransferAccountsChanged() {
+  const fromEl = document.getElementById('cvTransferFrom');
+  const toEl = document.getElementById('cvTransferTo');
+  const crossBox = document.getElementById('cvCrossCurrencyBox');
+  const amountLabel = document.getElementById('cvTransferAmountLabel');
+  const rateLabel = document.getElementById('cvTransferRateLabel');
+  const amountToLabel = document.getElementById('cvTransferAmountToLabel');
+  const pairText = document.getElementById('cvCrossPairText');
+
+  if (!fromEl || !toEl || !state.accounts.length) return;
+
+  const fromId = parseInt(fromEl.value);
+  const toId = parseInt(toEl.value);
+  const fromAcc = state.accounts.find(a => a.id === fromId);
+  const toAcc = state.accounts.find(a => a.id === toId);
+
+  if (!fromAcc || !toAcc) return;
+
+  const currFrom = fromAcc.currency || 'ARS';
+  const currTo = toAcc.currency || 'ARS';
+  const symFrom = getCurrencySymbol(currFrom);
+  const symTo = getCurrencySymbol(currTo);
+
+  if (currFrom === currTo) {
+    if (crossBox) crossBox.style.display = 'none';
+    if (amountLabel) amountLabel.textContent = `Monto a transferir (${symFrom})`;
+  } else {
+    if (crossBox) crossBox.style.display = 'block';
+    if (amountLabel) amountLabel.textContent = `Monto a debitar (${symFrom} ${currFrom})`;
+    if (amountToLabel) amountToLabel.textContent = `Monto a recibir (${symTo} ${currTo})`;
+    if (pairText) pairText.textContent = `Conversión ${currFrom} → ${currTo}`;
+
+    if (rateLabel) {
+      if ((currFrom === 'USD' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'USD')) {
+        rateLabel.textContent = 'Cotización (1 USD = ARS)';
+      } else if ((currFrom === 'EUR' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'EUR')) {
+        rateLabel.textContent = 'Cotización (1 EUR = ARS)';
+      } else {
+        rateLabel.textContent = `Cotización (1 ${currFrom} = ${currTo})`;
+      }
+    }
+
+    onTransferAmountChanged();
+  }
+}
+
+function updateTransferSummary(amountFrom, amountTo, rate, currFrom, currTo, fromAcc, toAcc) {
+  const summaryEl = document.getElementById('cvCrossSummary');
+  if (!summaryEl) return;
+
+  if (!amountFrom || !amountTo || !rate) {
+    summaryEl.innerHTML = `💡 Ingresá el monto y la cotización para calcular el destino en ${currTo}.`;
+    return;
+  }
+
+  const symFrom = getCurrencySymbol(currFrom);
+  const symTo = getCurrencySymbol(currTo);
+  const fmtFrom = amountFrom.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  const fmtTo = amountTo.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  const fmtRate = rate.toLocaleString('es-AR', { maximumFractionDigits: 4 });
+
+  let rateStr = '';
+  const type = getConversionRateType(currFrom, currTo);
+  if (type === 'USD_ARS') rateStr = `1 USD = $${fmtRate} ARS`;
+  else if (type === 'EUR_ARS') rateStr = `1 EUR = $${fmtRate} ARS`;
+  else rateStr = `1 ${currFrom} = ${fmtRate} ${currTo}`;
+
+  summaryEl.innerHTML = `💡 Débito: <strong>${symFrom} ${fmtFrom}</strong> (${escHtml(fromAcc.name)}) → Crédito: <strong>${symTo} ${fmtTo}</strong> (${escHtml(toAcc.name)})<br><span style="color:#60a5fa;">Tasa aplicada: ${rateStr}</span>`;
+}
+
+function onTransferAmountChanged() {
+  const fromEl = document.getElementById('cvTransferFrom');
+  const toEl = document.getElementById('cvTransferTo');
+  if (!fromEl || !toEl) return;
+  const fromAcc = state.accounts.find(a => a.id === parseInt(fromEl.value));
+  const toAcc = state.accounts.find(a => a.id === parseInt(toEl.value));
+  if (!fromAcc || !toAcc) return;
+
+  const currFrom = fromAcc.currency || 'ARS';
+  const currTo = toAcc.currency || 'ARS';
+  if (currFrom === currTo) return;
+
+  const amountFrom = parseFloat(document.getElementById('cvTransferAmount').value) || 0;
+  const rateInput = document.getElementById('cvTransferRate');
+  const amountToInput = document.getElementById('cvTransferAmountTo');
+  const rate = parseFloat(rateInput ? rateInput.value : 0) || 0;
+
+  if (amountFrom > 0 && rate > 0) {
+    const type = getConversionRateType(currFrom, currTo);
+    let amountTo = 0;
+    if (type === 'USD_ARS') {
+      amountTo = currFrom === 'USD' ? (amountFrom * rate) : (amountFrom / rate);
+    } else if (type === 'EUR_ARS') {
+      amountTo = currFrom === 'EUR' ? (amountFrom * rate) : (amountFrom / rate);
+    } else {
+      amountTo = amountFrom * rate;
+    }
+    if (amountToInput) amountToInput.value = (Math.round(amountTo * 100) / 100).toFixed(2);
+    updateTransferSummary(amountFrom, amountTo, rate, currFrom, currTo, fromAcc, toAcc);
+  } else {
+    updateTransferSummary(amountFrom, 0, rate, currFrom, currTo, fromAcc, toAcc);
+  }
+}
+
+function onTransferRateChanged() {
+  onTransferAmountChanged();
+}
+
+function onTransferAmountToChanged() {
+  const fromEl = document.getElementById('cvTransferFrom');
+  const toEl = document.getElementById('cvTransferTo');
+  if (!fromEl || !toEl) return;
+  const fromAcc = state.accounts.find(a => a.id === parseInt(fromEl.value));
+  const toAcc = state.accounts.find(a => a.id === parseInt(toEl.value));
+  if (!fromAcc || !toAcc) return;
+
+  const currFrom = fromAcc.currency || 'ARS';
+  const currTo = toAcc.currency || 'ARS';
+  if (currFrom === currTo) return;
+
+  const amountFrom = parseFloat(document.getElementById('cvTransferAmount').value) || 0;
+  const amountTo = parseFloat(document.getElementById('cvTransferAmountTo').value) || 0;
+  const rateInput = document.getElementById('cvTransferRate');
+
+  if (amountFrom > 0 && amountTo > 0) {
+    const type = getConversionRateType(currFrom, currTo);
+    let rate = 0;
+    if (type === 'USD_ARS') {
+      rate = currFrom === 'USD' ? (amountTo / amountFrom) : (amountFrom / amountTo);
+    } else if (type === 'EUR_ARS') {
+      rate = currFrom === 'EUR' ? (amountTo / amountFrom) : (amountFrom / amountTo);
+    } else {
+      rate = amountTo / amountFrom;
+    }
+    if (rateInput) rateInput.value = (Math.round(rate * 10000) / 10000).toFixed(2);
+    updateTransferSummary(amountFrom, amountTo, rate, currFrom, currTo, fromAcc, toAcc);
+  }
+}
+
+async function fetchSuggestedExchangeRate() {
+  const fromEl = document.getElementById('cvTransferFrom');
+  const toEl = document.getElementById('cvTransferTo');
+  const btn = document.getElementById('cvFetchRateBtn');
+  if (!fromEl || !toEl) return;
+
+  const fromAcc = state.accounts.find(a => a.id === parseInt(fromEl.value));
+  const toAcc = state.accounts.find(a => a.id === parseInt(toEl.value));
+  if (!fromAcc || !toAcc) return;
+
+  const currFrom = fromAcc.currency || 'ARS';
+  const currTo = toAcc.currency || 'ARS';
+  if (currFrom === currTo) return;
+
+  const origBtnText = btn ? btn.innerHTML : '';
+  if (btn) btn.innerHTML = '⏳ Consultando...';
+
+  try {
+    let rate = 0;
+    let label = '';
+
+    if ((currFrom === 'USD' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'USD')) {
+      const res = await fetch('https://dolarapi.com/v1/dolares/blue');
+      if (!res.ok) throw new Error('API no disponible');
+      const data = await res.json();
+      if (currFrom === 'USD') {
+        rate = data.compra || data.venta || 1350;
+        label = `Dólar Blue Compra ($${rate})`;
+      } else {
+        rate = data.venta || data.compra || 1350;
+        label = `Dólar Blue Venta ($${rate})`;
+      }
+    } else if ((currFrom === 'EUR' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'EUR')) {
+      const res = await fetch('https://dolarapi.com/v1/cotizaciones/eur');
+      if (!res.ok) throw new Error('API no disponible');
+      const data = await res.json();
+      rate = currFrom === 'EUR' ? (data.compra || data.venta) : (data.venta || data.compra);
+      label = `Euro Oficial ($${rate})`;
+    } else if ((currFrom === 'USD' && currTo === 'EUR') || (currFrom === 'EUR' && currTo === 'USD')) {
+      rate = currFrom === 'USD' ? 0.92 : 1.08;
+      label = `Referencia (${rate})`;
+    }
+
+    if (rate > 0) {
+      const rateInput = document.getElementById('cvTransferRate');
+      if (rateInput) {
+        rateInput.value = rate;
+        showToast(`✅ Cotización sugerida: ${label}`);
+        onTransferRateChanged();
+      }
+    }
+  } catch (err) {
+    console.warn('No se pudo obtener cotización externa:', err);
+    showToast('⚠️ No se pudo obtener la cotización en vivo. Podés ingresarla manualmente.', true);
+  } finally {
+    if (btn) btn.innerHTML = origBtnText;
+  }
 }
 
 function swapTransfer() {
   const f = document.getElementById('cvTransferFrom');
   const t = document.getElementById('cvTransferTo');
+  if (!f || !t) return;
   [f.value, t.value] = [t.value, f.value];
   updateCustomSelectDisplay(f);
   updateCustomSelectDisplay(t);
+  onTransferAccountsChanged();
 }
 
 async function doTransfer() {
   const fromId = parseInt(document.getElementById('cvTransferFrom').value);
   const toId = parseInt(document.getElementById('cvTransferTo').value);
-  const amount = parseFloat(document.getElementById('cvTransferAmount').value);
+  const amountFrom = parseFloat(document.getElementById('cvTransferAmount').value);
   const desc = document.getElementById('cvTransferDesc').value.trim() || 'Transferencia';
 
   if (fromId === toId) { showToast('⚠️ Seleccioná cuentas distintas', true); return; }
-  if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
+  if (!amountFrom || amountFrom <= 0) { showToast('⚠️ Ingresá un monto a transferir válido', true); return; }
 
   const fromAcc = state.accounts.find(x => x.id === fromId);
   const toAcc = state.accounts.find(x => x.id === toId);
   if (!fromAcc || !toAcc) return;
 
+  const currFrom = fromAcc.currency || 'ARS';
+  const currTo = toAcc.currency || 'ARS';
+  const isCross = (currFrom !== currTo);
+
+  let amountTo = amountFrom;
+  let rateInfo = '';
+
+  if (isCross) {
+    amountTo = parseFloat(document.getElementById('cvTransferAmountTo').value);
+    const rate = parseFloat(document.getElementById('cvTransferRate').value);
+
+    if (!amountTo || amountTo <= 0) {
+      showToast('⚠️ Ingresá el monto a recibir o la cotización', true);
+      return;
+    }
+
+    const type = getConversionRateType(currFrom, currTo);
+    if (type === 'USD_ARS') {
+      rateInfo = ` (1 USD = $${rate ? rate.toLocaleString('es-AR') : (currFrom === 'USD' ? (amountTo/amountFrom).toFixed(2) : (amountFrom/amountTo).toFixed(2))} ARS)`;
+    } else if (type === 'EUR_ARS') {
+      rateInfo = ` (1 EUR = $${rate ? rate.toLocaleString('es-AR') : ''} ARS)`;
+    } else if (rate) {
+      rateInfo = ` (1 ${currFrom} = ${rate} ${currTo})`;
+    }
+  }
+
+  const descExpense = `${desc} → ${toAcc.name}${rateInfo}`;
+  const descIncome = `${desc} ← ${fromAcc.name}${rateInfo}`;
+
   if (IS_SERVER) {
     try {
       const dateStr = new Date().toISOString().split('T')[0];
       const linkId = Date.now();
-      
+
       await apiFetch('/transactions', {
         method: 'POST',
         body: JSON.stringify({
           account_id: fromId,
           type: 'expense',
-          desc: `${desc} → ${toAcc.name}`,
-          amount,
+          desc: descExpense,
+          amount: amountFrom,
           cat: 'Otros',
           date: dateStr,
           transfer_id: linkId
         })
       });
-      
+
       await apiFetch('/transactions', {
         method: 'POST',
         body: JSON.stringify({
           account_id: toId,
           type: 'income',
-          desc: `${desc} ← ${fromAcc.name}`,
-          amount,
+          desc: descIncome,
+          amount: amountTo,
           cat: 'Otros',
           date: dateStr,
           transfer_id: linkId
         })
       });
-      
-      await loadUserData();
-      
+
+      if (window.loadUserData) {
+        await window.loadUserData();
+      }
+
       document.getElementById('cvTransferAmount').value = '';
+      if (document.getElementById('cvTransferAmountTo')) document.getElementById('cvTransferAmountTo').value = '';
       document.getElementById('cvTransferDesc').value = '';
       renderCuentasView();
-      showToast(`✅ Transferidos $${amount.toLocaleString('es-AR')} de ${fromAcc.name} a ${toAcc.name}`);
+      showToast(`✅ Transferencia realizada: ${formatMoney(amountFrom, currFrom)} → ${formatMoney(amountTo, currTo)}`);
     } catch (err) {
       console.error(err);
       showToast('⚠️ Error al realizar la transferencia en el servidor', true);
     }
   } else {
-    fromAcc.balance -= amount;
-    toAcc.balance += amount;
+    fromAcc.balance -= amountFrom;
+    toAcc.balance += amountTo;
     saveAccounts();
 
     const dateStr = new Date().toISOString().split('T')[0];
     const linkId = Date.now();
-    state.transactions.unshift({ id: linkId, type: 'expense', desc: `${desc} → ${toAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
-    state.transactions.unshift({ id: linkId + 1, type: 'income', desc: `${desc} ← ${fromAcc.name}`, amount, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
+    state.transactions.unshift({ id: linkId, type: 'expense', desc: descExpense, amount: amountFrom, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
+    state.transactions.unshift({ id: linkId + 1, type: 'income', desc: descIncome, amount: amountTo, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
     save();
 
     document.getElementById('cvTransferAmount').value = '';
+    if (document.getElementById('cvTransferAmountTo')) document.getElementById('cvTransferAmountTo').value = '';
     document.getElementById('cvTransferDesc').value = '';
 
     renderCuentasView();
-    showToast(`✅ Transferidos $${amount.toLocaleString('es-AR')} de ${fromAcc.name} a ${toAcc.name}`);
+    showToast(`✅ Transferencia realizada: ${formatMoney(amountFrom, currFrom)} → ${formatMoney(amountTo, currTo)}`);
   }
 }
 
@@ -968,3 +1227,9 @@ window.closeAccDeleteModal = closeAccDeleteModal;
 window.enterCuentasView = enterCuentasView;
 window.doTransfer = doTransfer;
 window.renderCvTransferSelects = renderCvTransferSelects;
+window.onTransferAccountsChanged = onTransferAccountsChanged;
+window.onTransferAmountChanged = onTransferAmountChanged;
+window.onTransferRateChanged = onTransferRateChanged;
+window.onTransferAmountToChanged = onTransferAmountToChanged;
+window.fetchSuggestedExchangeRate = fetchSuggestedExchangeRate;
+

@@ -1,6 +1,7 @@
 import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
 import { showToast, formatCurrency } from './utils/utils.js';
 import { apiFetch } from './api/apiClient.js';
+import { TransactionService } from './services/transactionService.js';
 // (Imports cruzados inyectados por refactor)
 
 /* =====================================================
@@ -204,33 +205,13 @@ function addFromModal() {
 }
 
 async function addTransaction(tx) {
-  if (IS_SERVER) {
-    try {
-      await apiFetch('/transactions', {
-        method: 'POST',
-        body: JSON.stringify({
-          account_id: tx.account_id || null,
-          type: tx.type,
-          desc: tx.desc,
-          amount: tx.amount,
-          cat: tx.cat,
-          date: tx.date,
-          transfer_id: tx.transfer_id || null
-        })
-      });
-      await loadUserData();
-      renderAll();
-      if (currentPage === 'transacciones') renderTxView();
-    } catch (err) {
-      console.error("Error al guardar transacción:", err);
-      showToast("Error al guardar la transacción en el servidor", true);
-    }
-  } else {
-    tx.id = Date.now();
-    state.transactions.unshift(tx);
-    save();
+  try {
+    await TransactionService.addTransaction(tx);
     renderAll();
-    if (currentPage === 'transacciones') renderTxView();
+    if (typeof currentPage !== 'undefined' && currentPage === 'transacciones') renderTxView();
+  } catch (err) {
+    console.error("Error al guardar transacción:", err);
+    showToast("Error al guardar la transacción", true);
   }
 }
 
@@ -493,38 +474,15 @@ async function saveEdit() {
   if (!amount || amount <= 0) { showToast('⚠️ Monto inválido', true); return; }
   if (!date) { showToast('⚠️ Seleccioná una fecha', true); return; }
 
-  if (IS_SERVER) {
-    try {
-      const orig = state.transactions.find(x => x.id === editingId);
-      await apiFetch(`/transactions/${editingId}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          account_id: orig ? orig.account_id : null,
-          type,
-          desc,
-          amount,
-          cat,
-          date,
-          transfer_id: orig ? orig.transfer_id : null
-        })
-      });
-      await loadUserData();
-      renderAll();
-      if (currentPage === 'transacciones') renderTxView();
-      showToast('Transacción actualizada');
-    } catch (err) {
-      console.error("Error al actualizar transacción:", err);
-      showToast("Error al actualizar la transacción en el servidor", true);
-    }
-  } else {
-    const idx = state.transactions.findIndex(x => x.id === editingId);
-    if (idx > -1) {
-      state.transactions[idx] = { ...state.transactions[idx], type, desc, amount, cat, date };
-      save();
-      renderAll();
-      if (currentPage === 'transacciones') renderTxView();
-      showToast('Transacción actualizada');
-    }
+  try {
+    const orig = state.transactions.find(x => x.id === editingId);
+    await TransactionService.updateTransaction(editingId, { type, desc, amount, cat, date }, orig);
+    renderAll();
+    if (typeof currentPage !== 'undefined' && currentPage === 'transacciones') renderTxView();
+    showToast('Transacción actualizada');
+  } catch (err) {
+    console.error("Error al actualizar transacción:", err);
+    showToast("Error al actualizar la transacción", true);
   }
   closeEditModal();
 }
@@ -552,25 +510,14 @@ function closeDeleteModal(e) {
 }
 
 async function doDelete() {
-  if (IS_SERVER) {
-    try {
-      await apiFetch(`/transactions/${editingId}`, {
-        method: 'DELETE'
-      });
-      await loadUserData();
-      renderAll();
-      if (currentPage === 'transacciones') renderTxView();
-      showToast('Transacción eliminada');
-    } catch (err) {
-      console.error("Error al eliminar transacción:", err);
-      showToast("Error al eliminar la transacción en el servidor", true);
-    }
-  } else {
-    state.transactions = state.transactions.filter(x => x.id !== editingId);
-    save();
+  try {
+    await TransactionService.deleteTransaction(editingId);
     renderAll();
-    if (currentPage === 'transacciones') renderTxView();
+    if (typeof currentPage !== 'undefined' && currentPage === 'transacciones') renderTxView();
     showToast('Transacción eliminada');
+  } catch (err) {
+    console.error("Error al eliminar transacción:", err);
+    showToast("Error al eliminar la transacción", true);
   }
   closeDeleteModal();
 }

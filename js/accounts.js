@@ -1,6 +1,7 @@
 import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
 import { showToast, formatCurrency, escHtml, getCurrencySymbol, formatMoney } from './utils/utils.js';
 import { apiFetch } from './api/apiClient.js';
+import { accountService } from './services/accountService.js';
 // (Imports cruzados inyectados por refactor)
 
 /* =====================================================
@@ -26,15 +27,11 @@ const ACC_TYPE_COLORS = {
 };
 
 function saveAccounts() {
-  if (!IS_SERVER) {
-    localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(state.accounts));
-  }
+  accountService.saveAccounts();
 }
 
 function initAccounts() {
-  if (state.accounts.length === 0) {
-    saveAccounts();
-  }
+  accountService.initAccounts();
 }
 
 /* ---- Nav entry ---- */
@@ -322,18 +319,9 @@ async function saveMpToken(accountId) {
   }
 
   try {
-    const res = await apiFetch(`/accounts/${accountId}/token`, {
-      method: 'PUT',
-      body: JSON.stringify({ mp_token: tokenVal })
-    });
-
+    const res = await accountService.saveMpToken(accountId, tokenVal);
     if (res && res.ok) {
       showToast('Token de Mercado Pago actualizado');
-      // Actualizar localmente el token de la cuenta
-      const acc = state.accounts.find(x => x.id === accountId);
-      if (acc) {
-        acc.mp_token = tokenVal;
-      }
       renderCuentasView();
     } else {
       showToast(res.error || 'Error al guardar el token', true);
@@ -348,6 +336,7 @@ async function saveMpToken(accountId) {
     }
   }
 }
+}
 
 async function syncWallet(accountId) {
   const btn = document.getElementById(`btnSyncWallet_${accountId}`);
@@ -359,23 +348,14 @@ async function syncWallet(accountId) {
   if (svg) svg.classList.add('spin-anim');
 
   try {
-    const res = await apiFetch(`/accounts/${accountId}/sync`, {
-      method: 'POST'
-    });
-
+    const res = await accountService.syncWallet(accountId);
     if (res && res.ok) {
-      // Actualizar el balance local con el saldo real devuelto por el servidor
-      const acc = state.accounts.find(x => x.id === accountId);
-      if (acc && res.balance !== undefined) {
-        acc.balance = res.balance;
-      }
-
       const msg = `¡Sincronización exitosa! Importados: ${res.imported_count} movimientos` +
                   (res.skipped_count ? ` (${res.skipped_count} ya existían)` : '') +
-                  `\nSaldo actual: $${res.balance?.toLocaleString('es-AR') || '—'}`;
+                  `\nSaldo actual: ${res.balance?.toLocaleString('es-AR') || '—'}`;
       showToast(msg);
       await loadUserData();
-      renderAll();
+      if (typeof renderAll === 'function') renderAll();
       renderCuentasView();
     } else {
       showToast(res.error || 'Error en la sincronización', true);
@@ -472,15 +452,11 @@ function saveMpBalance() {
   const accIdStr = document.getElementById('mpBalanceAccId').value;
   const balanceStr = document.getElementById('mpBalanceInput').value;
   
-  const acc = state.accounts.find(a => a.id === parseInt(accIdStr));
-  if (!acc) return;
-  
   if (balanceStr.trim() === '') {
     showToast('Por favor, ingresá un monto válido', true);
     return;
   }
   
-  // Convertir 11.000,50 a 11000.50
   const cleanStr = balanceStr.replace(/\./g, '').replace(',', '.');
   const newBalance = parseFloat(cleanStr);
   if (isNaN(newBalance)) {
@@ -492,39 +468,25 @@ function saveMpBalance() {
   btn.disabled = true;
   btn.textContent = 'Guardando...';
   
-  acc.balance = newBalance;
-  if (IS_SERVER) {
-    apiFetch(`/accounts/${acc.id}`, {
-      method: 'PUT',
-      body: JSON.stringify(acc)
-    }).then(() => {
-      renderAll();
-      renderCuentasView();
-      closeMpBalanceModal();
-      showToast('Saldo inicial guardado correctamente');
-      btn.disabled = false;
-      btn.textContent = 'Guardar Saldo Inicial';
-    }).catch(e => {
-      showToast('Error al guardar el saldo: ' + e.message, true);
-      btn.disabled = false;
-      btn.textContent = 'Guardar Saldo Inicial';
-    });
-  } else {
-    save();
-    renderAll();
+  accountService.updateAccountBalance(accIdStr, newBalance).then(() => {
+    if (typeof IS_SERVER !== 'undefined' && !IS_SERVER && typeof save === 'function') save();
+    if (typeof renderAll === 'function') renderAll();
     renderCuentasView();
     closeMpBalanceModal();
     showToast('Saldo inicial guardado correctamente');
+  }).catch(e => {
+    showToast('Error al guardar el saldo: ' + e.message, true);
+  }).finally(() => {
     btn.disabled = false;
     btn.textContent = 'Guardar Saldo Inicial';
-  }
+  });
 }
 
 /* ---- Wallet Connection Status ---- */
 
 async function loadWalletStatus(accountId) {
   try {
-    const res = await apiFetch(`/wallets/status/${accountId}`);
+    const res = await accountService.getWalletStatus(accountId);
     if (!res || !res.ok) return;
 
     const badge = document.getElementById(`walletStatusBadge_${accountId}`);
@@ -535,7 +497,6 @@ async function loadWalletStatus(accountId) {
     const oauthPanel = document.getElementById(`walletOAuthPanel_${accountId}`);
 
     if (res.connected) {
-      // Guardar provider en el panel para usarlo al desconectar
       const panelWrap = document.getElementById(`walletPanel_${accountId}`);
       if (panelWrap) {
         panelWrap.dataset.provider = res.provider;
@@ -548,7 +509,6 @@ async function loadWalletStatus(accountId) {
       };
       const providerLabel = providerNames[res.provider] || 'CONECTADA';
 
-      // Billetera conectada: ocultar opciones de conexión, mostrar sync/desconectar
       if (badge) {
         badge.textContent = `🟢 ${providerLabel.toUpperCase()}`;
         badge.style.background = 'rgba(34,197,94,0.12)';
@@ -559,7 +519,6 @@ async function loadWalletStatus(accountId) {
       if (syncPanel) syncPanel.style.display = 'flex';
       if (disconnectPanel) disconnectPanel.style.display = 'block';
 
-      // Mostrar última sincronización
       if (lastSyncEl && res.last_sync_at) {
         const timeAgo = formatTimeAgo(new Date(res.last_sync_at));
         const statusIcon = res.last_sync_status === 'success' ? '✓' : res.last_sync_status === 'error' ? '✗' : '○';
@@ -576,7 +535,6 @@ async function loadWalletStatus(accountId) {
       if (manualPanel) manualPanel.style.display = 'none';
       if (syncPanel) syncPanel.style.display = 'flex';
     } else {
-      // No conectada: mostrar opciones de conexión
       if (badge) {
         badge.textContent = '🔴 DESCONECTADA';
         badge.style.background = 'rgba(239,68,68,0.12)';
@@ -598,16 +556,11 @@ async function disconnectWallet(accountId) {
 
   try {
     const panelWrap = document.getElementById(`walletPanel_${accountId}`);
-    const provider = panelWrap ? panelWrap.dataset.provider : 'mercadopago'; // default fallback
+    const provider = panelWrap ? panelWrap.dataset.provider : 'mercadopago';
     
-    const res = await apiFetch(`/wallets/${provider}/disconnect/${accountId}`, {
-      method: 'POST'
-    });
-
+    const res = await accountService.disconnectWallet(accountId, provider);
     if (res && res.ok) {
       showToast('Billetera desconectada');
-      const acc = state.accounts.find(x => x.id === accountId);
-      if (acc) acc.mp_token = null;
       renderCuentasView();
     } else {
       showToast(res.error || 'Error al desconectar', true);
@@ -626,10 +579,10 @@ async function cleanupDuplicates() {
   }
   
   try {
-    const res = await apiFetch("/transactions/cleanup-duplicates", { method: "POST" });
+    const res = await accountService.cleanupDuplicates();
     showToast(res.message || "Duplicados eliminados.", "success");
-    await loadUserData(); // Recargar la lista y cuentas
-    if (typeof applyTxFilter === "function") applyTxFilter(); // Refrescar la tabla actual
+    await loadUserData();
+    if (typeof applyTxFilter === "function") applyTxFilter();
   } catch (err) {
     showToast("Error al limpiar duplicados: " + err.message, "error");
   }
@@ -872,36 +825,12 @@ async function fetchSuggestedExchangeRate() {
   if (btn) btn.innerHTML = '⏳ Consultando...';
 
   try {
-    let rate = 0;
-    let label = '';
-
-    if ((currFrom === 'USD' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'USD')) {
-      const res = await fetch('https://dolarapi.com/v1/dolares/blue');
-      if (!res.ok) throw new Error('API no disponible');
-      const data = await res.json();
-      if (currFrom === 'USD') {
-        rate = data.compra || data.venta || 1350;
-        label = `Dólar Blue Compra ($${rate})`;
-      } else {
-        rate = data.venta || data.compra || 1350;
-        label = `Dólar Blue Venta ($${rate})`;
-      }
-    } else if ((currFrom === 'EUR' && currTo === 'ARS') || (currFrom === 'ARS' && currTo === 'EUR')) {
-      const res = await fetch('https://dolarapi.com/v1/cotizaciones/eur');
-      if (!res.ok) throw new Error('API no disponible');
-      const data = await res.json();
-      rate = currFrom === 'EUR' ? (data.compra || data.venta) : (data.venta || data.compra);
-      label = `Euro Oficial ($${rate})`;
-    } else if ((currFrom === 'USD' && currTo === 'EUR') || (currFrom === 'EUR' && currTo === 'USD')) {
-      rate = currFrom === 'USD' ? 0.92 : 1.08;
-      label = `Referencia (${rate})`;
-    }
-
-    if (rate > 0) {
+    const suggested = await accountService.getSuggestedExchangeRate(currFrom, currTo);
+    if (suggested && suggested.rate > 0) {
       const rateInput = document.getElementById('cvTransferRate');
       if (rateInput) {
-        rateInput.value = rate;
-        showToast(`✅ Cotización sugerida: ${label}`);
+        rateInput.value = suggested.rate;
+        showToast(`✅ Cotización sugerida: ${suggested.label}`);
         onTransferRateChanged();
       }
     }
@@ -954,9 +883,9 @@ async function doTransfer() {
 
     const type = getConversionRateType(currFrom, currTo);
     if (type === 'USD_ARS') {
-      rateInfo = ` (1 USD = $${rate ? rate.toLocaleString('es-AR') : (currFrom === 'USD' ? (amountTo/amountFrom).toFixed(2) : (amountFrom/amountTo).toFixed(2))} ARS)`;
+      rateInfo = ` (1 USD = ${rate ? rate.toLocaleString('es-AR') : (currFrom === 'USD' ? (amountTo/amountFrom).toFixed(2) : (amountFrom/amountTo).toFixed(2))} ARS)`;
     } else if (type === 'EUR_ARS') {
-      rateInfo = ` (1 EUR = $${rate ? rate.toLocaleString('es-AR') : ''} ARS)`;
+      rateInfo = ` (1 EUR = ${rate ? rate.toLocaleString('es-AR') : ''} ARS)`;
     } else if (rate) {
       rateInfo = ` (1 ${currFrom} = ${rate} ${currTo})`;
     }
@@ -965,67 +894,21 @@ async function doTransfer() {
   const descExpense = `${desc} → ${toAcc.name}${rateInfo}`;
   const descIncome = `${desc} ← ${fromAcc.name}${rateInfo}`;
 
-  if (IS_SERVER) {
-    try {
-      const dateStr = new Date().toISOString().split('T')[0];
-      const linkId = Date.now();
-
-      await apiFetch('/transactions', {
-        method: 'POST',
-        body: JSON.stringify({
-          account_id: fromId,
-          type: 'expense',
-          desc: descExpense,
-          amount: amountFrom,
-          cat: 'Otros',
-          date: dateStr,
-          transfer_id: linkId
-        })
-      });
-
-      await apiFetch('/transactions', {
-        method: 'POST',
-        body: JSON.stringify({
-          account_id: toId,
-          type: 'income',
-          desc: descIncome,
-          amount: amountTo,
-          cat: 'Otros',
-          date: dateStr,
-          transfer_id: linkId
-        })
-      });
-
-      if (window.loadUserData) {
-        await window.loadUserData();
-      }
-
-      document.getElementById('cvTransferAmount').value = '';
-      if (document.getElementById('cvTransferAmountTo')) document.getElementById('cvTransferAmountTo').value = '';
-      document.getElementById('cvTransferDesc').value = '';
-      renderCuentasView();
-      showToast(`✅ Transferencia realizada: ${formatMoney(amountFrom, currFrom)} → ${formatMoney(amountTo, currTo)}`);
-    } catch (err) {
-      console.error(err);
-      showToast('⚠️ Error al realizar la transferencia en el servidor', true);
+  try {
+    const res = await accountService.doTransfer(fromId, toId, amountFrom, amountTo, descExpense, descIncome);
+    if (res && res.local && typeof save === 'function') {
+      save();
+    } else if (res && res.ok && window.loadUserData) {
+      await window.loadUserData();
     }
-  } else {
-    fromAcc.balance -= amountFrom;
-    toAcc.balance += amountTo;
-    saveAccounts();
-
-    const dateStr = new Date().toISOString().split('T')[0];
-    const linkId = Date.now();
-    state.transactions.unshift({ id: linkId, type: 'expense', desc: descExpense, amount: amountFrom, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
-    state.transactions.unshift({ id: linkId + 1, type: 'income', desc: descIncome, amount: amountTo, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
-    save();
-
     document.getElementById('cvTransferAmount').value = '';
     if (document.getElementById('cvTransferAmountTo')) document.getElementById('cvTransferAmountTo').value = '';
     document.getElementById('cvTransferDesc').value = '';
-
     renderCuentasView();
     showToast(`✅ Transferencia realizada: ${formatMoney(amountFrom, currFrom)} → ${formatMoney(amountTo, currTo)}`);
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Error al realizar la transferencia', true);
   }
 }
 
@@ -1097,54 +980,18 @@ async function saveAccount() {
 
   const payload = { name, type, bank, balance, currency, limit, notes };
 
-  if (IS_SERVER) {
-    try {
-      if (editingAccountId) {
-        const res = await apiFetch(`/accounts/${editingAccountId}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload)
-        });
-        if (res && res.ok) {
-          const idx = state.accounts.findIndex(x => x.id === editingAccountId);
-          if (idx > -1) {
-            state.accounts[idx] = res.account;
-            renderCuentasView();
-            showToast('✏️ Cuenta actualizada');
-          }
-        }
-      } else {
-        const res = await apiFetch('/accounts', {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        if (res && res.ok) {
-          state.accounts.push(res.account);
-          selectedAccountId = res.account.id;
-          renderCuentasView();
-          showToast('✅ Cuenta creada');
-        }
+  try {
+    const res = await accountService.saveAccount(payload, editingAccountId);
+    if (res && res.ok) {
+      if (!editingAccountId) {
+        selectedAccountId = res.account.id;
       }
-    } catch (err) {
-      console.error(err);
-      showToast('⚠️ Error al guardar en el servidor', true);
-    }
-  } else {
-    if (editingAccountId) {
-      const idx = state.accounts.findIndex(x => x.id === editingAccountId);
-      if (idx > -1) {
-        state.accounts[idx] = { ...state.accounts[idx], name, type, bank, balance, currency, limit, notes };
-        saveAccounts();
-        renderCuentasView();
-        showToast('✏️ Cuenta actualizada');
-      }
-    } else {
-      const newA = { id: Date.now(), name, type, bank, balance, currency, limit, notes };
-      state.accounts.push(newA);
-      selectedAccountId = newA.id;
-      saveAccounts();
       renderCuentasView();
-      showToast('✅ Cuenta creada');
+      showToast(editingAccountId ? '✏️ Cuenta actualizada' : '✅ Cuenta creada');
     }
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Error al guardar', true);
   }
   closeAccModal();
 }
@@ -1165,31 +1012,20 @@ function closeAccDeleteModal(e) {
 }
 
 async function doDeleteAccount() {
-  if (IS_SERVER) {
-    try {
-      const res = await apiFetch(`/accounts/${editingAccountId}`, {
-        method: 'DELETE'
-      });
-      if (res && res.ok) {
-        // En lugar de mutar localmente, recargamos la data real del servidor
-        // para que desaparezcan las transacciones que el backend eliminó en cascada
+  try {
+    const res = await accountService.deleteAccount(editingAccountId);
+    if (res && res.ok) {
+      if (typeof IS_SERVER !== 'undefined' && IS_SERVER && typeof loadUserData === 'function') {
         await loadUserData();
-        
-        if (selectedAccountId === editingAccountId) selectedAccountId = state.accounts[0]?.id || null;
-        renderCuentasView();
-        renderAll();
-        showToast('🗑️ Cuenta eliminada');
       }
-    } catch (err) {
-      console.error(err);
-      showToast('⚠️ Error al eliminar en el servidor', true);
+      if (selectedAccountId === editingAccountId) selectedAccountId = state.accounts[0]?.id || null;
+      renderCuentasView();
+      if (typeof IS_SERVER !== 'undefined' && IS_SERVER && typeof renderAll === 'function') renderAll();
+      showToast('🗑️ Cuenta eliminada');
     }
-  } else {
-    state.accounts = state.accounts.filter(x => x.id !== editingAccountId);
-    if (selectedAccountId === editingAccountId) selectedAccountId = state.accounts[0]?.id || null;
-    saveAccounts();
-    renderCuentasView();
-    showToast('🗑️ Cuenta eliminada');
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Error al eliminar', true);
   }
   closeAccDeleteModal();
 }

@@ -1,6 +1,6 @@
-import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { state } from './store/store.js';
 import { showToast, formatCurrency } from './utils/utils.js';
-import { apiFetch } from './api/apiClient.js';
+import * as budgetService from './services/budgetService.js';
 // (Imports cruzados inyectados por refactor)
 
 /* =====================================================
@@ -62,13 +62,11 @@ let bmEditingId = null;
 const BUDGET_EMOJIS = ['🛒', '🍕', '🚗', '🏠', '🎬', '💊', '🛍️', '📚', '📦', '🍔', '☕', '🏋️', '💡', '🎮', '🐾', '✈️'];
 
 function saveBudgets() {
-  localStorage.setItem(userKey('flujo_budgets'), JSON.stringify(state.budgets));
+  budgetService.saveBudgetsLocal();
 }
 
 function initBudgets() {
-  if (state.budgets.length === 0) {
-    saveBudgets();
-  }
+  budgetService.initBudgets();
 }
 
 /* --- Nav entry --- */
@@ -445,61 +443,30 @@ async function saveBudget() {
   if (!cat) { showToast('⚠️ Seleccioná una categoría', true); return; }
   if (!limit || limit <= 0) { showToast('⚠️ Ingresá un límite válido', true); return; }
 
-  if (IS_SERVER) {
-    try {
-      if (bmEditingId) {
-        await apiFetch(`/budgets/${bmEditingId}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            cat,
-            name: cat,
-            limit,
-            icon,
-            color: bmSelectedColor,
-            notes: notes || null
-          })
-        });
-        showToast('Presupuesto actualizado');
-      } else {
-        await apiFetch('/budgets', {
-          method: 'POST',
-          body: JSON.stringify({
-            cat,
-            name: cat,
-            limit,
-            icon,
-            color: bmSelectedColor,
-            notes: notes || null
-          })
-        });
-        showToast('Presupuesto creado');
-      }
-      await loadUserData();
-      renderBudgetView();
-      renderBudgets();
-    } catch (err) {
-      console.error("Error al guardar presupuesto:", err);
-      showToast("Error al guardar presupuesto en el servidor", true);
-    }
-  } else {
+  try {
+    const budgetData = {
+      cat,
+      name: cat,
+      limit,
+      icon,
+      color: bmSelectedColor,
+      notes: notes || null
+    };
+
     if (bmEditingId) {
-      const idx = state.budgets.findIndex(x => x.id === bmEditingId);
-      if (idx > -1) {
-        state.budgets[idx] = { ...state.budgets[idx], cat, name: cat, limit, icon, color: bmSelectedColor, notes };
-        saveBudgets();
-        renderBudgetView();
-        renderBudgets();
-        showToast('Presupuesto actualizado');
-      }
+      await budgetService.updateBudget(bmEditingId, budgetData);
+      showToast('Presupuesto actualizado');
     } else {
-      const newB = { id: Date.now(), cat, name: cat, limit, icon, color: bmSelectedColor, notes };
-      state.budgets.push(newB);
-      saveBudgets();
-      renderBudgetView();
-      renderBudgets();
+      await budgetService.createBudget(budgetData);
       showToast('Presupuesto creado');
     }
+    renderBudgetView();
+    renderBudgets();
+  } catch (err) {
+    console.error("Error al guardar presupuesto:", err);
+    showToast("Error al guardar presupuesto", true);
   }
+
   closeBudgetModal();
 }
 
@@ -519,25 +486,14 @@ function closeBudgetDeleteModal(e) {
 }
 
 async function doDeleteBudget() {
-  if (IS_SERVER) {
-    try {
-      await apiFetch(`/budgets/${bmEditingId}`, {
-        method: 'DELETE'
-      });
-      await loadUserData();
-      renderBudgetView();
-      renderBudgets();
-      showToast('Presupuesto eliminado');
-    } catch (err) {
-      console.error("Error al eliminar presupuesto:", err);
-      showToast("Error al eliminar presupuesto en el servidor", true);
-    }
-  } else {
-    state.budgets = state.budgets.filter(x => x.id !== bmEditingId);
-    saveBudgets();
+  try {
+    await budgetService.deleteBudget(bmEditingId);
     renderBudgetView();
     renderBudgets();
     showToast('Presupuesto eliminado');
+  } catch (err) {
+    console.error("Error al eliminar presupuesto:", err);
+    showToast("Error al eliminar presupuesto", true);
   }
   closeBudgetDeleteModal();
 }

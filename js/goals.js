@@ -1,6 +1,6 @@
-import { state, IS_SERVER, API_BASE, userKey } from './store/store.js';
+import { state } from './store/store.js';
 import { showToast, formatCurrency, escHtml, formatDate, formatDateLong } from './utils/utils.js';
-import { apiFetch } from './api/apiClient.js';
+import * as goalService from './services/goalService.js';
 // (Imports cruzados inyectados por refactor)
 
 /* =====================================================
@@ -17,12 +17,8 @@ const GOAL_COLORS = ['#00e5a0', '#00c8ff', '#a855f7', '#f59e0b', '#ef4444', '#ec
 const GOAL_EMOJIS = ['🎯', '✈️', '🏠', '🚗', '💰', '📚', '💻', '🏖️', '💍', '🎓', '🏋️', '🎸', '📈', '💊', '🛍️', '🐾'];
 const GOAL_CAT_EMOJIS = { 'Viaje': '✈️', 'Ahorro': '💰', 'Hogar': '🏠', 'Vehículo': '🚗', 'Educación': '📚', 'Tecnología': '💻', 'Inversión': '📈', 'Salud': '💊', 'Otro': '🎯' };
 
-function saveGoals() { localStorage.setItem(userKey('flujo_goals'), JSON.stringify(state.goals)); }
-
 function initGoals() {
-  if (state.goals.length === 0) {
-    saveGoals();
-  }
+  goalService.initGoals();
 }
 
 /* ---- Entry ---- */
@@ -421,62 +417,27 @@ async function saveGoal() {
   if (!name) { showToast('⚠️ Ingresá un nombre', true); return; }
   if (!target || target <= 0) { showToast('⚠️ Ingresá una meta válida', true); return; }
 
-  if (IS_SERVER) {
-    try {
-      if (editingGoalId) {
-        await apiFetch(`/goals/${editingGoalId}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            name,
-            target,
-            current,
-            deadline: deadline || null,
-            cat,
-            notes: notes || null,
-            emoji: gmSelectedEmoji,
-            color: gmSelectedColor,
-            status: 'active'
-          })
-        });
-        showToast('Objetivo actualizado');
-      } else {
-        await apiFetch('/goals', {
-          method: 'POST',
-          body: JSON.stringify({
-            name,
-            target,
-            current,
-            deadline: deadline || null,
-            cat,
-            notes: notes || null,
-            emoji: gmSelectedEmoji,
-            color: gmSelectedColor,
-            status: 'active'
-          })
-        });
-        showToast('Objetivo creado');
-      }
-      if (window.loadUserData) await window.loadUserData();
-      renderObjetivosView();
-    } catch (err) {
-      console.error("Error al guardar objetivo:", err);
-      showToast("Error al guardar objetivo en el servidor", true);
-    }
-  } else {
+  const goalData = {
+    name, target, current,
+    deadline: deadline || null,
+    cat, notes: notes || null,
+    emoji: gmSelectedEmoji, color: gmSelectedColor
+  };
+
+  try {
     if (editingGoalId) {
-      const idx = state.goals.findIndex(x => x.id === editingGoalId);
-      if (idx > -1) {
-        state.goals[idx] = { ...state.goals[idx], name, target, current, deadline, cat, notes, emoji: gmSelectedEmoji, color: gmSelectedColor };
-        saveGoals(); renderObjetivosView();
-        showToast('Objetivo actualizado');
-      }
+      await goalService.updateGoal(editingGoalId, goalData);
+      showToast('Objetivo actualizado');
     } else {
-      state.goals.push({ id: Date.now(), name, target, current, deadline, cat, notes, emoji: gmSelectedEmoji, color: gmSelectedColor, contributions: [], status: 'active' });
-      saveGoals(); renderObjetivosView();
+      await goalService.createGoal(goalData);
       showToast('Objetivo creado');
     }
+    renderObjetivosView();
+    closeGoalModal();
+  } catch (err) {
+    console.error("Error al guardar objetivo:", err);
+    showToast("Error al guardar objetivo", true);
   }
-  closeGoalModal();
 }
 
 /* ---- Contribute modal ---- */
@@ -527,65 +488,26 @@ async function saveContrib() {
   if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
   if (!date) { showToast('⚠️ Seleccioná una fecha', true); return; }
 
-  const idx = state.goals.findIndex(x => x.id === contribGoalId);
-  if (idx < 0) return;
-
-  if (IS_SERVER) {
-    try {
-      await apiFetch(`/goals/${contribGoalId}/contributions`, {
-        method: 'POST',
-        body: JSON.stringify({
-          amount,
-          date,
-          note: note || null
-        })
-      });
-      if (window.loadUserData) await window.loadUserData();
-      renderObjetivosView();
-      openContribModal(contribGoalId);
-      showToast(`Aportado $${amount.toLocaleString('es-AR')}`);
-    } catch (err) {
-      console.error("Error al guardar aporte:", err);
-      showToast("Error al registrar aporte en el servidor", true);
-    }
-  } else {
-    if (!state.goals[idx].contributions) state.goals[idx].contributions = [];
-    state.goals[idx].contributions.push({ id: Date.now(), amount, date, note });
-    state.goals[idx].current += amount;
-
-    saveGoals();
+  try {
+    await goalService.addContribution(contribGoalId, amount, date, note);
     renderObjetivosView();
-    openContribModal(contribGoalId); // refresh history in modal
+    openContribModal(contribGoalId);
     showToast(`Aportado $${amount.toLocaleString('es-AR')}`);
+  } catch (err) {
+    console.error("Error al guardar aporte:", err);
+    showToast("Error al registrar aporte", true);
   }
 }
 
 async function deleteContrib(goalId, contribId) {
-  const idx = state.goals.findIndex(x => x.id === goalId);
-  if (idx < 0) return;
-
-  if (IS_SERVER) {
-    try {
-      await apiFetch(`/goals/${goalId}/contributions/${contribId}`, {
-        method: 'DELETE'
-      });
-      if (window.loadUserData) await window.loadUserData();
-      renderObjetivosView();
-      openContribModal(goalId);
-      showToast('Aporte eliminado');
-    } catch (err) {
-      console.error("Error al eliminar aporte:", err);
-      showToast("Error al eliminar aporte en el servidor", true);
-    }
-  } else {
-    const c = state.goals[idx].contributions.find(x => x.id === contribId);
-    if (!c) return;
-    state.goals[idx].current = Math.max(state.goals[idx].current - c.amount, 0);
-    state.goals[idx].contributions = state.goals[idx].contributions.filter(x => x.id !== contribId);
-    saveGoals();
+  try {
+    await goalService.removeContribution(goalId, contribId);
     renderObjetivosView();
     openContribModal(goalId);
     showToast('Aporte eliminado');
+  } catch (err) {
+    console.error("Error al eliminar aporte:", err);
+    showToast("Error al eliminar aporte", true);
   }
 }
 
@@ -605,22 +527,13 @@ function closeGoalDeleteModal(e) {
 }
 
 async function doDeleteGoal() {
-  if (IS_SERVER) {
-    try {
-      await apiFetch(`/goals/${editingGoalId}`, {
-        method: 'DELETE'
-      });
-      if (window.loadUserData) await window.loadUserData();
-      renderObjetivosView();
-      showToast('Objetivo eliminado');
-    } catch (err) {
-      console.error("Error al eliminar objetivo:", err);
-      showToast("Error al eliminar objetivo en el servidor", true);
-    }
-  } else {
-    state.goals = state.goals.filter(x => x.id !== editingGoalId);
-    saveGoals(); renderObjetivosView();
+  try {
+    await goalService.deleteGoal(editingGoalId);
+    renderObjetivosView();
     showToast('Objetivo eliminado');
+  } catch (err) {
+    console.error("Error al eliminar objetivo:", err);
+    showToast("Error al eliminar objetivo", true);
   }
   closeGoalDeleteModal();
 }
@@ -651,7 +564,6 @@ window.renderOvTip = renderOvTip;
 window.daysLeft = daysLeft;
 window.saveGoal = saveGoal;
 window.renderOvSummary = renderOvSummary;
-window.saveGoals = saveGoals;
 window.saveContrib = saveContrib;
 window.selectGmEmoji = selectGmEmoji;
 window.renderOvCards = renderOvCards;

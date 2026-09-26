@@ -1,28 +1,27 @@
 # Refactorización del Backend: SOLID y PHAME en `budgets`
 
 ## Resumen de Cambios
-Como parte de la implementación del plan de mantenibilidad, hemos refactorizado el módulo de presupuestos (`budgets.py`) en el backend (FastAPI) para alinearlo con los estándares de Google y los principios **SOLID** y **PHAME**.
+Como parte de la implementación del plan de mantenibilidad, hemos refactorizado los módulos base del backend (`budgets.py`, `goals.py`, `transactions.py` y `accounts.py`) para alinearlos con los estándares de Google y los principios **SOLID** y **PHAME**.
 
 ## Detalles de la Refactorización
 
 ### 1. Inversión de Dependencias y Segregación de Interfaces (DIP e ISP)
-**Antes**: El enrutador dependía directamente de `sqlalchemy.orm.Session`.
+**Antes**: Todos los enrutadores dependían directamente de `sqlalchemy.orm.Session`.
 **Ahora**: 
-- Creamos una interfaz `IBudgetRepository` (`api/ports/repositories/budget_repository_port.py`) usando `typing.Protocol`.
-- Creamos una implementación concreta `SQLAlchemyBudgetRepository` (`api/infrastructure/repositories/sqlalchemy_budget_repository.py`).
-- Esto significa que la lógica de negocio ya no sabe qué base de datos estamos usando. Podríamos cambiar a MongoDB en el futuro escribiendo un nuevo repositorio sin tocar el resto del código.
+- Creamos interfaces (`ports/repositories/`) para cada modelo de negocio: `IBudgetRepository`, `IGoalRepository`, `ITransactionRepository`, `IAccountRepository` y `IWalletRepository`.
+- Creamos sus implementaciones concretas en `infrastructure/repositories/`.
+- Esto desacopla el negocio de la base de datos SQL.
 
 ### 2. Responsabilidad Única (SRP) y Jerarquía (PHAME)
-**Antes**: `api/routers/budgets.py` hacía tres cosas: recibía la petición web, aplicaba reglas de negocio (crear y preparar los modelos) y operaba la base de datos (`db.commit()`, `db.add()`).
+**Antes**: Los enrutadores hacían 3 cosas: recibir HTTP, aplicar reglas de negocio, y operar la DB. Por ejemplo, `transactions.py` modificaba directamente los saldos de `Account`.
 **Ahora**:
-- Dividimos la lógica en capas estrictas:
-  - **Capa de Infraestructura (Router)**: `api/routers/budgets.py` solo se encarga de recibir peticiones HTTP y retornar respuestas JSON.
-  - **Capa de Negocio (Service)**: `api/services/budget_service.py` (`BudgetService`) contiene toda la lógica de validación y transformación de modelos.
+- Dividimos la lógica en capas estrictas inyectadas a través de `infrastructure/dependencies.py`:
+  - **Capa de Infraestructura (Router)**: Enrutadores limpios y delegados.
+  - **Capa de Negocio (Service)**: Por ejemplo, `TransactionService` recibe inyectados tanto `ITransactionRepository` como `IAccountRepository` para actualizar los saldos limpiamente sin tocar SQL. 
   - **Capa de Acceso a Datos (Repository)**: Encargada puramente de la persistencia (SQLAlchemy).
 
 ### 3. Configuración de Análisis Estático
 - Se creó el archivo `pyproject.toml` en la raíz del proyecto para definir las reglas de linting y métricas utilizando `Ruff`, `MyPy` y `Radon`. 
-- Esto garantizará que todo el código futuro de Python se someta a mediciones de complejidad ciclomática automáticas.
 
 ## Próximos pasos
-El resto de los enrutadores (ej. `goals.py`, `transactions.py`) deberán seguir esta misma estructura en el futuro cercano para asegurar un Índice de Mantenibilidad (Maintainability Index) superior a 65 en toda la aplicación.
+Refactorizar la lógica masiva de sincronización (`sync_account_transactions` en `accounts.py`) hacia un `SyncService` especializado.

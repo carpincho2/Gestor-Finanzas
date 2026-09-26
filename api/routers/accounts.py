@@ -10,73 +10,33 @@ from models import Account, Transaction, WalletConnection, SyncLog, User
 from schemas import AccountCreate, AccountUpdate, AccountTokenRequest
 from security import get_current_user_id, token_crypto
 from wallet_adapters import get_adapter
+from infrastructure.dependencies import get_account_service
+from services.account_service import AccountService
 
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
 
 @router.get("")
-async def get_accounts(request: Request, db: Session = Depends(get_db)):
+async def get_accounts(request: Request, service: AccountService = Depends(get_account_service)):
     user_id = get_current_user_id(request)
-    accs = db.query(Account).filter(Account.user_id == user_id).all()
+    accs = service.get_user_accounts(user_id)
     return {"ok": True, "accounts": accs}
 
 @router.post("", status_code=201)
-async def create_account(payload: AccountCreate, request: Request, db: Session = Depends(get_db)):
+async def create_account(payload: AccountCreate, request: Request, service: AccountService = Depends(get_account_service)):
     user_id = get_current_user_id(request)
-    new_acc = Account(
-        user_id=user_id,
-        name=payload.name.strip(),
-        type=payload.type,
-        bank=payload.bank.strip() if payload.bank else None,
-        balance=payload.balance,
-        currency=payload.currency,
-        limit=payload.limit,
-        notes=payload.notes.strip() if payload.notes else None,
-        mp_token=payload.mp_token.strip() if payload.mp_token else None
-    )
-    db.add(new_acc)
-    db.commit()
-    db.refresh(new_acc)
+    new_acc = service.create_account(user_id, payload)
     return {"ok": True, "account": new_acc}
 
 @router.put("/{id}")
-async def update_account(id: int, payload: AccountUpdate, request: Request, db: Session = Depends(get_db)):
+async def update_account(id: int, payload: AccountUpdate, request: Request, service: AccountService = Depends(get_account_service)):
     user_id = get_current_user_id(request)
-    acc = db.query(Account).filter(Account.id == id, Account.user_id == user_id).first()
-    if not acc:
-        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
-    
-    acc.name = payload.name.strip()
-    acc.type = payload.type
-    acc.bank = payload.bank.strip() if payload.bank else None
-    acc.balance = payload.balance
-    acc.currency = payload.currency
-    acc.limit = payload.limit
-    acc.notes = payload.notes.strip() if payload.notes else None
-    acc.mp_token = payload.mp_token.strip() if payload.mp_token else None
-    
-    db.commit()
-    db.refresh(acc)
+    acc = service.update_account(id, user_id, payload)
     return {"ok": True, "account": acc}
 
 @router.delete("/{id}")
-async def delete_account(id: int, request: Request, db: Session = Depends(get_db)):
+async def delete_account(id: int, request: Request, service: AccountService = Depends(get_account_service)):
     user_id = get_current_user_id(request)
-    acc = db.query(Account).filter(Account.id == id, Account.user_id == user_id).first()
-    if not acc:
-        raise HTTPException(status_code=404, detail="Cuenta no encontrada")
-    
-    db.query(Transaction).filter(
-        Transaction.account_id == id, 
-        Transaction.user_id == user_id
-    ).delete()
-
-    db.query(WalletConnection).filter(
-        WalletConnection.account_id == id,
-        WalletConnection.user_id == user_id
-    ).delete()
-    
-    db.delete(acc)
-    db.commit()
+    service.delete_account(id, user_id)
     return {"ok": True, "message": "Cuenta eliminada"}
 
 @router.put("/{id}/token")

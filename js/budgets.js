@@ -320,23 +320,29 @@ function renderBvTip(spentByCat) {
 
 /* --- Budget Modal --- */
 function openBudgetModal(id) {
+  if (typeof id === 'object') id = null;
   bmEditingId = id || null;
   bmSelectedColor = BM_COLORS[0];
   bmSelectedIcon = '📦';
 
   // Build emoji grid
-  document.getElementById('bmEmojiGrid').innerHTML = BUDGET_EMOJIS.map(e => `
-    <button class="ov-emoji-btn ${e === bmSelectedIcon ? 'active' : ''}" onclick="selectBmEmoji('${e}')">${e}</button>
-  `).join('');
+  const emojiGrid = document.getElementById('bmEmojiGrid');
+  if (emojiGrid) {
+    emojiGrid.innerHTML = BUDGET_EMOJIS.map(e => `
+      <button class="ov-emoji-btn ${e === bmSelectedIcon ? 'active' : ''}" onclick="selectBmEmoji('${e}')">${e}</button>
+    `).join('');
+  }
 
   // Build color grid
   const grid = document.getElementById('bmColorGrid');
-  grid.innerHTML = BM_COLORS.map(c => `
-    <div class="bv-color-swatch ${c === bmSelectedColor ? 'selected' : ''}"
-         style="background:${c};"
-         onclick="selectBmColor('${c}')">
-    </div>
-  `).join('');
+  if (grid) {
+    grid.innerHTML = BM_COLORS.map(c => `
+      <div class="bv-color-swatch ${c === bmSelectedColor ? 'selected' : ''}"
+           style="background:${c};"
+           onclick="selectBmColor('${c}')">
+      </div>
+    `).join('');
+  }
 
   if (id) {
     const b = state.budgets.find(x => x.id === id);
@@ -345,11 +351,11 @@ function openBudgetModal(id) {
     document.getElementById('bmSaveBtn').textContent = 'Guardar cambios';
     document.getElementById('bmName').value = b.name || b.cat;
     document.getElementById('bmCat').value = b.cat;
-    updateCustomSelectDisplay(document.getElementById('bmCat'));
+    if (window.updateCustomSelectDisplay) window.updateCustomSelectDisplay(document.getElementById('bmCat'));
     const isCustomCat = !['Supermercado / Almacén', 'Salidas / Restaurantes', 'Transporte', 'Hogar / Servicios', 'Entretenimiento / Suscripciones', 'Salud / Farmacia', 'Compras / Ropa', 'Educación', 'Otros'].includes(b.cat);
     if (isCustomCat) {
       document.getElementById('bmCat').value = 'custom';
-      updateCustomSelectDisplay(document.getElementById('bmCat'));
+      if (window.updateCustomSelectDisplay) window.updateCustomSelectDisplay(document.getElementById('bmCat'));
       document.getElementById('bmCustomWrap').style.display = '';
       document.getElementById('bmCustomName').value = b.cat;
     } else {
@@ -360,26 +366,35 @@ function openBudgetModal(id) {
     bmSelectedColor = b.color;
     bmSelectedIcon = b.icon || '📦';
     // Update emoji grid selection
-    document.getElementById('bmEmojiGrid').innerHTML = BUDGET_EMOJIS.map(e => `
-      <button class="ov-emoji-btn ${e === bmSelectedIcon ? 'active' : ''}" onclick="selectBmEmoji('${e}')">${e}</button>
-    `).join('');
+    if (emojiGrid) {
+      emojiGrid.innerHTML = BUDGET_EMOJIS.map(e => `
+        <button class="ov-emoji-btn ${e === bmSelectedIcon ? 'active' : ''}" onclick="selectBmEmoji('${e}')">${e}</button>
+      `).join('');
+    }
     // Update swatch selection
-    grid.querySelectorAll('.bv-color-swatch').forEach(sw => {
-      sw.classList.toggle('selected', sw.style.background === b.color || sw.style.backgroundColor === b.color);
-    });
+    if (grid) {
+      grid.querySelectorAll('.bv-color-swatch').forEach(sw => {
+        sw.classList.toggle('selected', sw.style.background === b.color || sw.style.backgroundColor === b.color);
+      });
+    }
   } else {
     document.getElementById('budgetModalTitle').textContent = 'Nuevo Presupuesto';
     document.getElementById('bmSaveBtn').textContent = 'Crear Presupuesto';
     document.getElementById('bmName').value = '';
     document.getElementById('bmCat').value = 'Supermercado / Almacén';
-    updateCustomSelectDisplay(document.getElementById('bmCat'));
+    if (window.updateCustomSelectDisplay) window.updateCustomSelectDisplay(document.getElementById('bmCat'));
     document.getElementById('bmCustomWrap').style.display = 'none';
     document.getElementById('bmCustomName').value = '';
     document.getElementById('bmLimit').value = '';
     document.getElementById('bmNotes').value = '';
   }
 
-  document.getElementById('budgetModalOverlay').classList.add('open');
+  const modalOverlay = document.getElementById('budgetModalOverlay');
+  if (modalOverlay) {
+    modalOverlay.classList.add('open');
+  } else {
+    console.error("budgetModalOverlay not found in DOM");
+  }
 }
 
 function selectBmColor(color) {

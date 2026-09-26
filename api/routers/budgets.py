@@ -1,61 +1,31 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-from sqlalchemy.orm import Session
-
-from database import get_db
-from models import Budget
+from fastapi import APIRouter, Depends, Request
 from schemas import BudgetCreate
 from security import get_current_user_id
+from infrastructure.dependencies import get_budget_service
+from services.budget_service import BudgetService
 
 router = APIRouter(prefix="/api/budgets", tags=["budgets"])
 
 @router.get("")
-async def get_budgets(request: Request, db: Session = Depends(get_db)):
+async def get_budgets(request: Request, service: BudgetService = Depends(get_budget_service)):
     user_id = get_current_user_id(request)
-    bgts = db.query(Budget).filter(Budget.user_id == user_id).all()
+    bgts = service.get_user_budgets(user_id)
     return {"ok": True, "budgets": bgts}
 
 @router.post("", status_code=201)
-async def create_budget(payload: BudgetCreate, request: Request, db: Session = Depends(get_db)):
+async def create_budget(payload: BudgetCreate, request: Request, service: BudgetService = Depends(get_budget_service)):
     user_id = get_current_user_id(request)
-    new_bgt = Budget(
-        user_id=user_id,
-        cat=payload.cat,
-        name=payload.name.strip(),
-        icon=payload.icon,
-        limit=payload.limit,
-        color=payload.color,
-        notes=payload.notes.strip() if payload.notes else None
-    )
-    db.add(new_bgt)
-    db.commit()
-    db.refresh(new_bgt)
+    new_bgt = service.create_budget(user_id, payload)
     return {"ok": True, "budget": new_bgt}
 
 @router.put("/{id}")
-async def update_budget(id: int, payload: BudgetCreate, request: Request, db: Session = Depends(get_db)):
+async def update_budget(id: int, payload: BudgetCreate, request: Request, service: BudgetService = Depends(get_budget_service)):
     user_id = get_current_user_id(request)
-    bgt = db.query(Budget).filter(Budget.id == id, Budget.user_id == user_id).first()
-    if not bgt:
-        raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
-        
-    bgt.cat = payload.cat
-    bgt.name = payload.name.strip()
-    bgt.icon = payload.icon
-    bgt.limit = payload.limit
-    bgt.color = payload.color
-    bgt.notes = payload.notes.strip() if payload.notes else None
-    
-    db.commit()
-    db.refresh(bgt)
+    bgt = service.update_budget(id, user_id, payload)
     return {"ok": True, "budget": bgt}
 
 @router.delete("/{id}")
-async def delete_budget(id: int, request: Request, db: Session = Depends(get_db)):
+async def delete_budget(id: int, request: Request, service: BudgetService = Depends(get_budget_service)):
     user_id = get_current_user_id(request)
-    bgt = db.query(Budget).filter(Budget.id == id, Budget.user_id == user_id).first()
-    if not bgt:
-        raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
-        
-    db.delete(bgt)
-    db.commit()
+    service.delete_budget(id, user_id)
     return {"ok": True, "message": "Presupuesto eliminado"}

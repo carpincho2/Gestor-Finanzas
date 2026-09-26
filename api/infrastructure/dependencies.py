@@ -18,3 +18,12 @@ def get_auth_use_cases(user_repo: SQLAlchemyUserRepository = Depends(get_user_re
 
 def get_sepa_use_cases(price_repo: SQLAlchemyPriceRepository = Depends(get_price_repository)) -> SepaUseCases:
     return SepaUseCases(price_repo)
+
+from infrastructure.repositories.sqlalchemy_budget_repository import SQLAlchemyBudgetRepository
+from services.budget_service import BudgetService
+
+def get_budget_repository(db: Session = Depends(get_db)) -> SQLAlchemyBudgetRepository:
+    return SQLAlchemyBudgetRepository(db)
+
+def get_budget_service(budget_repo: SQLAlchemyBudgetRepository = Depends(get_budget_repository)) -> BudgetService:
+    return BudgetService(budget_repo)

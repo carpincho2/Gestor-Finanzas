@@ -18,3 +18,9 @@ class IWalletRepository(Protocol):
 
     def create_sync_log(self, log: SyncLog) -> SyncLog:
         ...
+
+    def get_active_by_provider(self, user_id: int, provider: str) -> Optional[WalletConnection]:
+        ...
+
+    def get_any_active_by_provider(self, provider: str) -> Optional[WalletConnection]:
+        ...

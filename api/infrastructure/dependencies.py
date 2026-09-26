@@ -66,4 +66,12 @@ def get_account_service(
 ) -> AccountService:
     return AccountService(account_repo, tx_repo, wallet_repo, user_repo)
 
+from services.shopping_service import ShoppingService
+
+def get_shopping_service(
+    account_repo: SQLAlchemyAccountRepository = Depends(get_account_repository),
+    wallet_repo: SQLAlchemyWalletRepository = Depends(get_wallet_repository)
+) -> ShoppingService:
+    return ShoppingService(account_repo, wallet_repo)
+
 

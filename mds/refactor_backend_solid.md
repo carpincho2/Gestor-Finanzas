@@ -25,3 +25,7 @@ Como parte de la implementación del plan de mantenibilidad, hemos refactorizado
 
 ## Próximos pasos
 Refactorizar la lógica masiva de sincronización (`sync_account_transactions` en `accounts.py`) hacia un `SyncService` especializado.
+
+### Actualización Reciente
+- Se refactorizó `shopping.py` para usar `ShoppingService` inyectado a través de `dependencies.py`, aislando la lógica de búsqueda en Mercado Libre, la evaluación de recomendaciones de pago y el parseo de URLs, de acuerdo a Clean Architecture.
+- Se agregaron métodos `get_active_by_provider` y `get_any_active_by_provider` en `IWalletRepository` y `SQLAlchemyWalletRepository` para interactuar con las billeteras sin depender directamente de SQLAlchemy `Session` en el enrutador.

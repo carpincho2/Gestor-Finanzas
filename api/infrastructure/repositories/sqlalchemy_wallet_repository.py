@@ -40,3 +40,16 @@ class SQLAlchemyWalletRepository(IWalletRepository):
         self.db.commit()
         self.db.refresh(log)
         return log
+
+    def get_active_by_provider(self, user_id: int, provider: str) -> Optional[WalletConnection]:
+        return self.db.query(WalletConnection).filter(
+            WalletConnection.user_id == user_id,
+            WalletConnection.provider == provider,
+            WalletConnection.status == "active"
+        ).first()
+
+    def get_any_active_by_provider(self, provider: str) -> Optional[WalletConnection]:
+        return self.db.query(WalletConnection).filter(
+            WalletConnection.provider == provider,
+            WalletConnection.status == "active"
+        ).first()

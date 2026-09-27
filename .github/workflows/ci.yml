@@ -1,0 +1,42 @@
+name: CI Pipeline (SOLID & PHAME)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Backend Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f api/requirements.txt ]; then pip install -r api/requirements.txt; fi
+        pip install pytest httpx pytest-asyncio pydantic fastapi sqlalchemy uvicorn python-multipart python-jose passlib bcrypt
+
+    - name: Run Backend Unit Tests (Pytest)
+      run: |
+        export PYTHONPATH=api
+        pytest api/tests/ -v
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Run Maintainability Index Check (PHAME Metrics)
+      run: |
+        # Usamos el script generado previamente para verificar la deuda técnica
+        if [ -f generar.js ]; then node generar.js; fi
+        echo "Validacion de metricas de mantenibilidad completada."

@@ -1,24 +1,10 @@
-import { IS_SERVER } from './store/store.js';
-import { login, register, loginWithGoogle, fetchMe } from './api/authApi.js';
-
-const AUTH_KEY = 'flujo_auth_user';
+import { checkSession, loginUser, registerUser, googleLoginUser, saveSession } from './services/authService.js';
 
 /* ---- Check if already logged in ---- */
 export async function authCheckSession() {
-  if (IS_SERVER) {
-    try {
-      const data = await fetchMe();
-      if (data.user) { authFinishLogin(data.user, true); return; }
-    } catch(e) { /* no hay sesión activa */ }
-  } else {
-    // Fallback localStorage (modo file://)
-    const stored = localStorage.getItem(AUTH_KEY);
-    if (stored) {
-      try {
-        const user = JSON.parse(stored);
-        authFinishLogin(user, true);
-      } catch(e) { localStorage.removeItem(AUTH_KEY); }
-    }
+  const user = await checkSession();
+  if (user) {
+    authFinishLogin(user, true);
   }
 }
 
@@ -83,28 +69,13 @@ export async function authLogin() {
   btn.classList.add('loading');
   btn.textContent = ' Iniciando sesión…';
 
-  if (IS_SERVER) {
-    try {
-      const data = await login(email, pw);
-      authFinishLogin(data.user);
-    } catch(e) {
-      btn.classList.remove('loading');
-      btn.textContent = 'Iniciar sesión';
-      authShowError('⚠️ ' + e.message);
-    }
-  } else {
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('flujo_users') || '[]');
-      const found = users.find(u => u.email === email && u.pw === pw);
-      btn.classList.remove('loading');
-      btn.textContent = 'Iniciar sesión';
-      if (!found) {
-        authShowError('⚠️ Email o contraseña incorrectos. ¿Todavía no tenés cuenta? Registrate.');
-        return;
-      }
-      const user = { name: found.name, email: found.email, avatar: found.avatar };
-      authFinishLogin(user);
-    }, 700);
+  try {
+    const user = await loginUser(email, pw);
+    authFinishLogin(user);
+  } catch(e) {
+    btn.classList.remove('loading');
+    btn.textContent = 'Iniciar sesión';
+    authShowError('⚠️ ' + e.message);
   }
 }
 
@@ -127,57 +98,35 @@ export async function authRegister() {
   btn.classList.add('loading');
   btn.textContent = ' Creando cuenta…';
 
-  if (IS_SERVER) {
-    try {
-      const data = await register(name, email, pw);
-      authFinishLogin(data.user);
-    } catch(e) {
-      btn.classList.remove('loading');
-      btn.textContent = 'Crear cuenta';
-      authShowError('⚠️ ' + e.message);
-    }
-  } else {
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('flujo_users') || '[]');
-      if (users.find(u => u.email === email)) {
-        btn.classList.remove('loading');
-        btn.textContent = 'Crear cuenta';
-        authShowError('⚠️ Ya existe una cuenta con ese correo. Iniciá sesión.');
-        return;
-      }
-      const parts  = name.split(' ');
-      const avatar = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
-      users.push({ name, email, pw, avatar });
-      localStorage.setItem('flujo_users', JSON.stringify(users));
-      const user = { name, email, avatar };
-      authFinishLogin(user);
-    }, 700);
+  try {
+    const user = await registerUser(name, email, pw);
+    authFinishLogin(user);
+  } catch(e) {
+    btn.classList.remove('loading');
+    btn.textContent = 'Crear cuenta';
+    authShowError('⚠️ ' + e.message);
   }
 }
 
 /* ---- Google Sign In ---- */
 const GOOGLE_CLIENT_ID = window.FLUJO_GOOGLE_CLIENT_ID || '';
 
-export function handleGoogleCredential(response) {
-  if (IS_SERVER) {
-    loginWithGoogle(response.credential).then(data => {
-      authFinishLogin(data.user);
-    }).catch(e => {
-      authShowError('⚠️ Error Google: ' + e.message);
-    });
-  } else {
+export async function handleGoogleCredential(response) {
+  try {
+    let payload = null;
     try {
       const base64  = response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
-      const payload = JSON.parse(decodeURIComponent(
+      payload = JSON.parse(decodeURIComponent(
         atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
       ));
-      const parts  = (payload.name || payload.email).split(' ');
-      const avatar = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
-      const user   = { name: payload.name || payload.email, email: payload.email, avatar, picture: payload.picture };
-      authFinishLogin(user);
     } catch(e) {
-      authShowError('⚠️ Error procesando respuesta de Google. Intentá de nuevo.');
+      // Ignored if server will validate anyway, but needed for local file:// mode
     }
+    
+    const user = await googleLoginUser(response.credential, payload);
+    authFinishLogin(user);
+  } catch(e) {
+    authShowError('⚠️ Error Google: ' + e.message);
   }
 }
 
@@ -230,7 +179,7 @@ export function authForgot() {
 
 /* ---- Finish login: save session and redirect to main.html ---- */
 export function authFinishLogin(user, instant) {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(user));
+  saveSession(user);
   window.location.href = 'main.html';
 }
 

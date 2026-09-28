@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flujo — Iniciar sesión</title>
+  <meta name="description" content="Flujo — tu gestor de finanzas personal con IA. Controlá gastos, presupuestos, objetivos y más."/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="icon" type="image/png" href="/assets/descarga-DNCiibOt.png">
+  <script type="module" crossorigin src="/assets/main-BZzoS6_5.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/chatbot-BeACgeLI.js">
+  <link rel="stylesheet" crossorigin href="/assets/chatbot-Cip9IuZz.css">
+</head>
+<body>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-bg-orbs">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+    <div class="auth-orb auth-orb-3"></div>
+  </div>
+
+  <div class="auth-container">
+
+    <!-- Brand -->
+    <div class="auth-brand">
+      <img src="data:image/png;base64,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" alt="flujo. logo" style="height:60px; margin-bottom:8px;">
+      <div class="auth-logo-sub">Finance Manager</div>
+    </div>
+
+    <!-- Card -->
+    <div class="auth-card" id="authCard">
+
+      <!-- Tab switcher -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="authTabLogin" onclick="authSwitchTab('login')">Iniciar sesión</button>
+        <button class="auth-tab" id="authTabRegister" onclick="authSwitchTab('register')">Registrarse</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="authLoginForm" onsubmit="event.preventDefault(); authLogin();">
+        <div class="auth-field">
+          <label class="auth-label">Correo electrónico</label>
+          <input class="auth-input" id="authLoginEmail" type="email" placeholder="tu@email.com" autocomplete="email"/>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Contraseña</label>
+          <div class="auth-pw-wrap">
+            <input class="auth-input" id="authLoginPw" type="password" placeholder="••••••••" autocomplete="current-password"/>
+            <button class="auth-pw-toggle" onclick="authTogglePw('authLoginPw', this)" type="button">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="auth-forgot"><a href="#" onclick="authForgot(); return false;">¿Olvidaste tu contraseña?</a></div>
+        <button type="submit" class="auth-btn-primary" id="authLoginBtn">Iniciar sesión</button>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="authRegisterForm" style="display:none;" onsubmit="event.preventDefault(); authRegister();">
+        <div class="auth-field">
+          <label class="auth-label">Nombre completo</label>
+          <input class="auth-input" id="authRegName" type="text" placeholder="Juan Pérez" autocomplete="name"/>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Correo electrónico</label>
+          <input class="auth-input" id="authRegEmail" type="email" placeholder="tu@email.com" autocomplete="email"/>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Contraseña</label>
+          <div class="auth-pw-wrap">
+            <input class="auth-input" id="authRegPw" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+            <button class="auth-pw-toggle" onclick="authTogglePw('authRegPw', this)" type="button">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Confirmar contraseña</label>
+          <div class="auth-pw-wrap">
+            <input class="auth-input" id="authRegPwConfirm" type="password" placeholder="Repetí tu contraseña" autocomplete="new-password"/>
+            <button class="auth-pw-toggle" onclick="authTogglePw('authRegPwConfirm', this)" type="button">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="auth-btn-primary" id="authRegisterBtn">Crear cuenta</button>
+      </form>
+
+      <!-- DIVIDER -->
+      <div class="auth-divider"><span>o continuá con</span></div>
+
+      <!-- GOOGLE BUTTON (Diseño personalizado con funcionalidad robusta mediante overlay) -->
+      <div class="auth-google-wrapper">
+        <button class="auth-btn-google" id="authBtnGoogleCustom" type="button" tabindex="-1">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.6 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.4 6.9 29.5 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/>
+            <path fill="#FF3D00" d="m6.3 15.5 6.6 4.8C14.6 16.8 19 14 24 14c3.1 0 5.8 1.1 8 2.9l5.7-5.7C34.4 8.9 29.5 7 24 7 16.2 7 9.4 11.3 6.3 15.5z"/>
+            <path fill="#4CAF50" d="M24 43c5.4 0 10.3-1.9 14-5.1l-6.5-5.3C29.6 34.5 26.9 35.5 24 35.5c-5.2 0-9.5-3.2-11.3-7.7l-6.6 5.1C9.3 39.5 16.1 43 24 43z"/>
+            <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.5 5.3C40.9 36.5 44 31.1 44 25c0-1.3-.1-2.6-.4-3.9z"/>
+          </svg>
+          Continuar con Google
+        </button>
+        <div id="googleBtnContainer" class="auth-google-container-overlay"></div>
+      </div>
+
+      <!-- Error message -->
+      <div class="auth-error" id="authError" style="display:none;"></div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="auth-footer">
+      Al continuar, aceptás los <a href="#">Términos de servicio</a> y la <a href="#">Política de privacidad</a>.
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== GOOGLE IDENTITY SERVICES ===== -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  window.FLUJO_GOOGLE_CLIENT_ID = '181912655817-l553ttb3c4p8q0q6p7kfon2e5p60bfcu.apps.googleusercontent.com';
+</script>
+
+<!-- ===== FLOATING CHATBOT ===== -->
+<div class="chatbot-widget">
+  <div class="chatbot-window" id="chatbotWindow">
+    <div class="chatbot-header">
+      <div class="chatbot-header-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Asistente IA
+      </div>
+      <button class="chatbot-close" id="chatbotCloseBtn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="chatbot-messages" id="chatbotMessages">
+      <div class="chat-message ai">¡Hola! Soy tu asistente financiero. ¿En qué te puedo ayudar hoy?</div>
+    </div>
+    <div class="chatbot-input-area">
+      <input type="text" id="chatbotInput" class="chatbot-input" placeholder="Escribí un mensaje..." autocomplete="off"/>
+      <button class="chatbot-send" id="chatbotSendBtn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="chatbot-bubble" id="chatbotToggleBtn">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </div>
+</div>
+
+
+</body>
+</html>
+

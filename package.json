@@ -1,0 +1,29 @@
+{
+  "name": "gestor-de-finanzas",
+  "version": "1.0.0",
+  "description": "Gestor de finanzas personales, asistente de compras inteligente y comparador de precios SEPA (Sistema Electrónico de Publicidad de Precios Argentinos), con versiones Web y App Móvil (Flutter).",
+  "main": "generar.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carpincho2/Gestor-Finanzas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/carpincho2/Gestor-Finanzas/issues"
+  },
+  "homepage": "https://github.com/carpincho2/Gestor-Finanzas#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1"
+  }
+}

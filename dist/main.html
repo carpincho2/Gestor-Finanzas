@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flujo — Gestor de Finanzas</title>
+  <meta name="description" content="Flujo — tu gestor de finanzas personal con IA. Controlá gastos, presupuestos, objetivos y más."/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="icon" type="image/png" href="/assets/descarga-DNCiibOt.png">
+  <script type="module" crossorigin src="/assets/dashboard-DdRYZtGM.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/chatbot-BeACgeLI.js">
+  <link rel="stylesheet" crossorigin href="/assets/chatbot-Cip9IuZz.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== SIDEBAR BACKDROP (mobile) ===== -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <img src="data:image/png;base64,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" alt="flujo. logo" style="height:40px; margin-bottom:4px;">
+      <div class="logo-sub">Finance Manager</div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section-label">Principal</div>
+
+      <div class="nav-item active" onclick="setPage(this,'dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'transacciones')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Transacciones
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'presupuestos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Presupuestos
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'cuentas')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        Cuentas
+      </div>
+
+      <div class="nav-section-label">Análisis</div>
+
+      <div class="nav-item" onclick="setPage(this,'reportes')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Reportes
+      </div>
+
+      <div class="nav-item" onclick="setPage(this,'objetivos')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Objetivos
+      </div>
+
+      <div class="nav-section-label">Herramientas IA</div>
+
+      <div class="nav-item" id="navSupermercadosItem" onclick="setPage(this,'supermercados')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        Buscador SEPA
+      </div>
+
+      <div class="nav-item" id="navShoppingItem" onclick="setPage(this,'shopping')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        Asistente de Compras
+        <span class="nav-badge-ai">IA</span>
+      </div>
+
+      <div class="nav-item" id="navScannerItem" onclick="setPage(this,'scanner')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+        Escanear Ticket
+        <span class="nav-badge-ai">IA</span>
+      </div>
+
+      <div class="nav-item" id="navInsightsItem" onclick="setPage(this,'insights')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        IA Insights
+        <span class="nav-badge-ai">IA</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card" onclick="setPage(null, 'perfil')" style="cursor:pointer;" title="Ver mi perfil">
+        <div class="user-avatar">JP</div>
+        <div class="user-info-col">
+          <div class="user-name">Juan Pérez</div>
+          <div class="user-plan">Plan Free</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="authLogout()" title="Cerrar sesión">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <!-- Hamburger (mobile only) -->
+      <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Abrir menú">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-date" id="pageDate"></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="openModal()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nueva Transacción
+        </button>
+        <button class="btn btn-primary" onclick="setPage(document.getElementById('navInsightsItem'),'insights')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          IA Insights
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD VIEW ===== -->
+    <div id="dashboardView">
+    </div><!-- /dashboardView -->
+
+    <!-- ===== TRANSACTIONS VIEW ===== -->
+    <div id="txView" style="display:none;">
+    </div><!-- /txView -->
+
+    <!-- ===== PRESUPUESTOS VIEW ===== -->
+    <div id="budgetView" style="display:none;">
+    </div><!-- /budgetView -->
+
+    <!-- ===== CUENTAS VIEW ===== -->
+    <div id="cuentasView" style="display:none;">
+    </div><!-- /cuentasView -->
+
+    <!-- ===== REPORTES VIEW ===== -->
+    <div id="reportesView" style="display:none;">
+    </div><!-- /reportesView -->
+
+    <!-- ===== OBJETIVOS VIEW ===== -->
+    <div id="objetivosView" style="display:none;">
+    </div><!-- /objetivosView -->
+
+    <!-- ===== SCANNER VIEW ===== -->
+    <div id="scannerView" style="display:none;">
+    </div><!-- /scannerView -->
+
+    <!-- ===== SUPERMERCADOS VIEW ===== -->
+    <div id="supermercadosView" style="display:none;">
+    </div><!-- /supermercadosView -->
+
+    <!-- ===== SHOPPING VIEW ===== -->
+    <div id="shoppingView" style="display:none;">
+    </div><!-- /shoppingView -->
+
+    <!-- ===== IA INSIGHTS VIEW ===== -->
+    <div id="insightsView" style="display:none;">
+    </div><!-- /insightsView -->
+
+    <!-- ===== PROFILE VIEW ===== -->
+    <div id="perfilView" style="display:none;">
+      <div style="max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
+        
+        <!-- User Badge Panel -->
+        <div class="panel" style="padding: 24px; display: flex; align-items: center; gap: 20px; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--accent); opacity: 0.05; border-radius: 50%; filter: blur(20px);"></div>
+          <div id="profileAvatar" class="user-avatar" style="width: 72px; height: 72px; font-size: 28px; font-weight: 800; border-radius: 50%; background: var(--accent)18; color: var(--accent); display: flex; align-items: center; justify-content: center;">JP</div>
+          <div style="flex: 1;">
+            <h2 id="profileNameHeader" style="font-size: 20px; font-weight: 800; margin: 0 0 4px 0;">Juan Pérez</h2>
+            <div id="profileEmailHeader" style="font-size: 13px; color: var(--muted); font-family: var(--font-mono);">juan.perez@example.com</div>
+          </div>
+        </div>
+
+        <!-- Personal Info Settings -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Información Personal</span>
+          </div>
+          <div style="padding: 20px 24px;">
+            <div class="form-full">
+              <label class="field-label">Nombre Completo</label>
+              <input class="field-input" id="profileNameInput" type="text" placeholder="Tu nombre"/>
+            </div>
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="profileUpdateInfo()">Guardar Cambios</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password Settings -->
+        <div class="panel" id="profilePasswordPanel">
+          <div class="panel-head">
+            <span class="panel-title">Seguridad y Contraseña</span>
+          </div>
+          <div style="padding: 20px 24px;">
+            <div class="form-full" id="profilePasswordCurrentWrap">
+              <label class="field-label">Contraseña Actual</label>
+              <input class="field-input" id="profilePasswordCurrent" type="password" placeholder="••••••••"/>
+            </div>
+            <div class="form-row" style="margin-top: 12px;">
+              <div>
+                <label class="field-label">Nueva Contraseña</label>
+                <input class="field-input" id="profilePasswordNew" type="password" placeholder="Mínimo 6 caracteres"/>
+              </div>
+              <div>
+                <label class="field-label">Confirmar Nueva Contraseña</label>
+                <input class="field-input" id="profilePasswordNewConfirm" type="password" placeholder="Repetí tu contraseña"/>
+              </div>
+            </div>
+            <div style="margin-top: 16px;">
+              <button class="btn btn-primary" onclick="profileUpdatePassword()">Actualizar Contraseña</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Actions Settings -->
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title" style="color:var(--danger);">Zona de Peligro</span>
+          </div>
+          <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="font-size: 13px; color: var(--muted); line-height: 1.5;">
+              Si querés cerrar tu sesión actual o borrar permanentemente tu cuenta con todos tus datos de transacciones, presupuestos y objetivos, podés hacerlo desde acá.
+            </div>
+            <div style="display: flex; gap: 12px; margin-top: 4px;">
+              <button class="btn btn-ghost" onclick="authLogout()" style="border-color: var(--border);">
+                Cerrar Sesión
+              </button>
+              <button class="btn btn-ghost" onclick="confirmResetData()" style="color:var(--orange); border-color:var(--orange);">
+                Vaciar Transacciones
+              </button>
+              <button class="btn btn-danger" onclick="authConfirmDeleteAccount()">
+                Eliminar Cuenta Permanentemente
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== GOAL MODAL ===== -->
+<div class="modal-overlay" id="goalModalOverlay" onclick="closeGoalModal(event)">
+  <div class="modal" style="width:500px;">
+    <div class="modal-title" id="goalModalTitle">Nuevo Objetivo</div>
+
+    <div class="form-full">
+      <label class="field-label">Nombre del objetivo</label>
+      <input class="field-input" id="gmName" type="text" placeholder="Ej: Vacaciones en Europa, Fondo de emergencia…"/>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Meta ($)</label>
+        <input class="field-input" id="gmTarget" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Ahorro inicial ($)</label>
+        <input class="field-input" id="gmCurrent" type="number" min="0" placeholder="0"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Fecha límite</label>
+        <input class="field-input" id="gmDeadline" type="date"/>
+      </div>
+      <div>
+        <label class="field-label">Categoría</label>
+        <select class="field-select" id="gmCat">
+          <option value="Viaje">✈️ Viaje</option>
+          <option value="Ahorro">💰 Ahorro / Emergencia</option>
+          <option value="Hogar">🏠 Hogar</option>
+          <option value="Vehículo">🚗 Vehículo</option>
+          <option value="Educación">📚 Educación</option>
+          <option value="Tecnología">💻 Tecnología</option>
+          <option value="Inversión">📈 Inversión</option>
+          <option value="Salud">💊 Salud</option>
+          <option value="Otro">🎯 Otro</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Ícono</label>
+      <div class="ov-emoji-grid" id="gmEmojiGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Color</label>
+      <div class="bv-color-grid" id="gmColorGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="gmNotes" type="text" placeholder="Descripción o motivación…"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeGoalModal()">Cancelar</button>
+      <button class="btn btn-primary" id="gmSaveBtn" onclick="saveGoal()">Crear Objetivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONTRIBUTE MODAL ===== -->
+<div class="modal-overlay" id="contribModalOverlay" onclick="closeContribModal(event)">
+  <div class="modal" style="width:420px;">
+    <div class="modal-title" id="contribModalTitle">Agregar aporte</div>
+    <p style="font-size:12px;color:var(--muted);font-family:var(--font-mono);margin-bottom:16px;" id="contribGoalInfo">—</p>
+
+    <div class="form-row">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="cmAmount" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="cmDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Nota (opcional)</label>
+      <input class="field-input" id="cmNote" type="text" placeholder="Ej: Sueldo de abril…"/>
+    </div>
+
+    <div class="ov-contrib-history" id="cmHistory"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeContribModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveContrib()">Agregar aporte</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GOAL DELETE MODAL ===== -->
+<div class="modal-overlay" id="goalDeleteOverlay" onclick="closeGoalDeleteModal(event)">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">¿Eliminar objetivo?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar <strong id="gdName" style="color:var(--text)"></strong> y todos sus aportes. Esta acción no se puede deshacer.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeGoalDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteGoal()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== USER DELETE MODAL ===== -->
+<div class="modal-overlay" id="userDeleteOverlay" onclick="closeUserDeleteModal(event)">
+  <div class="modal" style="max-width:370px;">
+    <div class="modal-title">¿Eliminar tu cuenta?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;">
+      Esta acción eliminará de forma **permanente** tu cuenta y **todos tus datos financieros** (cuentas, transacciones, presupuestos y objetivos).
+    </p>
+    <p style="font-size:12px;color:var(--danger);font-weight:600;line-height:1.5;margin-bottom:16px;">
+      ⚠️ Esta acción no se puede deshacer.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeUserDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteUserAccount()">Eliminar cuenta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT MODAL ===== -->
+<div class="modal-overlay" id="accModalOverlay" onclick="closeAccModal(event)">
+  <div class="modal" style="width:460px;">
+    <div class="modal-title" id="accModalTitle">Nueva Cuenta</div>
+
+    <div class="form-full">
+      <label class="field-label">Nombre de la cuenta</label>
+      <input class="field-input" id="amName" type="text" placeholder="Ej: Cuenta Corriente Galicia"/>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Tipo</label>
+        <select class="field-select" id="amType" onchange="onAmTypeChange()">
+          <option value="banco">🏦 Banco / Cuenta corriente</option>
+          <option value="ahorro">💰 Caja de ahorro</option>
+          <option value="efectivo">💵 Efectivo</option>
+          <option value="tarjeta">💳 Tarjeta de crédito</option>
+          <option value="inversion">📈 Inversión</option>
+          <option value="digital">📱 Billetera digital</option>
+          <option value="custom">✏️ Otro</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Banco / Entidad</label>
+        <input class="field-input" id="amBank" type="text" placeholder="Ej: Galicia, Mercado Pago…"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Saldo inicial ($)</label>
+        <input class="field-input" id="amBalance" type="number" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Moneda</label>
+        <select class="field-select" id="amCurrency">
+          <option value="ARS">🇦🇷 ARS — Peso argentino</option>
+          <option value="USD">🇺🇸 USD — Dólar</option>
+          <option value="EUR">🇪🇺 EUR — Euro</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="amLimitWrap" style="margin-top:12px;display:none;">
+      <label class="field-label">Límite de crédito ($)</label>
+      <input class="field-input" id="amLimit" type="number" placeholder="0"/>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="amNotes" type="text" placeholder="Ej: Cuenta en pesos para gastos diarios"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAccModal()">Cancelar</button>
+      <button class="btn btn-primary" id="amSaveBtn" onclick="saveAccount()">Crear Cuenta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT DELETE MODAL ===== -->
+<div class="modal-overlay" id="accDeleteOverlay" onclick="closeAccDeleteModal(event)">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">¿Eliminar cuenta?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar la cuenta <strong id="adName" style="color:var(--text)"></strong>.
+      <br><span style="color:var(--red);">¡Atención! También se eliminarán todas las transacciones asociadas a esta cuenta.</span>
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAccDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteAccount()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUDGET MODAL ===== -->
+<div class="modal-overlay" id="budgetModalOverlay" onclick="closeBudgetModal(event)">
+  <div class="modal" style="width:500px;">
+    <div class="modal-title" id="budgetModalTitle">Nuevo Presupuesto</div>
+
+    <div class="form-full">
+      <label class="field-label">Nombre del presupuesto</label>
+      <input class="field-input" id="bmName" type="text" placeholder="Ej: Supermercado, Salidas, Gimnasio…"/>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Categoría</label>
+        <select class="field-select" id="bmCat" onchange="onBmCatChange()">
+          <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+          <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+          <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+          <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+          <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+          <option value="Educación">📚 Educación</option>
+          <option value="Otros">📦 Otros</option>
+          <option value="custom">✏️ Personalizada…</option>
+        </select>
+      </div>
+      <div id="bmCustomWrap" style="display:none;">
+        <label class="field-label">Categoría personalizada</label>
+        <input class="field-input" id="bmCustomName" type="text" placeholder="Ej: Gimnasio"/>
+      </div>
+    </div>
+
+    <div class="form-full" style="margin-top:12px;">
+      <label class="field-label">Límite mensual ($)</label>
+      <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Ícono</label>
+      <div class="ov-emoji-grid" id="bmEmojiGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Color</label>
+      <div class="bv-color-grid" id="bmColorGrid"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label class="field-label">Notas (opcional)</label>
+      <input class="field-input" id="bmNotes" type="text" placeholder="Ej: Incluye delivery y salidas"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBudgetModal()">Cancelar</button>
+      <button class="btn btn-primary" id="bmSaveBtn" onclick="saveBudget()">Crear Presupuesto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUDGET DELETE MODAL ===== -->
+<div class="modal-overlay" id="budgetDeleteOverlay" onclick="closeBudgetDeleteModal(event)">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-title">¿Eliminar presupuesto?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
+      Vas a eliminar el presupuesto de <strong id="bdName" style="color:var(--text)"></strong>.
+      Las transacciones no se ven afectadas.
+    </p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBudgetDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDeleteBudget()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-title">Nueva Transacción</div>
+
+    <div class="type-toggle" style="margin-bottom:16px;">
+      <button class="type-btn active-expense" id="mTypeExpBtn" onclick="setModalType('expense')">— Gasto</button>
+      <button class="type-btn" id="mTypeIncBtn" onclick="setModalType('income')">+ Ingreso</button>
+    </div>
+
+    <div class="form-full">
+      <label class="field-label">Descripción</label>
+      <input class="field-input" id="mDesc" type="text" placeholder="Descripción de la transacción"/>
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="mAmount" type="number" min="0" placeholder="0.00"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="mDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Categoría</label>
+      <select class="field-select" id="mCat">
+        <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+        <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+        <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+        <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+        <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+        <option value="Educación">📚 Educación</option>
+        <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+        <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
+        <option value="Otros">📦 Otros</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="addFromModal()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT MODAL ===== -->
+<div class="modal-overlay" id="editModalOverlay" data-type="expense" onclick="closeEditModal(event)">
+  <div class="modal">
+    <div class="modal-title" id="editModalTitle">Editar Transacción</div>
+
+    <div class="type-toggle" style="margin-bottom:16px;">
+      <button class="type-btn active-expense" id="eTypeExpBtn" onclick="setEditType('expense')">— Gasto</button>
+      <button class="type-btn" id="eTypeIncBtn" onclick="setEditType('income')">+ Ingreso</button>
+    </div>
+
+    <div class="form-full">
+      <label class="field-label">Descripción</label>
+      <input class="field-input" id="eDesc" type="text" placeholder="Descripción"/>
+    </div>
+    <div class="form-row" style="margin-top:10px;">
+      <div>
+        <label class="field-label">Monto ($)</label>
+        <input class="field-input" id="eAmount" type="number" min="0" placeholder="0.00"/>
+      </div>
+      <div>
+        <label class="field-label">Fecha</label>
+        <input class="field-input" id="eDate" type="date"/>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Categoría</label>
+      <select class="field-select" id="eCat">
+        <option value="Alimentación">🍔 Alimentación</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Entretenimiento">🎬 Entretenimiento</option>
+        <option value="Salud">💊 Salud</option>
+        <option value="Hogar">🏠 Hogar</option>
+        <option value="Ropa">👕 Ropa</option>
+        <option value="Sueldo">💼 Sueldo</option>
+        <option value="Freelance">💻 Freelance</option>
+        <option value="Inversión">📈 Inversión</option>
+        <option value="Otros">📦 Otros</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE MODAL ===== -->
+<div class="modal-overlay" id="deleteModalOverlay" onclick="closeDeleteModal(event)">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-title">¿Eliminar transacción?</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px;">
+      Estás por eliminar:
+    </p>
+    <div id="deleteModalDesc" style="font-family:var(--font-mono);font-size:13px;color:var(--text);background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:4px;"></div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px;">Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="doDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCANNER RESULT MODAL ===== -->
+<div class="modal-overlay" id="scResultOverlay" onclick="scCloseResultModal(event)">
+  <div class="modal" style="width:560px;max-height:90vh;overflow-y:auto;">
+    <div class="sc-result-header">
+      <div class="modal-title" style="margin-bottom:0;">📋 Datos del Ticket</div>
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);margin-top:4px;">Revisá y editá los datos antes de guardar</div>
+    </div>
+
+    <!-- Confidence Bar (Deshabilitada en producción para Enfoque de Producto Premium)
+    <div class="sc-confidence" id="scConfidenceRow" style="display:none; margin-top:12px;">
+      <div class="sc-confidence-label">Confianza OCR</div>
+      <div class="sc-confidence-bar-wrap">
+        <div class="sc-confidence-bar" id="scConfidenceBar" style="width: 0%;"></div>
+      </div>
+      <div class="sc-confidence-val" id="scConfidenceVal">0%</div>
+    </div>
+    -->
+
+    <!-- Fields -->
+    <div class="sc-result-fields">
+
+      <div class="form-full">
+        <label class="field-label">Nombre del local / lugar <span class="sc-field-status" id="scStatusName"></span></label>
+        <input class="field-input" id="scfName" type="text" placeholder="Ej: Supermercado Disco"/>
+      </div>
+
+      <div class="form-row" style="margin-top:12px;">
+        <div>
+          <label class="field-label">Fecha <span class="sc-field-status" id="scStatusDate"></span></label>
+          <input class="field-input" id="scfDate" type="date"/>
+        </div>
+        <div>
+          <label class="field-label">Hora <span class="sc-field-status" id="scStatusTime"></span></label>
+          <input class="field-input" id="scfTime" type="time"/>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:12px;">
+        <div>
+          <label class="field-label">Total ($) <span class="sc-field-status" id="scStatusAmount"></span></label>
+          <input class="field-input" id="scfAmount" type="number" min="0" step="0.01" placeholder="0.00"/>
+        </div>
+        <div>
+          <label class="field-label">Categoría <span class="sc-field-status" id="scStatusCat"></span></label>
+          <select class="field-select" id="scfCat">
+            <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+            <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+            <option value="Transporte">🚗 Transporte</option>
+            <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+            <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+            <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+            <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+            <option value="Educación">📚 Educación</option>
+            <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+            <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
+            <option value="Otros">📦 Otros</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top:12px;">
+        <div>
+          <label class="field-label">Forma de pago <span class="sc-field-status" id="scStatusPayment"></span></label>
+          <select class="field-select" id="scfPayment">
+            <option value="Efectivo">💵 Efectivo</option>
+            <option value="Tarjeta de débito">💳 Tarjeta de débito</option>
+            <option value="Tarjeta de crédito">💳 Tarjeta de crédito</option>
+            <option value="Tarjeta Visa">💳 Visa</option>
+            <option value="Tarjeta Mastercard">💳 Mastercard</option>
+            <option value="Tarjeta Amex">💳 American Express</option>
+            <option value="Transferencia">🏦 Transferencia bancaria</option>
+            <option value="Mercado Pago">📱 Mercado Pago</option>
+            <option value="Cuenta DNI">📱 Cuenta DNI</option>
+            <option value="MODO">📱 MODO</option>
+            <option value="Naranja X">📱 Naranja X</option>
+            <option value="QR">📷 Pago por QR</option>
+            <option value="No especificado">❓ No especificado</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Dirección / Sucursal <span class="sc-field-status" id="scStatusAddress"></span></label>
+          <input class="field-input" id="scfAddress" type="text" placeholder="Ej: Av. Corrientes 1234"/>
+        </div>
+      </div>
+
+      <div class="form-full" style="margin-top:12px;">
+        <label class="field-label">Descripción / notas adicionales</label>
+        <input class="field-input" id="scfDesc" type="text" placeholder="Ej: Compra supermercado, artículos del hogar…"/>
+      </div>
+
+      <!-- Preview of items (collapsible) -->
+      <div class="sc-raw-wrap" id="scItemsWrap" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <button class="sc-raw-toggle" onclick="scToggleItems()" style="margin-bottom:8px;">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          Ver artículos detectados (<span id="scItemsCount">0</span>)
+        </button>
+        <div id="scItemsList" style="display:none;font-size:11px;font-family:var(--font-mono);color:var(--muted);background:var(--surface2);border-radius:8px;padding:10px 14px;max-height:150px;overflow-y:auto;flex-direction:column;gap:4px;">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Raw ticket text (collapsible) -->
+    <div class="sc-raw-wrap" id="scRawWrap">
+      <button class="sc-raw-toggle" onclick="scToggleRaw()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        Ver texto crudo del ticket
+      </button>
+      <div class="sc-raw-text" id="scRawText" style="display:none;"></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="scCloseResultModal()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Cancelar
+      </button>
+      <button class="btn btn-primary" onclick="scSaveTicket()" id="scSaveTicketBtn">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Guardar como Gasto
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCANNER LOADING OVERLAY ===== -->
+<div class="sc-loading-overlay" id="scLoadingOverlay" style="display:none;">
+  <div class="sc-loading-box">
+    <div class="sc-loading-spinner"></div>
+    <div class="sc-loading-title">Analizando ticket con IA…</div>
+    <div class="sc-loading-sub" id="scLoadingMsg">Procesando imagen</div>
+  </div>
+</div>
+
+<!-- ===== MODAL MP BALANCE ===== -->
+<div class="modal-overlay" id="mpBalanceModalOverlay">
+  <div class="modal" style="max-width:420px; text-align:center; padding:32px 24px;">
+    
+    <div style="width:56px;height:56px;background:rgba(56,189,248,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <svg width="28" height="28" fill="none" stroke="#38bdf8" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+    </div>
+    
+    <div class="modal-title" style="color:var(--text);font-size:20px;margin-bottom:8px;">¡Conexión Exitosa!</div>
+    
+    <div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.5;">
+      Por seguridad, Mercado Pago no nos permite leer tu saldo. Por favor ingresá tu <strong>saldo inicial</strong> para la cuenta <span id="mpBalanceAccName" style="color:var(--text);font-weight:600;"></span>.
+    </div>
+    
+    <input type="hidden" id="mpBalanceAccId">
+    
+    <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;">Saldo actual</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+        <span style="font-size:24px;color:var(--text);font-weight:600;">$</span>
+        <input type="text" inputmode="decimal" id="mpBalanceInput" placeholder="0,00" style="background:transparent;border:none;color:var(--text);font-size:32px;font-weight:700;width:150px;text-align:center;outline:none;" onfocus="this.select()" oninput="formatMpBalanceInput(this)" onkeydown="if(event.key === 'Enter') saveMpBalance()">
+      </div>
+    </div>
+    
+    <button class="btn btn-primary" onclick="saveMpBalance()" id="mpBalanceSaveBtn" style="width:100%;justify-content:center;padding:14px;font-size:15px;font-weight:600;">
+      Guardar Saldo Inicial
+    </button>
+    
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast"></div>
+
+<!-- ===== CHART.JS ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.ts"></script>
+
+<!-- ===== TESSERACT.JS OCR ===== -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.ts"></script>
+
+<!-- ===== EXCELJS ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.ts"></script>
+
+<!-- ===== GOOGLE IDENTITY SERVICES ===== -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- ===== EXCEL IMPORT & CSV PARSER ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.ts"></script>
+
+<!-- ===== FLOATING CHATBOT ===== -->
+<div class="chatbot-widget">
+  <div class="chatbot-window" id="chatbotWindow">
+    <div class="chatbot-header">
+      <div class="chatbot-header-title">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Asistente IA
+      </div>
+      <button class="chatbot-close" id="chatbotCloseBtn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="chatbot-messages" id="chatbotMessages">
+      <div class="chat-message ai">¡Hola! Soy tu asistente financiero. ¿En qué te puedo ayudar hoy?</div>
+    </div>
+    <div class="chatbot-input-area">
+      <input type="text" id="chatbotInput" class="chatbot-input" placeholder="Escribí un mensaje..." autocomplete="off"/>
+      <button class="chatbot-send" id="chatbotSendBtn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="chatbot-bubble" id="chatbotToggleBtn">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  </div>
+</div>
+
+
+</body>
+</html>
+

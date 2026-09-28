@@ -19,3 +19,4 @@ database.db
 *.apkLEGO Island Spanish.7z
 *.7z
 releases/
+node_modules

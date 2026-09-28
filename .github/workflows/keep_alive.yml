@@ -2,10 +2,8 @@ name: Render Keep-Alive Ping
 
 on:
   schedule:
-    # Render suspende los servicios web gratuitos después de 15 minutos de inactividad.
-    # Este cron se ejecuta cada 14 minutos para mantenerlo despierto.
     - cron: "*/14 * * * *"
-  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub
+  workflow_dispatch:
 
 jobs:
   ping:
@@ -13,13 +11,7 @@ jobs:
     steps:
       - name: Ping Render Web Service
         run: |
-          URL="${{ secrets.RENDER_APP_URL }}"
-          if [ -z "$URL" ]; then
-            echo "⚠️ ERROR: Falta configurar el secreto RENDER_APP_URL."
-            echo "Ve a GitHub > Settings > Secrets and variables > Actions"
-            echo "Crea un 'New repository secret' con el nombre RENDER_APP_URL y tu enlace de Render (ej: https://tu-app.onrender.com)"
-            exit 1
-          fi
+          URL="https://gestor-finanzas-1tkf.onrender.com/"
           echo "Haciendo ping a $URL para evitar que se suspenda..."
           curl -sS "$URL" > /dev/null
           echo "✅ Ping completado con éxito."

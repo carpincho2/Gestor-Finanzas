@@ -1,0 +1,42 @@
+name: Compilar APK (Flutter)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mobile/**'
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Instalar dependencias de Flutter
+        working-directory: ./mobile
+        run: flutter pub get
+
+      - name: Compilar APK
+        working-directory: ./mobile
+        run: flutter build apk --release
+
+      - name: Subir APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gestor-Finanzas-APK
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk

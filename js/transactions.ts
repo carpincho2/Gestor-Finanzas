@@ -209,7 +209,7 @@ async function addTransaction(tx) {
   try {
     await TransactionService.addTransaction(tx);
     renderAll();
-    if (typeof currentPage !== 'undefined' && currentPage === 'transacciones') renderTxView();
+    if (window.currentPage === 'transacciones') renderTxView();
   } catch (err) {
     console.error("Error al guardar transacción:", err);
     showToast("Error al guardar la transacción", true);
@@ -479,7 +479,7 @@ async function saveEdit() {
     const orig = state.transactions.find(x => x.id === editingId);
     await TransactionService.updateTransaction(editingId, { type, desc, amount, cat, date }, orig);
     renderAll();
-    if (typeof currentPage !== 'undefined' && currentPage === 'transacciones') renderTxView();
+    if (window.currentPage === 'transacciones') renderTxView();
     showToast('Transacción actualizada');
   } catch (err) {
     console.error("Error al actualizar transacción:", err);
@@ -514,7 +514,7 @@ async function doDelete() {
   try {
     await TransactionService.deleteTransaction(editingId);
     renderAll();
-    if (typeof currentPage !== 'undefined' && currentPage === 'transacciones') renderTxView();
+    if (window.currentPage === 'transacciones') renderTxView();
     showToast('Transacción eliminada');
   } catch (err) {
     console.error("Error al eliminar transacción:", err);

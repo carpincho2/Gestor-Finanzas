@@ -7,7 +7,7 @@ import { apiFetch } from './api/apiClient.ts';
 /* =====================================================
    NAV
    ===================================================== */
-let currentPage = 'dashboard';
+window.currentPage = 'dashboard';
 
 /* =====================================================
    SIDEBAR TOGGLE (Mobile hamburger)
@@ -53,12 +53,12 @@ function setPage(el, page) {
   }
 
   // Detener cámara y limpiar worker si salimos del scanner
-  if (currentPage === 'scanner' && page !== 'scanner') {
+  if (window.currentPage === 'scanner' && page !== 'scanner') {
     if (scCameraStream) scStopCamera();
     scCleanupWorker();
   }
 
-  currentPage = page;
+  window.currentPage = page;
 
   const titles = {
     dashboard: 'Dashboard', transacciones: 'Transacciones', presupuestos: 'Presupuestos',

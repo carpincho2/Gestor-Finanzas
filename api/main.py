@@ -93,7 +93,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"WARNING: No se pudo iniciar scheduler SEPA: {e}")
 
+    keep_alive_task = asyncio.create_task(render_keep_alive())
     yield
+    keep_alive_task.cancel()
 
     # Shutdown
     try:

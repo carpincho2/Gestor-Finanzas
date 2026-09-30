@@ -24,22 +24,22 @@ export function initShopping() {
           <div>
             <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px;">Asistente de Compras Inteligente</h2>
             <p style="color: var(--muted); font-size: 13px; margin: 0;">
-              Pegá el link de Mercado Libre para analizar con qué tarjeta o cuenta te conviene pagar y ganarle a la inflación.
+              Pegá el link de cualquier tienda online (Mercado Libre, Frávega, Amazon, Tiendamia, etc.) para calcular con qué tarjeta o cuenta te conviene pagar y ganarle a la inflación.
             </p>
           </div>
         </div>
 
         <!-- Form -->
         <div style="margin-bottom: 20px;">
-          <label class="field-label" style="margin-bottom: 8px;">Link de Mercado Libre</label>
-          <input type="text" id="shoppingUrl" class="field-input" placeholder="Ej: https://articulo.mercadolibre.com.ar/MLA-..." style="width: 100%; font-size: 14px; padding: 12px 14px;">
+          <label class="field-label" style="margin-bottom: 8px;">Link del producto (Cualquier tienda web)</label>
+          <input type="text" id="shoppingUrl" class="field-input" placeholder="Ej: https://... (Mercado Libre, Frávega, Amazon, etc.)" style="width: 100%; font-size: 14px; padding: 12px 14px;">
           <div id="shoppingTitlePreview" style="display: none; margin-top: 8px; padding: 8px 12px; background: rgba(0, 229, 160, 0.1); border: 1px solid rgba(0, 229, 160, 0.25); border-radius: 8px; color: var(--accent); font-size: 12px; font-weight: 600;"></div>
         </div>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
           
           <div>
-            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--accent); font-weight: 600;">(Autocompletable con MP)</span></label>
+            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--accent); font-weight: 600;">(Autocompletable)</span></label>
             <input type="text" id="shoppingPrice" inputmode="decimal" class="field-input" placeholder="Ej: 194799" style="width: 100%; border: 1px solid var(--accent); font-weight: 600;">
           </div>
 
@@ -91,7 +91,8 @@ export function initShopping() {
 
   const triggerPriceFetch = (val) => {
     if (!val || val === lastFetchedUrl) return;
-    if (val.includes('mercadolibre') || val.includes('mpago.li') || val.includes('mla') || val.includes('/p/ML')) {
+    // Permite cualquier URL http/https o dominios comunes
+    if (/^(https?:\/\/|[a-z0-9-]+\.[a-z]{2,})/i.test(val)) {
       lastFetchedUrl = val;
       fetchProductPrice(val);
     }
@@ -105,20 +106,30 @@ export function initShopping() {
         return;
       }
       try {
-        const u = new URL(val);
-        const parts = u.pathname.split('/').filter(p => p && p !== 'p');
-        if (parts.length > 0) {
-          let clean = decodeURIComponent(parts[0])
+        const fullUrl = val.startsWith('http') ? val : 'https://' + val;
+        const u = new URL(fullUrl);
+        const domain = u.hostname.replace(/^www\./, '');
+        const pathParts = u.pathname.split('/').filter(p => p && p !== 'p' && !p.endsWith('.html') && !p.endsWith('.htm'));
+        
+        let clean = '';
+        if (pathParts.length > 0) {
+          let rawPart = pathParts[pathParts.length - 1];
+          // Si el último es un ID numérico, usar el penúltimo
+          if (/^\d+$/.test(rawPart) && pathParts.length > 1) {
+            rawPart = pathParts[pathParts.length - 2];
+          }
+          clean = decodeURIComponent(rawPart)
             .replace(/^ML[A-Z]-?\d+-?/i, '')
             .replace(/_JM$/i, '')
             .replace(/[\-_]+/g, ' ')
             .trim();
-          if (clean.length > 3) {
-            clean = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-            if (previewBadge) {
-              previewBadge.innerHTML = `📦 Producto: <strong>${clean}</strong> <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:6px;">(Consultando precio con tu cuenta vinculada...)</span>`;
-              previewBadge.style.display = 'block';
-            }
+        }
+
+        if (clean.length > 3) {
+          clean = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+          if (previewBadge) {
+            previewBadge.innerHTML = `📦 <strong>${clean}</strong> <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:6px;">(${domain} - Consultando precio...)</span>`;
+            previewBadge.style.display = 'block';
           }
         }
       } catch (e) {}
@@ -137,8 +148,8 @@ export function initShopping() {
 }
 
 /**
- * Obtiene el precio y metadatos de un producto de Mercado Libre.
- * Prioriza el token OAuth de Mercado Pago del usuario a través del backend (/api/shopping/fetch-price).
+ * Obtiene el precio y metadatos de un producto de cualquier tienda web.
+ * Soporta Mercado Libre (con tokens OAuth de Mercado Pago) y cualquier otra web vía Schema.org / OpenGraph.
  */
 async function fetchProductPrice(urlText) {
   const priceEl = document.getElementById('shoppingPrice');
@@ -151,19 +162,28 @@ async function fetchProductPrice(urlText) {
   try {
     let price = 0;
     let title = null;
+    let domain = 'Tienda';
+    let hasMpToken = false;
 
-    // 1. Extraer título limpio del slug localmente
+    // 1. Extraer título limpio del slug localmente y dominio
     try {
-      const u = new URL(urlText);
-      const qp = u.searchParams.get('price') || u.searchParams.get('precio') || u.searchParams.get('p');
+      const fullUrl = urlText.startsWith('http') ? urlText : 'https://' + urlText;
+      const u = new URL(fullUrl);
+      domain = u.hostname.replace(/^www\./, '');
+
+      const qp = u.searchParams.get('price') || u.searchParams.get('precio') || u.searchParams.get('p') || u.searchParams.get('amount');
       if (qp) {
         const pNum = parseFloat(qp.replace(/[^0-9.]/g, ''));
         if (pNum > 0) price = pNum;
       }
 
-      const parts = u.pathname.split('/').filter(p => p && p !== 'p');
+      const parts = u.pathname.split('/').filter(p => p && p !== 'p' && !p.endsWith('.html') && !p.endsWith('.htm'));
       if (parts.length > 0) {
-        let clean = decodeURIComponent(parts[0])
+        let rawPart = parts[parts.length - 1];
+        if (/^\d+$/.test(rawPart) && parts.length > 1) {
+          rawPart = parts[parts.length - 2];
+        }
+        let clean = decodeURIComponent(rawPart)
           .replace(/^ML[A-Z]-?\d+-?/i, '')
           .replace(/_JM$/i, '')
           .replace(/[\-_]+/g, ' ')
@@ -174,7 +194,7 @@ async function fetchProductPrice(urlText) {
       }
     } catch (_) {}
 
-    // 2. Extraer item_id del link
+    // 2. Extraer item_id si es Mercado Libre
     let itemId = null;
     const queryMatch = urlText.match(/(?:item_id|wid)(?:%3A|=)(MLA-?\d+)/i);
     const catalogMatch = urlText.match(/\/p\/(ML[A-Z]-?\d+)/i);
@@ -184,7 +204,7 @@ async function fetchProductPrice(urlText) {
     else if (catalogMatch) itemId = catalogMatch[1].replace(/-/g, '').toUpperCase();
     else if (generalMatch) itemId = generalMatch[1].replace(/-/g, '').toUpperCase();
 
-    // 3. Intento ultra-rápido de consulta directa a API pública por si está abierta
+    // 3. Intento ultra-rápido de consulta directa a API pública de ML por si está abierta
     if (price === 0 && itemId) {
       try {
         const resp = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
@@ -200,17 +220,17 @@ async function fetchProductPrice(urlText) {
       } catch (_) {}
     }
 
-    // 4. Consultar al backend usando el token OAuth de Mercado Pago vinculado del usuario
-    let hasMpToken = false;
+    // 4. Consultar al backend mediante el endpoint unificado multitienda
     if (price === 0 && IS_SERVER) {
       try {
         const serverData = await apiFetch(`/shopping/fetch-price?url=${encodeURIComponent(urlText)}`);
         if (serverData) {
           hasMpToken = Boolean(serverData.has_mp_token);
+          if (serverData.domain) domain = serverData.domain;
           if (serverData.price && serverData.price > 0) {
             price = serverData.price;
           }
-          if (serverData.title && serverData.title !== 'Producto Mercado Libre') {
+          if (serverData.title && !serverData.title.toLowerCase().includes('tienda web')) {
             title = serverData.title;
           }
         }
@@ -220,20 +240,21 @@ async function fetchProductPrice(urlText) {
     }
 
     // 5. Actualizar feedback visual
-    if (previewBadge && title) {
+    if (previewBadge && (title || domain)) {
+      const displayTitle = title || `Producto en ${domain}`;
       let extraInfo = '';
       if (price > 0) {
         const tokenTag = hasMpToken
           ? `<span style="font-size:11px;color:var(--accent);font-weight:600;display:block;margin-top:2px;">✨ Precio obtenido con tu Mercado Pago vinculado</span>`
-          : `<span style="font-size:11px;color:var(--accent);font-weight:600;display:block;margin-top:2px;">✨ Precio autodetectado</span>`;
+          : `<span style="font-size:11px;color:var(--accent);font-weight:600;display:block;margin-top:2px;">✨ Precio autodetectado desde ${domain}</span>`;
         extraInfo = ` <span style="margin-left:8px;color:var(--text);font-weight:700;">($${Math.round(price).toLocaleString('es-AR')})</span>${tokenTag}`;
       } else {
         const helpMsg = hasMpToken
           ? `Cuenta de Mercado Pago vinculada. Si la publicación requiere precio manual, ingresalo abajo para calcular cuotas vs inflación.`
-          : `Por seguridad de Mercado Libre, ingresá el precio abajo para calcular cuotas vs inflación. (Tip: Vinculá tu cuenta de MP en Ajustes para sincronización automática).`;
+          : `Por políticas de seguridad o antibot de ${domain}, ingresá el precio publicado abajo para calcular cuotas vs inflación.`;
         extraInfo = `<div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:3px;">${helpMsg}</div>`;
       }
-      previewBadge.innerHTML = `📦 Producto: <strong>${title}</strong>${extraInfo}`;
+      previewBadge.innerHTML = `📦 <strong>${displayTitle}</strong>${extraInfo}`;
       previewBadge.style.display = 'block';
     }
 
@@ -286,8 +307,8 @@ export async function analyzeShoppingUrl() {
   const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;
   const tna = parseFloat(document.getElementById('shoppingTna')?.value) || 40;
   
-  if (!url) {
-    showToast('Por favor, ingresá un link válido de Mercado Libre', true);
+  if (!url && (!priceVal || priceVal <= 0)) {
+    showToast('Por favor, ingresá el link de la publicación o el precio del producto', true);
     return;
   }
 
@@ -310,17 +331,17 @@ export async function analyzeShoppingUrl() {
   document.getElementById('shoppingResultsContainer').style.display = 'none';
 
   // Extraer título para fallback
-  let detectedTitle = "Producto Mercado Libre";
+  let detectedTitle = "Producto seleccionado";
   try {
     const previewEl = document.getElementById('shoppingTitlePreview');
     if (previewEl && previewEl.textContent) {
-      detectedTitle = previewEl.textContent.replace('📦 Producto:', '').split('(')[0].trim();
+      detectedTitle = previewEl.textContent.replace('📦', '').split('(')[0].trim();
     }
   } catch (_) {}
 
   try {
     const bodyPayload = {
-      url: url,
+      url: url || 'https://tienda-online.com/producto',
       installments_without_interest: selectedInstallments,
       discount_percentage: discount,
       custom_tna: tna,
@@ -447,7 +468,7 @@ function localEvaluateShopping(url, title, price, installments, discount, tna) {
 
   return {
     item: {
-      title: title || 'Producto Mercado Libre',
+      title: title || 'Producto seleccionado',
       price: price,
       permalink: url
     },
@@ -472,7 +493,7 @@ function renderShoppingResults(data) {
         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
       </div>
       <div style="flex: 1; min-width: 0;">
-        <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Producto detectado</div>
+        <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">${item.domain ? 'Tienda: ' + item.domain : 'Producto detectado'}</div>
         <div style="font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.title}">${item.title}</div>
       </div>
       <div style="text-align: right; flex-shrink: 0;">

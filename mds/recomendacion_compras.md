@@ -107,3 +107,60 @@ Para usuarios que han vinculado su cuenta de Mercado Pago en la aplicación (con
    - Al pegar o ingresar el enlace en el campo de URL, tras 500ms de debounce se dispara la petición al backend.
    - Si la API responde con éxito, el precio se inyecta automáticamente en el campo `#shoppingPrice` con retroalimentación visual (borde verde/turquesa y badge "✨ Precio obtenido con tu Mercado Pago vinculado").
    - Si la publicación específica no permite lectura remota o no hay cuenta vinculada, la interfaz muestra de forma elegante el mensaje orientativo solicitando el ingreso manual sin bloquear la experiencia del usuario.
+
+---
+
+## 6. EXPANSIÓN MULTITIENDA: ARQUITECTURA UNIVERSAL DE ASISTENTE DE COMPRAS (MÁS ALLÁ DE MERCADO LIBRE)
+
+### A. Contexto y Desafío de Ingeniería
+Originalmente, el asistente de compras estaba acoplado a Mercado Libre y a su ecosistema de APIs y tokens de Mercado Pago. Sin embargo, en el mundo real, los usuarios adquieren productos en decenas de comercios electrónicos diferentes:
+- **Tiendas locales de electrodomésticos y retail:** Frávega, Garbarino, Cetrogar, Musimundo, Carrefour.
+- **Tiendas globales y cross-border:** Amazon, Tiendamia, eBay, AliExpress.
+- **Tiendas de marca directa y plataformas SaaS:** Sitios creados sobre **Shopify, WooCommerce, Magento, PrestaShop o VTEX** (Nike, Adidas, librerías, casas de informática como CompraGamer o Venex).
+
+A diferencia de Mercado Libre, estas plataformas **no comparten una API unificada ni un sistema OAuth común**. Diseñar un extractor específico para cada una de las millones de webs existentes violaría los principios de mantenibilidad y escalabilidad.
+
+### B. Solución Arquitectural: Patrón Strategy + Registry y Extracción Semántica Universal
+
+Para resolver este desafío con calidad de ingeniería de software clase mundial (Google-grade) y manteniendo la arquitectura **PHAME/Hexagonal**, se implementó el desacoplamiento en dos capas:
+
+```mermaid
+flowchart TD
+    UI["Frontend: js/shopping.ts"] -->|URL de cualquier tienda| Router["FastAPI: /api/shopping/fetch-price"]
+    Router --> ShoppingService["ShoppingService"]
+    ShoppingService --> Registry["ProductExtractorRegistry"]
+    Registry -->|URL de ML / mpago.li| MLExtractor["MercadoLibreExtractor"]
+    Registry -->|Cualquier otra URL| GenericExtractor["GenericECommerceExtractor"]
+    
+    GenericExtractor --> JSONLD["1. Schema.org JSON-LD"]
+    GenericExtractor --> OG["2. Open Graph & Twitter Cards"]
+    GenericExtractor --> Microdata["3. Microdata itemprop"]
+    GenericExtractor --> CSSHeuristics["4. Heurísticas CSS HTML"]
+    GenericExtractor --> ResilientFallback["5. Slug Parsing + Autofoco Guiado"]
+    
+    ShoppingService --> RecomEngine["Motor Financiero VPN / Cuotas vs Inflación"]
+    RecomEngine --> UIResults["Recomendación Ganadora en Frontend"]
+```
+
+#### 1. Principios SOLID Aplicados
+- **Single Responsibility Principle (SRP):** `ShoppingService` ahora es puramente un orquestador de casos de uso y cálculo financiero. La lógica de scraping y comunicación HTTP vive exclusivamente en los extractores.
+- **Open/Closed Principle (OCP):** El sistema está abierto a la extensión y cerrado a la modificación. Para dar soporte especializado a una nueva tienda (por ejemplo, con autenticación propietaria), basta con implementar `IProductExtractor` y registrarlo en `ProductExtractorRegistry` sin tocar ni una sola línea de `ShoppingService`.
+- **Liskov Substitution Principle (LSP):** Tanto `MercadoLibreExtractor` como `GenericECommerceExtractor` cumplen con la interfaz `IProductExtractor`, devolviendo el mismo contrato de datos normalizado (`title`, `price`, `currency_id`, `domain`, `source`, `ok`).
+- **Interface Segregation Principle (ISP):** La interfaz `IProductExtractor` declara únicamente los métodos estrictamente necesarios: `can_handle(url)` y `extract(url, ...)`.
+- **Dependency Inversion Principle (DIP):** El servicio depende de la abstracción (`IProductExtractor`), facilitando mocks y pruebas unitarias aisladas sin red real.
+
+#### 2. Jerarquía de Extracción Semántica en `GenericECommerceExtractor`
+Para extraer con precisión quirúrgica el producto y su precio sin importar la tecnología del comercio:
+1. **Schema.org en JSON-LD (`<script type="application/ld+json">`):** Estándar internacional exigido por Google para indexación de Google Shopping y SEO. En el 90%+ de las tiendas (Shopify, VTEX, WooCommerce, Magento), contiene un JSON estructurado con `@type: "Product"` y sus `offers: { "price": ..., "priceCurrency": ... }`.
+2. **Open Graph Protocol & Twitter Cards (`og:price:amount`, `og:title`):** Metadatos utilizados por WhatsApp, Telegram y redes sociales para generar vistas previas de enlaces.
+3. **Microdata HTML (`itemprop="price"`, `itemprop="name"`):** Atributos semánticos inline en el DOM.
+4. **Heurísticas CSS & Sanitizador Numérico Regional:** Parser inteligente que interpreta tanto el formato de miles latino (`$ 1.250.000,50`) como anglosajón (`$1,250.00`).
+5. **Manejo Resiliente ante WAF / Anti-Bot (Cloudflare, Akamai):** Si una tienda bloquea la petición HTTP automatizada (código 403 / captcha), el extractor extrae el nombre legible del producto y el dominio desde el slug de la URL en 0 milisegundos, y la interfaz guía al usuario con auto-enfoque al campo de precio: `"Por seguridad de {dominio}, ingresá el precio publicado para calcular cuotas vs inflación"`.
+
+### C. Experiencia en Frontend (`js/shopping.ts`)
+- **Aceptación Universal de Enlaces:** El debounce reactivo de 500ms analiza cualquier URL que inicie con `http://` o `https://`.
+- **Badges Contextuales:**
+  - Si es Mercado Libre con cuenta vinculada: `✨ Precio obtenido con tu Mercado Pago vinculado`.
+  - Si es otra tienda: `✨ Precio autodetectado desde {dominio}`.
+  - Si la tienda requiere precio manual: Notificación clara orientando al usuario a ingresar el precio para ejecutar el simulador de cuotas vs inflación.
+- **Evaluación Financiera Homogénea:** La matemática de Valor Presente Neto ($VPN$) y análisis de Costo Financiero Total se aplica de manera idéntica sea cual sea la tienda de origen, maximizando el ahorro del usuario frente a la inflación.

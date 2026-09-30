@@ -10,11 +10,14 @@ router = APIRouter(prefix="/api/shopping", tags=["shopping"])
 
 @router.get("/fetch-price")
 async def fetch_price(
-    url: str = Query(..., description="URL de la publicación de Mercado Libre"),
+    url: str = Query(..., description="URL del producto en cualquier tienda online (Mercado Libre, Frávega, Amazon, etc.)"),
     user_id: Optional[int] = Depends(get_optional_user_id),
     shopping_service: ShoppingService = Depends(get_shopping_service)
 ):
-    """Obtiene el precio, título y moneda del producto usando el token de MP del usuario si está conectado."""
+    """
+    Obtiene el precio, título, moneda y dominio del producto desde cualquier web
+    (aprovechando tokens OAuth si es Mercado Libre, o Schema.org/OpenGraph si es otra tienda).
+    """
     return shopping_service.fetch_product_details(url, user_id)
 
 class AnalyzeUrlRequest(BaseModel):
@@ -35,7 +38,7 @@ async def search_items(
     q: str = Query(...),
     shopping_service: ShoppingService = Depends(get_shopping_service)
 ):
-    """Busca productos en Mercado Libre por palabra clave."""
+    """Busca productos en catálogo de e-commerce por palabra clave."""
     return shopping_service.search_items(q)
 
 @router.post("/analyze-url")
@@ -44,7 +47,7 @@ async def analyze_url(
     user_id: int = Depends(get_current_user_id),
     shopping_service: ShoppingService = Depends(get_shopping_service)
 ):
-    """Analiza una URL de ML y recomienda el mejor método de pago."""
+    """Analiza una URL de cualquier tienda online y recomienda el mejor método financiero de pago (VPN vs inflación)."""
     return shopping_service.analyze_url(payload, user_id)
 
 @router.post("/analyze-barcode")

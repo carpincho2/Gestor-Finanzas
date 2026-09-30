@@ -324,6 +324,7 @@ async function saveMpToken(accountId) {
     if (res && res.ok) {
       showToast('Token de Mercado Pago actualizado');
       renderCuentasView();
+      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') renderTxView();
     } else {
       showToast(res.error || 'Error al guardar el token', true);
     }
@@ -357,6 +358,7 @@ async function syncWallet(accountId) {
       await loadUserData();
       if (typeof renderAll === 'function') renderAll();
       renderCuentasView();
+      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') renderTxView();
     } else {
       showToast(res.error || 'Error en la sincronización', true);
     }
@@ -474,6 +476,7 @@ function saveMpBalance() {
     renderCuentasView();
     closeMpBalanceModal();
     showToast('Saldo inicial guardado correctamente');
+    if (typeof syncWallet === 'function') syncWallet(parseInt(accIdStr));
   }).catch(e => {
     showToast('Error al guardar el saldo: ' + e.message, true);
   }).finally(() => {
@@ -562,6 +565,7 @@ async function disconnectWallet(accountId) {
     if (res && res.ok) {
       showToast('Billetera desconectada');
       renderCuentasView();
+      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') renderTxView();
     } else {
       showToast(res.error || 'Error al desconectar', true);
     }

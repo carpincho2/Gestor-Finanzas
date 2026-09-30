@@ -217,29 +217,48 @@ async function addTransaction(tx) {
 }
 
 /* =====================================================
-   TRANSACTIONS VIEW
-   ===================================================== */
+// =====================================================
+// TRANSACTIONS VIEW LIFECYCLE & STATE
+// =====================================================
 const TX_PER_PAGE = 12;
-let txFilter = { type: 'all', cat: 'all', search: '', dateFrom: '', dateTo: '' };
-let txSort = { field: 'date', dir: 'desc' };
-let txPage = 1;
+export let txFilter = { type: 'all', cat: 'all', search: '', dateFrom: '', dateTo: '' };
+export let txSort = { field: 'date', dir: 'desc' };
+export let txPage = 1;
 let editingId = null;
 
-function getFilteredTx() {
-  let list = [...state.transactions];
+export function enterTxView() {
+  txFilter = { type: 'all', cat: 'all', search: '', dateFrom: '', dateTo: '' };
+  txSort = { field: 'date', dir: 'desc' };
+  txPage = 1;
+  syncTxFilterUI();
+  renderTxView();
+}
 
-  if (txFilter.type !== 'all') list = list.filter(t => t.type === txFilter.type);
-  if (txFilter.cat !== 'all') list = list.filter(t => t.cat === txFilter.cat);
+function getFilteredTx() {
+  let list = [...(state.transactions || [])];
+
+  if (txFilter.type && txFilter.type !== 'all') {
+    list = list.filter(t => t.type === txFilter.type);
+  }
+  if (txFilter.cat && txFilter.cat !== 'all') {
+    list = list.filter(t => t.cat === txFilter.cat || (t.cat && t.cat.toLowerCase().includes(txFilter.cat.toLowerCase())));
+  }
   if (txFilter.search) {
     const q = txFilter.search.toLowerCase();
-    list = list.filter(t => t.desc.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q));
+    list = list.filter(t => 
+      (t.desc && String(t.desc).toLowerCase().includes(q)) || 
+      (t.cat && String(t.cat).toLowerCase().includes(q))
+    );
   }
-  if (txFilter.dateFrom) list = list.filter(t => t.date >= txFilter.dateFrom);
-  if (txFilter.dateTo) list = list.filter(t => t.date <= txFilter.dateTo);
+  if (txFilter.dateFrom) list = list.filter(t => t.date && t.date >= txFilter.dateFrom);
+  if (txFilter.dateTo) list = list.filter(t => t.date && t.date <= txFilter.dateTo);
 
   list.sort((a, b) => {
     let va = a[txSort.field], vb = b[txSort.field];
-    if (txSort.field === 'amount') { va = +va; vb = +vb; }
+    if (txSort.field === 'amount') { 
+      va = +va || 0; 
+      vb = +vb || 0; 
+    }
     if (va < vb) return txSort.dir === 'asc' ? -1 : 1;
     if (va > vb) return txSort.dir === 'asc' ? 1 : -1;
     return 0;
@@ -249,6 +268,14 @@ function getFilteredTx() {
 }
 
 function renderTxView() {
+  const sumTotalEl = document.getElementById('txSumTotal');
+  const sumIncomeEl = document.getElementById('txSumIncome');
+  const sumExpenseEl = document.getElementById('txSumExpense');
+  const sumNetEl = document.getElementById('txSumNet');
+  const tbody = document.getElementById('txTableBody');
+  
+  if (!sumTotalEl || !tbody) return; // Si la vista no está cargada aún en el DOM
+
   const all = getFilteredTx();
   const total = all.length;
   const pages = Math.max(1, Math.ceil(total / TX_PER_PAGE));
@@ -256,44 +283,49 @@ function renderTxView() {
   const slice = all.slice((txPage - 1) * TX_PER_PAGE, txPage * TX_PER_PAGE);
 
   // Summary strip
-  const income = all.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expenses = all.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const income = all.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0);
+  const expenses = all.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0);
   const fmt = n => '$' + n.toLocaleString('es-AR');
 
-  document.getElementById('txSumTotal').textContent = total + ' transacciones';
-  document.getElementById('txSumIncome').textContent = fmt(income);
-  document.getElementById('txSumExpense').textContent = fmt(expenses);
-  document.getElementById('txSumNet').textContent = fmt(income - expenses);
-  document.getElementById('txSumNet').className = 'txsum-val ' + (income - expenses >= 0 ? 'green' : 'red');
+  sumTotalEl.textContent = total + ' transacciones';
+  if (sumIncomeEl) sumIncomeEl.textContent = fmt(income);
+  if (sumExpenseEl) sumExpenseEl.textContent = fmt(expenses);
+  if (sumNetEl) {
+    sumNetEl.textContent = fmt(income - expenses);
+    sumNetEl.className = 'txsum-val ' + (income - expenses >= 0 ? 'green' : 'red');
+  }
 
   // Table body
-  const tbody = document.getElementById('txTableBody');
   if (slice.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);font-family:var(--font-mono);font-size:12px;">Sin resultados para los filtros aplicados.</td></tr>`;
   } else {
-    tbody.innerHTML = slice.map(t => `
+    tbody.innerHTML = slice.map(t => {
+      const catColor = (state.CAT_COLORS && state.CAT_COLORS[t.cat]) || '#64748b';
+      const catIcon = (state.CAT_ICONS && state.CAT_ICONS[t.cat]) || '📦';
+      const isIncome = t.type === 'income';
+      return `
       <tr class="tx-row" data-id="${t.id}">
         <td>
           <div style="display:flex;align-items:center;gap:10px;">
-            <div class="tx-icon" style="background:${state.CAT_COLORS[t.cat]}22;width:32px;height:32px;font-size:14px;">
-              ${state.CAT_ICONS[t.cat] || '📦'}
+            <div class="tx-icon" style="background:${catColor}22;width:32px;height:32px;font-size:14px;">
+              ${catIcon}
             </div>
             <div>
-              <div style="font-weight:600;font-size:13.5px;">${escHtml(t.desc)}</div>
+              <div style="font-weight:600;font-size:13.5px;">${escHtml(t.desc || '—')}</div>
             </div>
           </div>
         </td>
         <td>
-          <span class="cat-chip" style="background:${state.CAT_COLORS[t.cat]}18;color:${state.CAT_COLORS[t.cat]};">
-            ${t.cat}
+          <span class="cat-chip" style="background:${catColor}18;color:${catColor};">
+            ${escHtml(t.cat || 'Otros')}
           </span>
         </td>
         <td>
-          <span class="type-chip ${t.type}">${t.type === 'income' ? 'Ingreso' : 'Gasto'}</span>
+          <span class="type-chip ${t.type}">${isIncome ? 'Ingreso' : 'Gasto'}</span>
         </td>
         <td style="font-family:var(--font-mono);font-size:13px;color:var(--muted);">${formatDateLong(t.date)}</td>
         <td style="font-family:var(--font-mono);font-weight:700;font-size:14px;text-align:right;" class="${t.type}">
-          ${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}
+          ${isIncome ? '+' : '-'}${fmt(Number(t.amount || 0))}
         </td>
         <td style="text-align:right;">
           <div style="display:flex;gap:4px;justify-content:flex-end;">
@@ -306,7 +338,8 @@ function renderTxView() {
           </div>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   // Sort indicators
@@ -326,6 +359,7 @@ function renderTxView() {
 
 function renderTxPagination(total, pages) {
   const el = document.getElementById('txPagination');
+  if (!el) return;
   if (pages <= 1) { el.innerHTML = ''; return; }
 
   let html = `<span style="font-size:11px;font-family:var(--font-mono);color:var(--muted);margin-right:8px;">${total} resultados</span>`;
@@ -349,7 +383,8 @@ function goTxPage(p) {
   if (p < 1 || p > pages) return;
   txPage = p;
   renderTxView();
-  document.getElementById('txView').scrollTo(0, 0);
+  const txViewEl = document.getElementById('txView');
+  if (txViewEl) txViewEl.scrollTo(0, 0);
 }
 
 function sortTx(field) {
@@ -364,19 +399,40 @@ function sortTx(field) {
 }
 
 function syncTxFilterUI() {
-  document.getElementById('txSearch').value = txFilter.search;
-  document.getElementById('txFilterType').value = txFilter.type;
-  document.getElementById('txFilterCat').value = txFilter.cat;
-  document.getElementById('txFilterFrom').value = txFilter.dateFrom;
-  document.getElementById('txFilterTo').value = txFilter.dateTo;
+  const searchEl = document.getElementById('txSearch');
+  if (searchEl) searchEl.value = txFilter.search;
+  
+  const typeEl = document.getElementById('txFilterType');
+  if (typeEl) {
+    typeEl.value = txFilter.type;
+    if (typeof updateCustomSelectDisplay === 'function') updateCustomSelectDisplay(typeEl);
+  }
+  
+  const catEl = document.getElementById('txFilterCat');
+  if (catEl) {
+    catEl.value = txFilter.cat;
+    if (typeof updateCustomSelectDisplay === 'function') updateCustomSelectDisplay(catEl);
+  }
+  
+  const fromEl = document.getElementById('txFilterFrom');
+  if (fromEl) fromEl.value = txFilter.dateFrom;
+  
+  const toEl = document.getElementById('txFilterTo');
+  if (toEl) toEl.value = txFilter.dateTo;
 }
 
 function applyTxFilter() {
-  txFilter.search = document.getElementById('txSearch').value.trim();
-  txFilter.type = document.getElementById('txFilterType').value;
-  txFilter.cat = document.getElementById('txFilterCat').value;
-  txFilter.dateFrom = document.getElementById('txFilterFrom').value;
-  txFilter.dateTo = document.getElementById('txFilterTo').value;
+  const searchEl = document.getElementById('txSearch');
+  const typeEl = document.getElementById('txFilterType');
+  const catEl = document.getElementById('txFilterCat');
+  const fromEl = document.getElementById('txFilterFrom');
+  const toEl = document.getElementById('txFilterTo');
+  
+  txFilter.search = searchEl ? searchEl.value.trim() : '';
+  txFilter.type = typeEl ? typeEl.value : 'all';
+  txFilter.cat = catEl ? catEl.value : 'all';
+  txFilter.dateFrom = fromEl ? fromEl.value : '';
+  txFilter.dateTo = toEl ? toEl.value : '';
   txPage = 1;
   renderTxView();
 }
@@ -528,13 +584,18 @@ function escHtml(s) {
 }
 
 function formatDateLong(str) {
-  const d = new Date(str + 'T00:00:00');
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
+  if (!str) return '—';
+  const d = new Date(str.includes('T') ? str : str + 'T00:00:00');
+  return isNaN(d.getTime()) ? String(str) : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 
 
 // --- WINDOW ATTACHMENTS ---
+window.enterTxView = enterTxView;
+window.txFilter = txFilter;
+window.txSort = txSort;
+window.txPage = txPage;
 window.quickAdd = quickAdd;
 window.applyTxFilter = applyTxFilter;
 window.formatDate = formatDate;

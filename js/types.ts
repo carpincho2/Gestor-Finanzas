@@ -55,6 +55,7 @@ declare global {
   var txFilter: any;
   var txSort: any;
   var txPage: any;
+  var enterTxView: any;
   var syncTxFilterUI: any;
   var renderTxView: any;
   var enterBudgetView: any;

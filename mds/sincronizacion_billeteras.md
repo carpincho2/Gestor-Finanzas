@@ -72,5 +72,7 @@ En el frontend (`js/app.js` y el HTML inyectado dinámicamente):
 *   **Estado de conexión**: Muestra visualmente mediante "Badges" si la billetera está 🟢 CONECTADA, 🟡 EXPIRADA o 🔴 DESCONECTADA.
 *   **Última sincronización**: Debajo del botón de sincronizar, el usuario puede ver cuándo fue la última vez que sus datos se actualizaron y si fue exitoso (ej. *"Última sync: hace 5 min ✓"*).
 *   **Desconectar**: Permite al usuario revocar el acceso a su billetera de manera segura.
+*   **Visibilidad unificada en Transacciones**: Las transacciones sincronizadas se integran en `state.transactions`, haciéndose visibles tanto en el panel de Cuentas como en la tabla principal de Transacciones mediante `enterTxView()`.
+*   **Sincronización automática al conectar**: Al ingresar y guardar el saldo inicial tras completar OAuth, se dispara de inmediato la sincronización de movimientos sin requerir clics adicionales.
 
 *Nota: Por compatibilidad con desarrollo local, seguimos soportando el ingreso manual de la palabra "mock-token" para generar datos de prueba.*

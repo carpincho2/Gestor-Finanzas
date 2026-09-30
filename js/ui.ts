@@ -94,11 +94,13 @@ function setPage(el, page) {
   } else if (page === 'transacciones') {
     hideAll();
     document.getElementById('txView').style.display = '';
-    txFilter = { type: 'all', cat: 'all', search: '', dateFrom: '', dateTo: '' };
-    txSort = { field: 'date', dir: 'desc' };
-    txPage = 1;
-    syncTxFilterUI();
-    renderTxView();
+    if (typeof enterTxView === 'function') {
+      enterTxView();
+    } else if (typeof window.enterTxView === 'function') {
+      window.enterTxView();
+    } else if (typeof renderTxView === 'function') {
+      renderTxView();
+    }
   } else if (page === 'presupuestos') {
     hideAll();
     enterBudgetView();

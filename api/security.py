@@ -4,6 +4,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException, Request
+from typing import Optional
 
 # Configuración JWT
 JWT_SECRET = os.getenv("ENCRYPTION_KEY", "super-secret-default-key")
@@ -84,6 +85,12 @@ def get_current_user_id(request: Request):
             error_detail += f" ({jwt_error})"
         raise HTTPException(status_code=401, detail=error_detail)
     return user_id
+ 
+def get_optional_user_id(request: Request) -> Optional[int]:
+    try:
+        return get_current_user_id(request)
+    except HTTPException:
+        return None
 
 # Dummy hash generado con bcrypt para igualar tiempos (aprox 100ms)
 DUMMY_PASSWORD_HASH = bcrypt.hashpw(b"dummy_password_for_timing_attack_prevention", bcrypt.gensalt())

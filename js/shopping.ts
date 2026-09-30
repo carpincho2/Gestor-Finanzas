@@ -1,9 +1,11 @@
 // @ts-nocheck
 import { apiFetch } from './api/apiClient.ts';
 import { showToast } from './utils/utils.ts';
+import { state, IS_SERVER } from './store/store.ts';
 
 export function initShopping() {
   const container = document.getElementById('shoppingView');
+  if (!container) return;
 
   // Evitar re-renderizar si ya existe el formulario (preserva datos del usuario)
   if (container.querySelector('#shoppingUrl')) return;
@@ -37,7 +39,7 @@ export function initShopping() {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
           
           <div>
-            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--accent); font-weight: 600;">(Ingresalo para calcular cuotas)</span></label>
+            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--accent); font-weight: 600;">(Autocompletable con MP)</span></label>
             <input type="text" id="shoppingPrice" inputmode="decimal" class="field-input" placeholder="Ej: 194799" style="width: 100%; border: 1px solid var(--accent); font-weight: 600;">
           </div>
 
@@ -85,6 +87,15 @@ export function initShopping() {
   const inputEl = container.querySelector('#shoppingUrl');
   const previewBadge = container.querySelector('#shoppingTitlePreview');
   let lastFetchedUrl = '';
+  let debounceTimer = null;
+
+  const triggerPriceFetch = (val) => {
+    if (!val || val === lastFetchedUrl) return;
+    if (val.includes('mercadolibre') || val.includes('mpago.li') || val.includes('mla') || val.includes('/p/ML')) {
+      lastFetchedUrl = val;
+      fetchProductPrice(val);
+    }
+  };
 
   if (inputEl) {
     inputEl.addEventListener('input', () => {
@@ -105,50 +116,45 @@ export function initShopping() {
           if (clean.length > 3) {
             clean = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
             if (previewBadge) {
-              previewBadge.textContent = `📦 Producto: ${clean}`;
+              previewBadge.innerHTML = `📦 Producto: <strong>${clean}</strong> <span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:6px;">(Consultando precio con tu cuenta vinculada...)</span>`;
               previewBadge.style.display = 'block';
             }
           }
         }
       } catch (e) {}
 
-      // Auto-fetch precio desde el navegador del usuario (evita bloqueo de ML a IPs de datacenter)
-      if (val.includes('mercadolibre') && val !== lastFetchedUrl) {
-        lastFetchedUrl = val;
-        fetchPriceFromClient(val);
-      }
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => triggerPriceFetch(val), 500);
+    });
+
+    inputEl.addEventListener('paste', () => {
+      setTimeout(() => {
+        const val = inputEl.value.trim();
+        triggerPriceFetch(val);
+      }, 80);
     });
   }
 }
 
 /**
- * Obtiene el precio de un producto de MercadoLibre directamente desde el navegador del usuario.
- * Esto evita el bloqueo que ML hace a IPs de datacenters (como Render).
- *
- * IMPORTANTE: Solo usa las APIs JSON de ML (api.mercadolibre.com) que tienen CORS habilitado.
- * NO intenta scrapear HTML porque las páginas de ML (articulo.mercadolibre.com.ar) bloquean CORS.
- *
- * Estrategia:
- *   1. API /items/{id} — items individuales
- *   2. API /products/{id} — catálogo (URLs tipo /p/MLA...)
- *   3. API /sites/MLA/search?q={titulo} — búsqueda por nombre extraído del slug
+ * Obtiene el precio y metadatos de un producto de Mercado Libre.
+ * Prioriza el token OAuth de Mercado Pago del usuario a través del backend (/api/shopping/fetch-price).
  */
-async function fetchPriceFromClient(urlText) {
+async function fetchProductPrice(urlText) {
   const priceEl = document.getElementById('shoppingPrice');
   const previewBadge = document.getElementById('shoppingTitlePreview');
   if (!priceEl) return;
 
-  // Si el usuario ya ingresó un precio manualmente, no pisar
+  // Si el usuario ya ingresó un precio manualmente y no fue auto-llenado, respetarlo
   if (priceEl.value.trim() && !priceEl.dataset.autoFilled) return;
 
   try {
     let price = 0;
     let title = null;
 
-    // 1. Extraer título limpio del slug
+    // 1. Extraer título limpio del slug localmente
     try {
       const u = new URL(urlText);
-      // Chequear si viene parámetro de precio en la URL (?price= o &p=)
       const qp = u.searchParams.get('price') || u.searchParams.get('precio') || u.searchParams.get('p');
       if (qp) {
         const pNum = parseFloat(qp.replace(/[^0-9.]/g, ''));
@@ -168,7 +174,7 @@ async function fetchPriceFromClient(urlText) {
       }
     } catch (_) {}
 
-    // 2. Extraer item_id del link (soporta MLA-123456789, MLA123456789, pdp_filters, wid)
+    // 2. Extraer item_id del link
     let itemId = null;
     const queryMatch = urlText.match(/(?:item_id|wid)(?:%3A|=)(MLA-?\d+)/i);
     const catalogMatch = urlText.match(/\/p\/(ML[A-Z]-?\d+)/i);
@@ -178,11 +184,11 @@ async function fetchPriceFromClient(urlText) {
     else if (catalogMatch) itemId = catalogMatch[1].replace(/-/g, '').toUpperCase();
     else if (generalMatch) itemId = generalMatch[1].replace(/-/g, '').toUpperCase();
 
-    // 3. Intento ultra-rápido de consulta a API pública (timeout de 1.5s)
+    // 3. Intento ultra-rápido de consulta directa a API pública por si está abierta
     if (price === 0 && itemId) {
       try {
         const resp = await fetch(`https://api.mercadolibre.com/items/${itemId}`, {
-          signal: AbortSignal.timeout(1500)
+          signal: AbortSignal.timeout(1200)
         });
         if (resp.ok) {
           const data = await resp.json();
@@ -194,22 +200,49 @@ async function fetchPriceFromClient(urlText) {
       } catch (_) {}
     }
 
-    // 4. Mostrar feedback al usuario
+    // 4. Consultar al backend usando el token OAuth de Mercado Pago vinculado del usuario
+    let hasMpToken = false;
+    if (price === 0 && IS_SERVER) {
+      try {
+        const serverData = await apiFetch(`/shopping/fetch-price?url=${encodeURIComponent(urlText)}`);
+        if (serverData) {
+          hasMpToken = Boolean(serverData.has_mp_token);
+          if (serverData.price && serverData.price > 0) {
+            price = serverData.price;
+          }
+          if (serverData.title && serverData.title !== 'Producto Mercado Libre') {
+            title = serverData.title;
+          }
+        }
+      } catch (backendErr) {
+        console.warn('Consulta de precio al backend:', backendErr);
+      }
+    }
+
+    // 5. Actualizar feedback visual
     if (previewBadge && title) {
-      previewBadge.innerHTML = `📦 Producto: <strong>${title}</strong>` + 
-        (price > 0 
-          ? ` <span style="margin-left:8px;color:var(--text);font-weight:700;">($${Math.round(price).toLocaleString('es-AR')})</span>` 
-          : `<div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:3px;">Por seguridad antibots de Mercado Libre, ingresá el precio abajo para calcular cuotas vs inflación.</div>`);
+      let extraInfo = '';
+      if (price > 0) {
+        const tokenTag = hasMpToken
+          ? `<span style="font-size:11px;color:var(--accent);font-weight:600;display:block;margin-top:2px;">✨ Precio obtenido con tu Mercado Pago vinculado</span>`
+          : `<span style="font-size:11px;color:var(--accent);font-weight:600;display:block;margin-top:2px;">✨ Precio autodetectado</span>`;
+        extraInfo = ` <span style="margin-left:8px;color:var(--text);font-weight:700;">($${Math.round(price).toLocaleString('es-AR')})</span>${tokenTag}`;
+      } else {
+        const helpMsg = hasMpToken
+          ? `Cuenta de Mercado Pago vinculada. Si la publicación requiere precio manual, ingresalo abajo para calcular cuotas vs inflación.`
+          : `Por seguridad de Mercado Libre, ingresá el precio abajo para calcular cuotas vs inflación. (Tip: Vinculá tu cuenta de MP en Ajustes para sincronización automática).`;
+        extraInfo = `<div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:3px;">${helpMsg}</div>`;
+      }
+      previewBadge.innerHTML = `📦 Producto: <strong>${title}</strong>${extraInfo}`;
       previewBadge.style.display = 'block';
     }
 
     if (price > 0) {
       priceEl.value = Math.round(price).toString();
       priceEl.dataset.autoFilled = 'true';
-      priceEl.style.border = '2px solid var(--green)';
-      priceEl.style.boxShadow = '0 0 10px rgba(0, 229, 160, 0.3)';
+      priceEl.style.border = '2px solid var(--accent)';
+      priceEl.style.boxShadow = '0 0 12px rgba(0, 229, 160, 0.4)';
       setTimeout(() => {
-        priceEl.style.border = '1px solid var(--accent)';
         priceEl.style.boxShadow = 'none';
       }, 3000);
     } else {
@@ -218,6 +251,7 @@ async function fetchPriceFromClient(urlText) {
       priceEl.focus();
     }
   } catch (err) {
+    console.warn('Error en fetchProductPrice:', err);
     priceEl.placeholder = 'Ingresá el precio (ej: 194799)';
   }
 }
@@ -257,7 +291,8 @@ export async function analyzeShoppingUrl() {
     return;
   }
 
-  if (!priceVal || priceVal <= 0) {
+  // Si no hay precio ingresado y no estamos en servidor, solicitarlo de inmediato
+  if ((!priceVal || priceVal <= 0) && !IS_SERVER) {
     showToast('⚠️ Ingresá el precio del producto para calcular las opciones de pago', true);
     const priceEl = document.getElementById('shoppingPrice');
     if (priceEl) {
@@ -279,7 +314,7 @@ export async function analyzeShoppingUrl() {
   try {
     const previewEl = document.getElementById('shoppingTitlePreview');
     if (previewEl && previewEl.textContent) {
-      detectedTitle = previewEl.textContent.replace('📦 Producto:', '').trim();
+      detectedTitle = previewEl.textContent.replace('📦 Producto:', '').split('(')[0].trim();
     }
   } catch (_) {}
 
@@ -300,15 +335,36 @@ export async function analyzeShoppingUrl() {
           body: JSON.stringify(bodyPayload)
         });
       } catch (apiErr) {
+        if (!priceVal) {
+          // Si falló y no había precio, pedir que lo ingrese
+          showToast(apiErr.message || '⚠️ Ingresá el precio del producto para calcular las opciones de pago', true);
+          const priceEl = document.getElementById('shoppingPrice');
+          if (priceEl) {
+            priceEl.style.border = '2px solid var(--amber)';
+            priceEl.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.4)';
+            priceEl.focus();
+          }
+          return;
+        }
         console.warn("Backend /shopping/analyze-url no disponible, usando cálculo local:", apiErr);
       }
     }
 
-    if (!data) {
+    if (!data && priceVal && priceVal > 0) {
       data = localEvaluateShopping(url, detectedTitle, priceVal, selectedInstallments, discount, tna);
     }
     
-    renderShoppingResults(data);
+    if (data) {
+      // Si el backend autocompletó el precio y el campo estaba vacío, actualizarlo
+      if (data.item?.price) {
+        const priceEl = document.getElementById('shoppingPrice');
+        if (priceEl && !priceEl.value) {
+          priceEl.value = Math.round(data.item.price).toString();
+          priceEl.dataset.autoFilled = 'true';
+        }
+      }
+      renderShoppingResults(data);
+    }
     
   } catch (err) {
     console.error(err);
@@ -401,6 +457,7 @@ function localEvaluateShopping(url, title, price, installments, discount, tna) {
 
 function renderShoppingResults(data) {
   const container = document.getElementById('shoppingResultsContainer');
+  if (!container) return;
   const { item, recommendation } = data;
   
   const formatMoney = (val) => '$ ' + parseFloat(val).toLocaleString('es-AR', {minimumFractionDigits: 2});
@@ -496,4 +553,3 @@ function renderShoppingResults(data) {
   container.innerHTML = html;
   container.style.display = 'block';
 }
-

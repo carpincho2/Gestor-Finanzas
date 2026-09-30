@@ -2,11 +2,20 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from typing import Optional
 
-from security import get_current_user_id
+from security import get_current_user_id, get_optional_user_id
 from infrastructure.dependencies import get_shopping_service
 from services.shopping_service import ShoppingService
 
 router = APIRouter(prefix="/api/shopping", tags=["shopping"])
+
+@router.get("/fetch-price")
+async def fetch_price(
+    url: str = Query(..., description="URL de la publicación de Mercado Libre"),
+    user_id: Optional[int] = Depends(get_optional_user_id),
+    shopping_service: ShoppingService = Depends(get_shopping_service)
+):
+    """Obtiene el precio, título y moneda del producto usando el token de MP del usuario si está conectado."""
+    return shopping_service.fetch_product_details(url, user_id)
 
 class AnalyzeUrlRequest(BaseModel):
     url: str

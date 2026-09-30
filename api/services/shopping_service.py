@@ -2,7 +2,7 @@ import requests
 import re
 from urllib.parse import urlparse, unquote
 from fastapi import HTTPException
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from ports.repositories.wallet_repository_port import IWalletRepository
 from ports.repositories.account_repository_port import IAccountRepository
@@ -33,13 +33,15 @@ class ShoppingService:
             })
         return {"ok": True, "results": results}
 
-    def analyze_url(self, payload, user_id: int) -> Dict[str, Any]:
-        """Analiza una URL de ML y recomienda el mejor método de pago."""
-        url = payload.url.strip()
+    def fetch_product_details(self, raw_url: str, user_id: Optional[int] = None) -> Dict[str, Any]:
+        """Extrae el precio, título y moneda de un producto de Mercado Libre usando el token de MP si está disponible."""
+        url = raw_url.strip()
 
-        # 1. Si el usuario conectó Mercado Pago, recuperar su token
+        # 1. Si el usuario conectó Mercado Pago, recuperar su token descifrado
         user_token = None
-        wallet = self.wallet_repo.get_active_by_provider(user_id, "mercadopago")
+        wallet = None
+        if user_id:
+            wallet = self.wallet_repo.get_active_by_provider(user_id, "mercadopago")
         if not wallet:
             wallet = self.wallet_repo.get_any_active_by_provider("mercadopago")
 
@@ -69,7 +71,6 @@ class ShoppingService:
 
         # 3. Extraer el ID específico del item o catálogo de la URL
         item_id = None
-        
         query_item = re.search(r'(?:item_id|wid)%3A(MLA-?\d+)', url, re.IGNORECASE) or re.search(r'(?:item_id|wid)=(MLA-?\d+)', url, re.IGNORECASE)
         catalog_match = re.search(r'/p/(ML[A-Z]-?\d+)', url, re.IGNORECASE)
         general_match = re.search(r'(ML[A-Z]-?\d{6,})', url, re.IGNORECASE)
@@ -108,13 +109,7 @@ class ShoppingService:
         except Exception:
             pass
 
-        raw_price = payload.price or query_price or 0.0
-        # Corregir caso donde el usuario ingresa 194.799 pensando que son 194 mil pesos
-        if 0 < raw_price < 1000 and round(raw_price * 1000, 2) >= 1000 and round(raw_price * 1000, 3) == float(f"{raw_price * 1000:.3f}"):
-            price = float(round(raw_price * 1000, 2))
-        else:
-            price = raw_price
-
+        price = query_price or 0.0
         title = slug_title or "Producto Mercado Libre"
         currency_id = "ARS"
         found = False
@@ -122,7 +117,7 @@ class ShoppingService:
         if price > 0:
             found = True
 
-        # 5. Intentar consultar las APIs de Mercado Libre
+        # 5. Intentar consultar las APIs de Mercado Libre (aprovechando token de MP)
         if not found and item_id:
             try:
                 resp = requests.get(f"https://api.mercadolibre.com/items/{item_id}", headers=headers, timeout=6)
@@ -131,7 +126,8 @@ class ShoppingService:
                     price = float(data.get("price") or price)
                     title = data.get("title") or title
                     currency_id = data.get("currency_id") or currency_id
-                    found = True
+                    if price > 0:
+                        found = True
             except Exception:
                 pass
 
@@ -144,7 +140,8 @@ class ShoppingService:
                         price = float(buy_box.get("price") or data.get("price") or price)
                         title = data.get("name") or data.get("title") or title
                         currency_id = buy_box.get("currency_id") or data.get("currency_id") or currency_id
-                        found = True
+                        if price > 0:
+                            found = True
                 except Exception:
                     pass
 
@@ -195,7 +192,7 @@ class ShoppingService:
                     pass
 
         # 5.c Búsqueda por título
-        if price == 0 and title and title != "Producto Mercado Libre":
+        if (not found or price == 0) and title and title != "Producto Mercado Libre":
             try:
                 from urllib.parse import quote
                 search_api = f"https://api.mercadolibre.com/sites/MLA/search?q={quote(title)}&limit=1"
@@ -209,8 +206,35 @@ class ShoppingService:
             except Exception:
                 pass
 
+        return {
+            "ok": bool(found and price > 0),
+            "item_id": item_id,
+            "title": title,
+            "price": price,
+            "currency_id": currency_id,
+            "has_mp_token": bool(user_token)
+        }
+
+    def analyze_url(self, payload, user_id: int) -> Dict[str, Any]:
+        """Analiza una URL de ML y recomienda el mejor método de pago."""
+        url = payload.url.strip()
+
+        # Extraer o consultar detalles del producto (utilizando token OAuth si está conectado)
+        details = self.fetch_product_details(url, user_id)
+        
+        item_id = details.get("item_id")
+        title = details.get("title") or "Producto Mercado Libre"
+        currency_id = details.get("currency_id") or "ARS"
+
+        raw_price = payload.price or details.get("price") or 0.0
+        # Corregir caso donde el usuario ingresa 194.799 pensando que son 194 mil pesos
+        if 0 < raw_price < 1000 and round(raw_price * 1000, 2) >= 1000 and round(raw_price * 1000, 3) == float(f"{raw_price * 1000:.3f}"):
+            price = float(round(raw_price * 1000, 2))
+        else:
+            price = raw_price
+
         if price == 0:
-            if not item_id and not slug_title:
+            if not item_id and title == "Producto Mercado Libre":
                 raise HTTPException(
                     status_code=400,
                     detail="No pudimos encontrar el ID de producto en el link. Copiá el link completo de la publicación."
@@ -220,7 +244,7 @@ class ShoppingService:
                 detail=f"Identificamos '{title}', pero Mercado Libre requiere ingresar el precio manualmente en el campo 'Precio del producto' para calcular las cuotas."
             )
 
-        # 7. Evaluar opciones de pago con la billetera del usuario
+        # Evaluar opciones de pago con las cuentas del usuario
         accounts = self.account_repo.get_by_user_id(user_id)
         
         options = evaluate_payment_options(

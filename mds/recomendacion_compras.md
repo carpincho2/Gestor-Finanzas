@@ -97,3 +97,13 @@ Dado que un bot scraping sin proxies residenciales ni credenciales corporativas 
 3. **Motor Local de Recomendación Financiera (VPN):**
    - Si el backend está offline o no disponible, el frontend ejecuta localmente la misma fórmula de Valor Presente Neto ($VPN = \text{Cuota} \times \frac{1 - (1 + \text{TEM})^{-n}}{\text{TEM}}$).
    - Compara las tarjetas de crédito del usuario en 1, 3, 6, 9, 12, 18 y 24 cuotas contra el rendimiento de una TNA de referencia (40%), destacando cuál opción le gana a la inflación.
+
+### C. Integración con Token OAuth de Mercado Pago vinculado
+Para usuarios que han vinculado su cuenta de Mercado Pago en la aplicación (con los permisos `read`, `offline_access` habilitados en Mercado Pago Developers):
+1. **Endpoint `GET /api/shopping/fetch-price?url=...`:**
+   - Recupera de forma segura el `access_token` descifrado del usuario desde `cuentas_billeteras` / `wallet_connections`.
+   - Realiza la consulta a la API de Mercado Libre (`https://api.mercadolibre.com/items/{item_id}` y `/products/{item_id}`) enviando el encabezado de autenticación `Authorization: Bearer {user_token}`.
+2. **Autocompletado Reactivo en Frontend (`js/shopping.ts`):**
+   - Al pegar o ingresar el enlace en el campo de URL, tras 500ms de debounce se dispara la petición al backend.
+   - Si la API responde con éxito, el precio se inyecta automáticamente en el campo `#shoppingPrice` con retroalimentación visual (borde verde/turquesa y badge "✨ Precio obtenido con tu Mercado Pago vinculado").
+   - Si la publicación específica no permite lectura remota o no hay cuenta vinculada, la interfaz muestra de forma elegante el mensaje orientativo solicitando el ingreso manual sin bloquear la experiencia del usuario.

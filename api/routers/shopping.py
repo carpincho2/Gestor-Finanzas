@@ -25,13 +25,17 @@ class AnalyzeUrlRequest(BaseModel):
     discount_percentage: Optional[float] = 0.0
     installments_without_interest: Optional[int] = 0 # 0 = Autodetectar mejor cuota
     custom_tna: Optional[float] = 40.0 # Tasa nominal anual
-    price: Optional[float] = None       # Precio manual opcional
+    price: Optional[float] = None       # Precio contado manual opcional
+    surcharge_percentage: Optional[float] = 0.0 # % de recargo en cuotas si aplica
+    installment_total_price: Optional[float] = None # Precio total financiado en cuotas si difiere
 
 class AnalyzeBarcodeRequest(BaseModel):
     barcode: str
     discount_percentage: Optional[float] = 0.0
     installments_without_interest: Optional[int] = 0
     custom_tna: Optional[float] = 40.0
+    surcharge_percentage: Optional[float] = 0.0
+    installment_total_price: Optional[float] = None
 
 @router.get("/search")
 async def search_items(

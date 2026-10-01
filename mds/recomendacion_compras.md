@@ -164,3 +164,39 @@ Para extraer con precisión quirúrgica el producto y su precio sin importar la 
   - Si es otra tienda: `✨ Precio autodetectado desde {dominio}`.
   - Si la tienda requiere precio manual: Notificación clara orientando al usuario a ingresar el precio para ejecutar el simulador de cuotas vs inflación.
 - **Evaluación Financiera Homogénea:** La matemática de Valor Presente Neto ($VPN$) y análisis de Costo Financiero Total se aplica de manera idéntica sea cual sea la tienda de origen, maximizando el ahorro del usuario frente a la inflación.
+
+---
+
+## 7. MÓDULO INTEGRAL DE COMPRAS: MULTIMODALIDAD, FINANZAS CON RECARGO Y REGISTRO DIRECTO
+
+### A. Selector Multimodal de Entrada (3 Modos)
+La interfaz expone ahora tres formas complementarias para analizar compras sin salir de la plataforma:
+1. **Pestaña `Link Web` (Universal):** Acepta URLs de cualquier e-commerce y autocompleta precio y título mediante el registro de extractores semánticos.
+2. **Pestaña `Buscar Producto` (Catálogo en Tiempo Real):** Permite ingresar términos como *"Smart TV 50"*, consume el endpoint `/api/shopping/search?q=...` y renderiza tarjetas interactivas con foto, título, precio y botón `[⚡ Analizar Cuotas]`.
+3. **Pestaña `Código de Barras`:** Admite códigos EAN/GTIN de productos físicos o escaneados en góndola y consume `/api/shopping/analyze-barcode`.
+
+### B. Profundidad Financiera: Simulador de Cuotas con Interés vs Contado
+En economías con inflación, no todas las cuotas son "sin interés". Muchas veces el comercio ofrece:
+- **Precio Contado:** $\$ 100.000$
+- **Precio Financiado (6 cuotas):** $\$ 120.000$ ($20\%$ de recargo total).
+
+El motor evalúa si el costo del recargo financiero es inferior o superior a la inflación/rendimiento proyectado de la TNA:
+$$VPN = \sum_{t=1}^n \frac{\text{Cuota}}{(1 + \text{TEM})^t}$$
+- Si $VPN < \text{Precio Contado}$, el sistema dictamina: *"¡Conviene pagar en cuotas! A pesar del recargo, ajustado por rendimiento/inflación tu costo real es menor"*.
+- Si $VPN > \text{Precio Contado}$, el sistema dictamina: *"Conviene pagar al contado: el recargo que te cobran supera el rendimiento proyectado"*. La tarjeta de débito o efectivo pasa al primer puesto del ranking.
+
+### C. Integración con el Gestor de Gastos y Presupuestos
+1. **Alerta Preventiva de Impacto en Presupuesto (`Budget Impact`):**
+   - Cruza el precio o cuota mensual con los presupuestos activos del usuario (`state.budgets`).
+   - Muestra una insignia dinámica con semáforo:
+     - 🟢 **Saludable:** Consume $< 35\%$ del cupo restante.
+     - 🟡 **Atención:** Consume entre $35\%$ y $75\%$.
+     - 🔴 **Alerta crítica:** Supera o compromete más del $75\%$ del presupuesto del mes.
+2. **Botón Directo `[💳 Registrar esta Compra como Gasto]`:**
+   - La tarjeta recomendada (y las alternativas) incluye una acción con 1 clic.
+   - Crea la transacción directamente con `TransactionService.addTransaction()`, asociando la cuenta o tarjeta seleccionada, la categoría *"Compras"* y la fecha actual.
+   - Actualiza inmediatamente los balances, gráficos y presupuestos en toda la aplicación (`renderAll()`).
+
+### D. Historial de Consultas Recientes
+- Se persisten localmente las últimas simulaciones en `localStorage` (`gestor_shopping_history`).
+- Se renderiza una botonera de chips interactivos con acceso rápido para re-analizar productos previamente consultados.

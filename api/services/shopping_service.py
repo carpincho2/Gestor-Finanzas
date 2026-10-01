@@ -111,7 +111,9 @@ class ShoppingService:
             accounts=accounts,
             tna=payload.custom_tna,
             discount=payload.discount_percentage,
-            installments=payload.installments_without_interest
+            installments=payload.installments_without_interest,
+            surcharge_percentage=getattr(payload, "surcharge_percentage", 0.0) or 0.0,
+            installment_total_price=getattr(payload, "installment_total_price", None)
         )
         
         return {
@@ -151,7 +153,9 @@ class ShoppingService:
             accounts=accounts,
             tna=payload.custom_tna,
             discount=payload.discount_percentage,
-            installments=payload.installments_without_interest
+            installments=payload.installments_without_interest,
+            surcharge_percentage=getattr(payload, "surcharge_percentage", 0.0) or 0.0,
+            installment_total_price=getattr(payload, "installment_total_price", None)
         )
         
         return {

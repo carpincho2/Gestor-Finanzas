@@ -7,7 +7,10 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from contextlib import asynccontextmanager
 
-from database import engine, Base, DATABASE_URL, load_env
+from sqlalchemy import inspect, text
+from database import engine, Base, DATABASE_URL, load_env, SessionLocal
+from models import Account, WalletConnection
+from security import token_crypto
 from routers import auth, accounts, transactions, budgets, goals, wallets, ai, shopping, ocr, sepa
 
 # Load .env variables (if any are missing)
@@ -32,6 +35,13 @@ def migrate_schema_columns():
             if "picture" not in columns:
                 conn.execute(text("ALTER TABLE users ADD COLUMN picture VARCHAR(500)"))
                 print("INFO: Migración de esquema: añadida columna picture a users")
+
+        # Check budgets.currency
+        if "budgets" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("budgets")]
+            if "currency" not in columns:
+                conn.execute(text("ALTER TABLE budgets ADD COLUMN currency VARCHAR(10) DEFAULT 'ARS'"))
+                print("INFO: Migración de esquema: añadida columna currency a budgets")
 
 def migrate_plaintext_tokens():
     db = SessionLocal()

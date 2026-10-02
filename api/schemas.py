@@ -75,6 +75,7 @@ class BudgetCreate(BaseModel):
     limit: float
     color: str
     notes: Optional[str] = None
+    currency: Optional[str] = "ARS"
 
 class GoalCreate(BaseModel):
     name: str

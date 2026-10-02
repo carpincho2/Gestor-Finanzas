@@ -7,9 +7,9 @@
   <meta name="description" content="Flujo — tu gestor de finanzas personal con IA. Controlá gastos, presupuestos, objetivos y más."/>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
   <link rel="icon" type="image/png" href="/assets/descarga-DNCiibOt.png">
-  <script type="module" crossorigin src="/assets/dashboard-CppOMT8w.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/chatbot-BeACgeLI.js">
-  <link rel="stylesheet" crossorigin href="/assets/chatbot-Cip9IuZz.css">
+  <script type="module" crossorigin src="/assets/dashboard-BnWc1v0Z.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/chatbot-D-W1iDl7.js">
+  <link rel="stylesheet" crossorigin href="/assets/chatbot-CIq5KjLf.css">
 <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
 <body>
 
@@ -487,9 +487,18 @@
       </div>
     </div>
 
-    <div class="form-full" style="margin-top:12px;">
-      <label class="field-label">Límite mensual ($)</label>
-      <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Límite mensual</label>
+        <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Moneda</label>
+        <select class="field-select" id="bmCurrency">
+          <option value="ARS">ARS ($)</option>
+          <option value="USD">USD (US$)</option>
+        </select>
+      </div>
     </div>
 
     <div style="margin-top:14px;">
@@ -569,6 +578,8 @@
         <option value="Otros">📦 Otros</option>
       </select>
     </div>
+
+    <div id="mBudgetImpact" style="display:none;margin-top:12px;padding:10px 12px;border-radius:var(--radius-md);font-size:12px;line-height:1.4;"></div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>

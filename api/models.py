@@ -65,6 +65,7 @@ class Budget(Base):
     limit = Column(Float, nullable=False)
     color = Column(String(50), nullable=False)
     notes = Column(String(500), nullable=True)
+    currency = Column(String(10), default="ARS", nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
 class Goal(Base):

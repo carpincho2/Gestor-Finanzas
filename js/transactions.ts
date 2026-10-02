@@ -145,13 +145,93 @@ function quickAdd() {
 /* =====================================================
    MODAL
    ===================================================== */
+function updateModalBudgetImpact() {
+  const impactEl = document.getElementById('mBudgetImpact');
+  if (!impactEl) return;
+
+  if (state.mCurrentType !== 'expense') {
+    impactEl.style.display = 'none';
+    return;
+  }
+
+  const catEl = document.getElementById('mCat');
+  const cat = catEl ? catEl.value : null;
+  const amountEl = document.getElementById('mAmount');
+  const amount = amountEl ? parseFloat(amountEl.value) || 0 : 0;
+  const dateEl = document.getElementById('mDate');
+  const dateVal = dateEl ? dateEl.value : null;
+  const date = dateVal ? new Date(dateVal) : new Date();
+
+  if (!cat) {
+    impactEl.style.display = 'none';
+    return;
+  }
+
+  const budget = (state.budgets || []).find(b => b.cat === cat);
+  if (!budget) {
+    impactEl.style.display = 'block';
+    impactEl.style.background = 'var(--surface2)';
+    impactEl.style.border = '1px solid var(--border)';
+    impactEl.style.color = 'var(--muted)';
+    impactEl.innerHTML = `ℹ️ La categoría <strong>${cat}</strong> no tiene un presupuesto asignado este mes.`;
+    return;
+  }
+
+  const spent = (state.transactions || [])
+    .filter(t => t.type === 'expense' && t.cat === cat)
+    .filter(t => {
+      const d = new Date(t.date);
+      return d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear();
+    })
+    .reduce((s, t) => s + t.amount, 0);
+
+  const remaining = budget.limit - spent;
+  const newRemaining = remaining - amount;
+
+  impactEl.style.display = 'block';
+  if (newRemaining < 0) {
+    impactEl.style.background = 'rgba(255, 74, 107, 0.12)';
+    impactEl.style.border = '1px solid rgba(255, 74, 107, 0.3)';
+    impactEl.style.color = 'var(--danger)';
+    impactEl.innerHTML = `⚠️ <strong>Presupuesto excedido:</strong> Este gasto superará el límite de <strong>${budget.name}</strong> por <strong>$${Math.abs(newRemaining).toLocaleString('es-AR')}</strong>.`;
+  } else if (budget.limit > 0 && newRemaining / budget.limit <= 0.2) {
+    impactEl.style.background = 'rgba(255, 184, 74, 0.12)';
+    impactEl.style.border = '1px solid rgba(255, 184, 74, 0.3)';
+    impactEl.style.color = 'var(--warn)';
+    impactEl.innerHTML = `⚡ <strong>Atención:</strong> Tras este gasto solo te quedarán <strong>$${newRemaining.toLocaleString('es-AR')}</strong> (${Math.round((newRemaining / budget.limit) * 100)}%) en <strong>${budget.name}</strong>.`;
+  } else {
+    impactEl.style.background = 'rgba(0, 229, 160, 0.08)';
+    impactEl.style.border = '1px solid rgba(0, 229, 160, 0.25)';
+    impactEl.style.color = 'var(--accent)';
+    impactEl.innerHTML = `✅ <strong>En presupuesto:</strong> Te quedarán <strong>$${newRemaining.toLocaleString('es-AR')}</strong> en ${budget.name}.`;
+  }
+}
+
 function openModal() {
   document.getElementById('modalOverlay').classList.add('open');
+  const mAmount = document.getElementById('mAmount');
+  const mCat = document.getElementById('mCat');
+  const mDate = document.getElementById('mDate');
+  if (mAmount && !mAmount.dataset.budgetBound) {
+    mAmount.addEventListener('input', updateModalBudgetImpact);
+    mAmount.dataset.budgetBound = 'true';
+  }
+  if (mCat && !mCat.dataset.budgetBound) {
+    mCat.addEventListener('change', updateModalBudgetImpact);
+    mCat.dataset.budgetBound = 'true';
+  }
+  if (mDate && !mDate.dataset.budgetBound) {
+    mDate.addEventListener('change', updateModalBudgetImpact);
+    mDate.dataset.budgetBound = 'true';
+  }
+  updateModalBudgetImpact();
 }
 
 function closeModal(e) {
   if (!e || e.target.id === 'modalOverlay') {
     document.getElementById('modalOverlay').classList.remove('open');
+    const impactEl = document.getElementById('mBudgetImpact');
+    if (impactEl) impactEl.style.display = 'none';
   }
 }
 
@@ -165,27 +245,27 @@ function setModalType(type) {
     expBtn.classList.add('active-expense');
     incBtn.classList.remove('active-income');
     catSelect.innerHTML = `
-      <option value="Alimentación">🍔 Alimentación</option>
+      <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+      <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
       <option value="Transporte">🚗 Transporte</option>
-      <option value="Entretenimiento">🎬 Entretenimiento</option>
-      <option value="Salud">💊 Salud</option>
-      <option value="Hogar">🏠 Hogar</option>
-      <option value="Ropa">👕 Ropa</option>
-      <option value="Inversión">📈 Inversión</option>
+      <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+      <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+      <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+      <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+      <option value="Educación">📚 Educación</option>
       <option value="Otros">📦 Otros</option>
     `;
   } else {
     incBtn.classList.add('active-income');
     expBtn.classList.remove('active-expense');
     catSelect.innerHTML = `
-      <option value="Sueldo">💼 Sueldo</option>
-      <option value="Freelance">💻 Freelance</option>
-      <option value="Ventas">🛒 Ventas</option>
-      <option value="Inversión">📈 Inversión</option>
+      <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+      <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
       <option value="Otros">📦 Otros</option>
     `;
   }
   initCustomSelects(catSelect.parentNode);
+  updateModalBudgetImpact();
 }
 
 function addFromModal() {

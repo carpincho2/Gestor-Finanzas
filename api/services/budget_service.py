@@ -22,7 +22,8 @@ class BudgetService:
             icon=payload.icon,
             limit=payload.limit,
             color=payload.color,
-            notes=payload.notes.strip() if payload.notes else None
+            notes=payload.notes.strip() if payload.notes else None,
+            currency=payload.currency.strip().upper() if payload.currency else "ARS"
         )
         return self.repository.create(new_bgt)
 
@@ -37,6 +38,7 @@ class BudgetService:
         bgt.limit = payload.limit
         bgt.color = payload.color
         bgt.notes = payload.notes.strip() if payload.notes else None
+        bgt.currency = payload.currency.strip().upper() if payload.currency else "ARS"
         
         return self.repository.update(bgt)
 

@@ -2,10 +2,9 @@
 import { state } from './store/store.ts';
 import { showToast, formatCurrency } from './utils/utils.ts';
 import * as budgetService from './services/budgetService.ts';
-// (Imports cruzados inyectados por refactor)
 
 /* =====================================================
-   state.BUDGETS
+   DASHBOARD MINI BUDGETS WIDGET
    ===================================================== */
 function renderBudgets() {
   const now = new Date();
@@ -13,6 +12,7 @@ function renderBudgets() {
   const year = now.getFullYear();
 
   const el = document.getElementById('budgetList');
+  if (!el) return;
   if (!state.budgets || state.budgets.length === 0) {
     el.innerHTML = `<div style="padding:16px 0;text-align:center;font-size:11px;font-family:var(--font-mono);color:var(--muted);">Sin presupuestos creados.</div>`;
     return;
@@ -24,7 +24,7 @@ function renderBudgets() {
       .filter(t => { const d = new Date(t.date); return d.getMonth() === month && d.getFullYear() === year; })
       .reduce((s, t) => s + t.amount, 0);
 
-    const pct = Math.min((spent / b.limit) * 100, 100);
+    const pct = b.limit > 0 ? Math.min((spent / b.limit) * 100, 100) : 0;
     const over = spent > b.limit;
 
     return `
@@ -42,13 +42,15 @@ function renderBudgets() {
 }
 
 /* =====================================================
-   PRESUPUESTOS
+   VISTA DE PRESUPUESTOS (ESTADO Y CONTROLADORES)
    ===================================================== */
 
 let budgetViewMonth = new Date().getMonth();
 let budgetViewYear = new Date().getFullYear();
 let editingBudgetId = null;
 let budgetDonutInstance = null;
+let currentBudgetFilter = 'all'; // 'all' | 'warning' | 'ok'
+let currentBudgetSort = 'pct_desc'; // 'pct_desc' | 'spent_desc' | 'limit_desc' | 'name_asc'
 
 const BM_COLORS = [
   '#00e5a0', '#5b8cff', '#ff6b4a', '#ffb84a', '#a78bfa',
@@ -70,12 +72,17 @@ function initBudgets() {
   budgetService.initBudgets();
 }
 
-/* --- Nav entry --- */
+/* --- Navegación de vista --- */
 function enterBudgetView() {
-  document.getElementById('budgetView').style.display = '';
-  document.getElementById('dashboardView').style.display = 'none';
-  document.getElementById('txView').style.display = 'none';
-  document.getElementById('pageDate').style.display = 'none';
+  const bView = document.getElementById('budgetView');
+  const dView = document.getElementById('dashboardView');
+  const tView = document.getElementById('txView');
+  const pDate = document.getElementById('pageDate');
+  if (bView) bView.style.display = '';
+  if (dView) dView.style.display = 'none';
+  if (tView) tView.style.display = 'none';
+  if (pDate) pDate.style.display = 'none';
+
   budgetViewMonth = new Date().getMonth();
   budgetViewYear = new Date().getFullYear();
   renderBudgetView();
@@ -88,77 +95,258 @@ function changeBudgetMonth(delta) {
   renderBudgetView();
 }
 
-/* --- Main render --- */
+function setBudgetFilter(filter) {
+  currentBudgetFilter = filter;
+  document.querySelectorAll('.bv-filter-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.id === 'bvFilter' + (filter === 'all' ? 'All' : filter === 'warning' ? 'Warning' : 'Ok'));
+  });
+  renderBudgetView();
+}
+
+function changeBudgetSort(sort) {
+  currentBudgetSort = sort;
+  renderBudgetView();
+}
+
+/* --- Render Principal --- */
 function renderBudgetView() {
   const monthName = new Date(budgetViewYear, budgetViewMonth, 1)
     .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
     .replace(/^\w/, c => c.toUpperCase());
 
-  document.getElementById('bvMonthLabel').textContent = monthName;
-  document.getElementById('bvDonutMonth').textContent = monthName;
+  const monthLabel = document.getElementById('bvMonthLabel');
+  const donutMonth = document.getElementById('bvDonutMonth');
+  if (monthLabel) monthLabel.textContent = monthName;
+  if (donutMonth) donutMonth.textContent = monthName;
 
-  // Get spending per category for this month
+  // Lógica temporal del mes (ritmo / burn rate)
+  const now = new Date();
+  const isCurrentMonth = now.getMonth() === budgetViewMonth && now.getFullYear() === budgetViewYear;
+  const daysInMonth = new Date(budgetViewYear, budgetViewMonth + 1, 0).getDate();
+  const currentDay = isCurrentMonth ? now.getDate() : (budgetViewYear < now.getFullYear() || (budgetViewYear === now.getFullYear() && budgetViewMonth < now.getMonth()) ? daysInMonth : 1);
+  const timeElapsedPct = Math.min(Math.round((currentDay / daysInMonth) * 100), 100);
+
+  const pacePill = document.getElementById('bvMonthPace');
+  if (pacePill) {
+    if (isCurrentMonth) {
+      pacePill.innerHTML = `⏱️ Día ${currentDay} de ${daysInMonth} (${timeElapsedPct}% del mes)`;
+    } else {
+      pacePill.innerHTML = `📅 ${daysInMonth} días totales`;
+    }
+  }
+
+  // Filtrar transacciones de gastos de este mes
   const monthTx = state.transactions.filter(t => {
     if (t.type !== 'expense') return false;
     const d = new Date(t.date);
     return d.getMonth() === budgetViewMonth && d.getFullYear() === budgetViewYear;
   });
 
+  // Mapear gastos por categoría
   const spentByCat = {};
-  monthTx.forEach(t => { spentByCat[t.cat] = (spentByCat[t.cat] || 0) + t.amount; });
+  monthTx.forEach(t => {
+    spentByCat[t.cat] = (spentByCat[t.cat] || 0) + t.amount;
+  });
 
-  // Summary header
-  const totalLimit = state.budgets.reduce((s, b) => s + b.limit, 0);
-  const totalSpent = state.budgets.reduce((s, b) => s + (spentByCat[b.cat] || 0), 0);
-  const totalLeft = totalLimit - totalSpent;
+  // Identificar gastos no presupuestados
+  const budgetedCats = new Set((state.budgets || []).map(b => b.cat));
+  const unbudgetedByCat = {};
+  let totalUnbudgeted = 0;
+
+  monthTx.forEach(t => {
+    if (!budgetedCats.has(t.cat)) {
+      unbudgetedByCat[t.cat] = (unbudgetedByCat[t.cat] || 0) + t.amount;
+      totalUnbudgeted += t.amount;
+    }
+  });
+
+  // Totales de presupuestos asignados
+  const totalLimit = (state.budgets || []).reduce((s, b) => s + b.limit, 0);
+  const totalSpent = (state.budgets || []).reduce((s, b) => s + (spentByCat[b.cat] || 0), 0);
+  const totalLeft = totalLimit - totalSpent - totalUnbudgeted;
   const fmt = n => '$' + Math.abs(n).toLocaleString('es-AR');
 
-  document.getElementById('bvTotalLimit').textContent = fmt(totalLimit);
-  document.getElementById('bvTotalSpent').textContent = fmt(totalSpent);
+  const elLimit = document.getElementById('bvTotalLimit');
+  const elSpent = document.getElementById('bvTotalSpent');
+  const elUnbudgeted = document.getElementById('bvTotalUnbudgeted');
   const leftEl = document.getElementById('bvTotalLeft');
-  leftEl.textContent = (totalLeft < 0 ? '-' : '') + fmt(totalLeft);
-  leftEl.style.color = totalLeft >= 0 ? 'var(--accent)' : 'var(--danger)';
 
-  // Cards
-  renderBvCards(spentByCat, monthTx);
+  if (elLimit) elLimit.textContent = fmt(totalLimit);
+  if (elSpent) elSpent.textContent = fmt(totalSpent);
+  if (elUnbudgeted) elUnbudgeted.textContent = fmt(totalUnbudgeted);
 
-  // Donut
-  renderBudgetDonut(spentByCat);
+  if (leftEl) {
+    leftEl.textContent = (totalLeft < 0 ? '-' : '') + fmt(totalLeft);
+    leftEl.style.color = totalLeft >= 0 ? 'var(--accent)' : 'var(--danger)';
+  }
 
-  // Tip
-  renderBvTip(spentByCat);
+  // Renderizar sección de no presupuestados
+  renderUnbudgetedSection(unbudgetedByCat, totalUnbudgeted);
+
+  // Renderizar tarjetas de presupuestos
+  renderBvCards(spentByCat, monthTx, { isCurrentMonth, currentDay, daysInMonth, timeElapsedPct });
+
+  // Renderizar Donut Chart
+  renderBudgetDonut(spentByCat, unbudgetedByCat, totalUnbudgeted);
+
+  // Renderizar Consejos Inteligentes
+  renderBvTip(spentByCat, unbudgetedByCat, totalUnbudgeted, totalLimit, totalSpent, { isCurrentMonth, currentDay, daysInMonth });
 }
 
-function renderBvCards(spentByCat, monthTx) {
-  const el = document.getElementById('bvCards');
+/* --- Render Sección de Gastos No Presupuestados --- */
+function renderUnbudgetedSection(unbudgetedByCat, totalUnbudgeted) {
+  const container = document.getElementById('bvUnbudgetedSection');
+  if (!container) return;
 
-  if (state.budgets.length === 0) {
+  const entries = Object.entries(unbudgetedByCat).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0 || totalUnbudgeted <= 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const itemsHtml = entries.map(([cat, amt]) => {
+    const icon = (state.CAT_ICONS && state.CAT_ICONS[cat]) || '📦';
+    return `
+      <div class="bv-unbudgeted-item">
+        <div class="bv-unbudgeted-item-info">
+          <span>${icon}</span>
+          <span class="bv-unbudgeted-item-name" title="${escHtml(cat)}">${escHtml(cat)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="bv-unbudgeted-item-amt">-$${amt.toLocaleString('es-AR')}</span>
+          <button class="bv-unbudgeted-btn" onclick="quickBudgetCat('${escHtml(cat)}', ${amt})">+ Presupuestar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="bv-unbudgeted-box">
+      <div class="bv-unbudgeted-head">
+        <div class="bv-unbudgeted-title">
+          <span>⚠️ Gastos No Presupuestados</span>
+          <span class="bv-unbudgeted-badge">${entries.length} categorí${entries.length > 1 ? 'as' : 'a'}</span>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--warn);">
+          Total: -$${totalUnbudgeted.toLocaleString('es-AR')}
+        </span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Estos gastos fueron registrados en categorías que no tienen un presupuesto asignado. Podés convertirlos en presupuestos para tener un control integral.
+      </div>
+      <div class="bv-unbudgeted-list">
+        ${itemsHtml}
+      </div>
+    </div>
+  `;
+}
+
+/* --- Render Cards --- */
+function renderBvCards(spentByCat, monthTx, timeContext) {
+  const el = document.getElementById('bvCards');
+  if (!el) return;
+
+  if (!state.budgets || state.budgets.length === 0) {
     el.innerHTML = `
       <div class="panel" style="padding:48px 24px;text-align:center;">
         <div style="font-size:36px;margin-bottom:12px;">🎯</div>
         <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Sin presupuestos todavía</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Creá tu primer presupuesto para empezar a controlar tus gastos.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Creá tu primer presupuesto para empezar a controlar tus gastos con inteligencia financiera.</div>
         <button class="btn btn-primary" onclick="openBudgetModal()">+ Nuevo Presupuesto</button>
       </div>`;
     return;
   }
 
-  el.innerHTML = state.budgets.map(b => {
+  const { isCurrentMonth, currentDay, daysInMonth, timeElapsedPct } = timeContext;
+
+  // Enriquecer datos para ordenamiento y filtrado
+  let budgetsWithData = state.budgets.map(b => {
     const spent = spentByCat[b.cat] || 0;
-    const pct = b.limit > 0 ? Math.min((spent / b.limit) * 100, 100) : 0;
+    const pct = b.limit > 0 ? (spent / b.limit) * 100 : 0;
     const left = b.limit - spent;
     const over = spent > b.limit;
     const warn = pct >= 80 && !over;
+    return { ...b, spent, pct, left, over, warn };
+  });
 
-    const barColor = over ? 'var(--danger)' : warn ? 'var(--warn)' : b.color;
+  // Aplicar Filtro
+  if (currentBudgetFilter === 'warning') {
+    budgetsWithData = budgetsWithData.filter(b => b.over || b.warn);
+  } else if (currentBudgetFilter === 'ok') {
+    budgetsWithData = budgetsWithData.filter(b => !b.over && !b.warn);
+  }
+
+  // Aplicar Ordenamiento
+  budgetsWithData.sort((a, b) => {
+    switch (currentBudgetSort) {
+      case 'pct_desc': return b.pct - a.pct;
+      case 'spent_desc': return b.spent - a.spent;
+      case 'limit_desc': return b.limit - a.limit;
+      case 'name_asc': return a.name.localeCompare(b.name);
+      default: return b.pct - a.pct;
+    }
+  });
+
+  if (budgetsWithData.length === 0) {
+    el.innerHTML = `
+      <div class="panel" style="padding:32px 20px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+        No hay presupuestos que coincidan con el filtro seleccionado.
+      </div>
+    `;
+    return;
+  }
+
+  el.innerHTML = budgetsWithData.map(b => {
+    const displayPct = Math.min(b.pct, 100);
+    const barColor = b.over ? 'var(--danger)' : b.warn ? 'var(--warn)' : b.color;
+
+    // Ritmo de gasto
+    let paceHtml = '';
+    if (isCurrentMonth) {
+      if (b.over) {
+        paceHtml = `<span class="bv-pace-badge over">⚠️ Excedido</span>`;
+      } else if (b.pct > timeElapsedPct + 15) {
+        paceHtml = `<span class="bv-pace-badge fast">🔥 Ritmo acelerado</span>`;
+      } else if (b.spent === 0) {
+        paceHtml = `<span class="bv-pace-badge normal">🌱 Sin gastos</span>`;
+      } else {
+        paceHtml = `<span class="bv-pace-badge normal">⚡ A buen ritmo</span>`;
+      }
+    }
+
+    // Proyección a fin de mes y saldo diario restante
+    let projectionStripHtml = '';
+    if (isCurrentMonth && currentDay > 0) {
+      const projected = Math.round((b.spent / currentDay) * daysInMonth);
+      const daysRemaining = Math.max(daysInMonth - currentDay, 1);
+      const dailyLeft = b.left > 0 ? Math.round(b.left / daysRemaining) : 0;
+      const isProjectedOver = projected > b.limit;
+
+      projectionStripHtml = `
+        <div class="bv-projection-strip">
+          <div>
+            Proyección fin de mes: 
+            <span class="bv-projection-val" style="color:${isProjectedOver ? 'var(--danger)' : 'var(--accent)'}">
+              $${projected.toLocaleString('es-AR')}
+            </span>
+          </div>
+          <div>
+            Disponible diario: 
+            <span class="bv-projection-val">
+              $${dailyLeft.toLocaleString('es-AR')}/día
+            </span>
+          </div>
+        </div>
+      `;
+    }
 
     let statusHtml;
-    if (spent === 0) statusHtml = `<span class="bv-status empty"><span class="bv-dot"></span>Sin gastos</span>`;
-    else if (over) statusHtml = `<span class="bv-status danger"><span class="bv-dot"></span>Excedido ${fmt2(spent - b.limit)}</span>`;
-    else if (warn) statusHtml = `<span class="bv-status warn"><span class="bv-dot"></span>Casi al límite</span>`;
+    if (b.spent === 0) statusHtml = `<span class="bv-status empty"><span class="bv-dot"></span>Sin gastos</span>`;
+    else if (b.over) statusHtml = `<span class="bv-status danger"><span class="bv-dot"></span>Excedido ${fmt2(b.spent - b.limit)}</span>`;
+    else if (b.warn) statusHtml = `<span class="bv-status warn"><span class="bv-dot"></span>Casi al límite</span>`;
     else statusHtml = `<span class="bv-status ok"><span class="bv-dot"></span>En presupuesto</span>`;
 
-    // Last 3 txs for this category in this month
+    // Movimientos recientes
     const catTx = monthTx.filter(t => t.cat === b.cat).sort((a, c) => new Date(c.date) - new Date(a.date)).slice(0, 3);
     const txRows = catTx.map(t => `
       <div class="bv-tx-item">
@@ -176,12 +364,18 @@ function renderBvCards(spentByCat, monthTx) {
           <div class="bv-card-left">
             <div class="bv-card-icon" style="background:${b.color}18;">${b.icon || '📦'}</div>
             <div>
-              <div class="bv-card-name">${escHtml(b.name)}</div>
-              <div class="bv-card-sub">${b.notes ? escHtml(b.notes) : b.cat}</div>
+              <div class="bv-card-name">
+                ${escHtml(b.name)}
+                <span class="bv-currency-tag">${b.currency || 'ARS'}</span>
+              </div>
+              <div class="bv-card-sub-wrap">
+                <span class="bv-card-sub">${b.notes ? escHtml(b.notes) : b.cat}</span>
+                ${paceHtml}
+              </div>
             </div>
           </div>
           <div class="bv-card-right">
-            <div class="bv-card-pct" style="color:${barColor};">${Math.round(pct)}%</div>
+            <div class="bv-card-pct" style="color:${barColor};">${Math.round(b.pct)}%</div>
             <div class="bv-card-actions">
               <button class="row-btn edit-btn" onclick="openBudgetModal(${b.id})" title="Editar">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -194,12 +388,15 @@ function renderBvCards(spentByCat, monthTx) {
         </div>
 
         <div class="bv-bar-wrap">
-          <div class="bv-bar-bg">
-            <div class="bv-bar-fill" style="width:${pct}%;background:${barColor};"></div>
+          <div class="bv-bar-container">
+            <div class="bv-bar-bg">
+              <div class="bv-bar-fill" style="width:${displayPct}%;background:${barColor};"></div>
+            </div>
+            ${isCurrentMonth ? `<div class="bv-pace-marker" style="left:${timeElapsedPct}%;" title="Día actual del mes (${timeElapsedPct}%)"></div>` : ''}
           </div>
           <div class="bv-bar-labels">
-            <span class="spent" style="color:${barColor};">$${spent.toLocaleString('es-AR')} gastado</span>
-            <span>${over ? '<span style="color:var(--danger)">-' + fmt2(Math.abs(left)) + '</span>' : fmt2(left) + ' disponible'}</span>
+            <span class="spent" style="color:${barColor};">$${b.spent.toLocaleString('es-AR')} gastado</span>
+            <span>${b.over ? '<span style="color:var(--danger)">-' + fmt2(Math.abs(b.left)) + '</span>' : fmt2(b.left) + ' disponible'}</span>
           </div>
         </div>
 
@@ -207,6 +404,8 @@ function renderBvCards(spentByCat, monthTx) {
           ${statusHtml}
           <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted);">Límite: $${b.limit.toLocaleString('es-AR')}</span>
         </div>
+
+        ${projectionStripHtml}
 
         ${catTx.length > 0 ? `
           <div class="bv-tx-list" id="bvtx-${b.id}">
@@ -226,8 +425,8 @@ function fmt2(n) { return '$' + Math.abs(n).toLocaleString('es-AR'); }
 
 function toggleBvCard(id) {
   const card = document.getElementById('bvc-' + id);
-  const txList = document.getElementById('bvtx-' + id);
   const btn = document.getElementById('bvexp-' + id);
+  if (!card) return;
   const expanded = card.classList.toggle('expanded');
   if (btn) {
     btn.innerHTML = expanded
@@ -237,16 +436,26 @@ function toggleBvCard(id) {
 }
 
 /* --- Donut chart --- */
-function renderBudgetDonut(spentByCat) {
+function renderBudgetDonut(spentByCat, unbudgetedByCat = {}, totalUnbudgeted = 0) {
   const canvas = document.getElementById('budgetDonut');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  const data = state.budgets.map(b => spentByCat[b.cat] || 0);
-  const labels = state.budgets.map(b => b.name);
-  const colors = state.budgets.map(b => b.color);
+  const labels = (state.budgets || []).map(b => b.name);
+  const data = (state.budgets || []).map(b => spentByCat[b.cat] || 0);
+  const colors = (state.budgets || []).map(b => b.color);
+
+  // Si hay gastos no presupuestados, añadirlos a la dona para representar la realidad financiera
+  if (totalUnbudgeted > 0) {
+    labels.push('No Presupuestado');
+    data.push(totalUnbudgeted);
+    colors.push('#ffb84a');
+  }
+
   const total = data.reduce((s, v) => s + v, 0);
 
-  document.getElementById('bvDonutTotal').textContent = '$' + total.toLocaleString('es-AR');
+  const donutTotalEl = document.getElementById('bvDonutTotal');
+  if (donutTotalEl) donutTotalEl.textContent = '$' + total.toLocaleString('es-AR');
 
   if (budgetDonutInstance) budgetDonutInstance.destroy();
 
@@ -255,9 +464,9 @@ function renderBudgetDonut(spentByCat) {
     data: {
       labels,
       datasets: [{
-        data: total === 0 ? state.budgets.map(() => 1) : data,
-        backgroundColor: total === 0 ? state.budgets.map(() => '#1a2030') : colors.map(c => c + 'cc'),
-        borderColor: total === 0 ? '#232b3a' : colors,
+        data: total === 0 ? [1] : data,
+        backgroundColor: total === 0 ? ['#1a2030'] : colors.map(c => c + 'cc'),
+        borderColor: total === 0 ? ['#232b3a'] : colors,
         borderWidth: 2,
         hoverOffset: 6,
       }]
@@ -277,16 +486,18 @@ function renderBudgetDonut(spentByCat) {
     }
   });
 
-  // Legend
+  // Leyenda
   const leg = document.getElementById('bvLegend');
-  leg.innerHTML = state.budgets.map((b, i) => {
+  if (!leg) return;
+
+  const budgetItems = (state.budgets || []).map(b => {
     const spent = spentByCat[b.cat] || 0;
     const pct = total > 0 ? Math.round((spent / total) * 100) : 0;
     return `
       <div class="bv-legend-item">
         <div class="bv-legend-left">
           <div class="bv-legend-dot" style="background:${b.color};"></div>
-          <span class="bv-legend-name">${b.icon} ${escHtml(b.name)}</span>
+          <span class="bv-legend-name">${b.icon || '📦'} ${escHtml(b.name)}</span>
         </div>
         <div style="display:flex;gap:10px;align-items:center;">
           <span class="bv-legend-val">$${spent.toLocaleString('es-AR')}</span>
@@ -294,27 +505,93 @@ function renderBudgetDonut(spentByCat) {
         </div>
       </div>
     `;
-  }).join('');
-}
-
-/* --- Tips --- */
-function renderBvTip(spentByCat) {
-  const tips = [];
-
-  state.budgets.forEach(b => {
-    const spent = spentByCat[b.cat] || 0;
-    const pct = b.limit > 0 ? (spent / b.limit) * 100 : 0;
-    if (pct > 100) tips.push(`⚠️ Superaste el presupuesto de <strong>${b.name}</strong> en $${(spent - b.limit).toLocaleString('es-AR')}.`);
-    else if (pct > 80) tips.push(`🔶 Te queda poco presupuesto en <strong>${b.name}</strong> — solo el ${Math.round(100 - pct)}% disponible.`);
   });
 
-  const allSpent = state.budgets.reduce((s, b) => s + (spentByCat[b.cat] || 0), 0);
-  const allLimit = state.budgets.reduce((s, b) => s + b.limit, 0);
-  if (allSpent === 0) tips.push('📭 Aún no hay gastos registrados para este mes.');
-  else if (allSpent / allLimit < 0.5) tips.push('✅ Vas muy bien — llevás menos del 50% del presupuesto total gastado.');
+  if (totalUnbudgeted > 0) {
+    const unbudgetedPct = total > 0 ? Math.round((totalUnbudgeted / total) * 100) : 0;
+    budgetItems.push(`
+      <div class="bv-legend-item" style="border-top:1px dashed var(--border);margin-top:4px;padding-top:8px;">
+        <div class="bv-legend-left">
+          <div class="bv-legend-dot" style="background:#ffb84a;"></div>
+          <span class="bv-legend-name" style="color:var(--warn);">⚠️ No Presupuestado</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="bv-legend-val" style="color:var(--warn);">$${totalUnbudgeted.toLocaleString('es-AR')}</span>
+          <span style="font-size:10px;font-family:var(--font-mono);color:var(--warn);min-width:28px;text-align:right;">${unbudgetedPct}%</span>
+        </div>
+      </div>
+    `);
+  }
 
-  if (tips.length === 0) tips.push('💪 Todo bajo control. Seguís respetando tus presupuestos.');
-  document.getElementById('bvTip').innerHTML = tips[0];
+  leg.innerHTML = budgetItems.join('');
+}
+
+/* --- Tips & Insights Financieros --- */
+function renderBvTip(spentByCat, unbudgetedByCat, totalUnbudgeted, allLimit, allSpent, timeContext) {
+  const tipEl = document.getElementById('bvTip');
+  if (!tipEl) return;
+  const tips = [];
+  const { isCurrentMonth, currentDay, daysInMonth } = timeContext;
+
+  // Tip de gastos no presupuestados
+  if (totalUnbudgeted > 0) {
+    tips.push(`⚠️ Tenés <strong>$${totalUnbudgeted.toLocaleString('es-AR')}</strong> en gastos fuera de presupuesto este mes. Creá presupuestos para esas categorías para tener control total.`);
+  }
+
+  // Tips por categoría
+  (state.budgets || []).forEach(b => {
+    const spent = spentByCat[b.cat] || 0;
+    const pct = b.limit > 0 ? (spent / b.limit) * 100 : 0;
+    if (pct > 100) {
+      tips.push(`🚨 Superaste el límite en <strong>${b.name}</strong> por $${(spent - b.limit).toLocaleString('es-AR')}. Considerá ajustar gastos o redistribuir de otra categoría.`);
+    } else if (isCurrentMonth && currentDay > 0) {
+      const projected = (spent / currentDay) * daysInMonth;
+      if (projected > b.limit && pct < 100) {
+        tips.push(`📈 Al ritmo actual, en <strong>${b.name}</strong> terminarás gastando ~$${Math.round(projected).toLocaleString('es-AR')} ($${Math.round(projected - b.limit).toLocaleString('es-AR')} sobre el límite).`);
+      }
+    }
+  });
+
+  const allTotalSpent = allSpent + totalUnbudgeted;
+  if (allTotalSpent === 0) {
+    tips.push('📭 Aún no hay gastos registrados para este mes.');
+  } else if (allLimit > 0 && (allTotalSpent / allLimit) < 0.5 && isCurrentMonth && currentDay > 15) {
+    tips.push('🎯 ¡Excelente gestión! Pasada la mitad del mes, llevás menos del 50% de tu presupuesto consumido.');
+  }
+
+  if (tips.length === 0) {
+    tips.push('💪 Todo en orden. Estás respetando tus metas presupuestarias y tu ritmo diario está controlado.');
+  }
+
+  tipEl.innerHTML = tips[0];
+}
+
+/* --- Quick Create Budget from Unbudgeted Spending --- */
+function quickBudgetCat(catName, spentAmount) {
+  openBudgetModal();
+  const nameEl = document.getElementById('bmName');
+  const catEl = document.getElementById('bmCat');
+  const limitEl = document.getElementById('bmLimit');
+
+  if (nameEl) nameEl.value = catName;
+  if (catEl) {
+    const optionExists = Array.from(catEl.options).some(o => o.value === catName);
+    if (optionExists) {
+      catEl.value = catName;
+      document.getElementById('bmCustomWrap').style.display = 'none';
+    } else {
+      catEl.value = 'custom';
+      document.getElementById('bmCustomWrap').style.display = '';
+      document.getElementById('bmCustomName').value = catName;
+    }
+    if (window.updateCustomSelectDisplay) window.updateCustomSelectDisplay(catEl);
+  }
+
+  // Sugerir un límite redondeado un 15% arriba del gasto actual
+  const suggested = Math.max(Math.ceil((spentAmount * 1.15) / 1000) * 1000, 5000);
+  if (limitEl) limitEl.value = suggested;
+
+  onBmCatChange();
 }
 
 /* --- Budget Modal --- */
@@ -324,7 +601,7 @@ function openBudgetModal(id) {
   bmSelectedColor = BM_COLORS[0];
   bmSelectedIcon = '📦';
 
-  // Build emoji grid
+  // Construir grilla de emojis
   const emojiGrid = document.getElementById('bmEmojiGrid');
   if (emojiGrid) {
     emojiGrid.innerHTML = BUDGET_EMOJIS.map(e => `
@@ -332,7 +609,7 @@ function openBudgetModal(id) {
     `).join('');
   }
 
-  // Build color grid
+  // Construir grilla de colores
   const grid = document.getElementById('bmColorGrid');
   if (grid) {
     grid.innerHTML = BM_COLORS.map(c => `
@@ -361,16 +638,17 @@ function openBudgetModal(id) {
       document.getElementById('bmCustomWrap').style.display = 'none';
     }
     document.getElementById('bmLimit').value = b.limit;
+    const curEl = document.getElementById('bmCurrency');
+    if (curEl) curEl.value = b.currency || 'ARS';
     document.getElementById('bmNotes').value = b.notes || '';
     bmSelectedColor = b.color;
     bmSelectedIcon = b.icon || '📦';
-    // Update emoji grid selection
+
     if (emojiGrid) {
       emojiGrid.innerHTML = BUDGET_EMOJIS.map(e => `
         <button class="ov-emoji-btn ${e === bmSelectedIcon ? 'active' : ''}" onclick="selectBmEmoji('${e}')">${e}</button>
       `).join('');
     }
-    // Update swatch selection
     if (grid) {
       grid.querySelectorAll('.bv-color-swatch').forEach(sw => {
         sw.classList.toggle('selected', sw.style.background === b.color || sw.style.backgroundColor === b.color);
@@ -385,6 +663,8 @@ function openBudgetModal(id) {
     document.getElementById('bmCustomWrap').style.display = 'none';
     document.getElementById('bmCustomName').value = '';
     document.getElementById('bmLimit').value = '';
+    const curEl = document.getElementById('bmCurrency');
+    if (curEl) curEl.value = 'ARS';
     document.getElementById('bmNotes').value = '';
   }
 
@@ -411,13 +691,21 @@ function selectBmEmoji(e) {
 function onBmCatChange() {
   const val = document.getElementById('bmCat').value;
   document.getElementById('bmCustomWrap').style.display = val === 'custom' ? '' : 'none';
-  // Auto-fill icon and name
-  const icons = { 'Supermercado / Almacén': '🛒', 'Salidas / Restaurantes': '🍕', 'Transporte': '🚗', 'Hogar / Servicios': '🏠', 'Entretenimiento / Suscripciones': '🎬', 'Salud / Farmacia': '💊', 'Compras / Ropa': '🛍️', 'Educación': '📚', 'Otros': '📦' };
+  const icons = {
+    'Supermercado / Almacén': '🛒',
+    'Salidas / Restaurantes': '🍕',
+    'Transporte': '🚗',
+    'Hogar / Servicios': '🏠',
+    'Entretenimiento / Suscripciones': '🎬',
+    'Salud / Farmacia': '💊',
+    'Compras / Ropa': '🛍️',
+    'Educación': '📚',
+    'Otros': '📦'
+  };
   if (icons[val]) {
     bmSelectedIcon = icons[val];
     document.querySelectorAll('#bmEmojiGrid .ov-emoji-btn').forEach(b => b.classList.toggle('active', b.textContent === icons[val]));
   }
-  // Auto-fill name from category if name is empty
   const nameEl = document.getElementById('bmName');
   if (nameEl && !nameEl.value.trim() && val !== 'custom') {
     nameEl.value = val;
@@ -438,6 +726,8 @@ async function saveBudget() {
   const limit = parseFloat(document.getElementById('bmLimit').value);
   const icon = bmSelectedIcon || '📦';
   const notes = document.getElementById('bmNotes').value.trim();
+  const curEl = document.getElementById('bmCurrency');
+  const currency = curEl ? curEl.value : 'ARS';
   const name = nameInput || cat;
 
   if (!name) { showToast('⚠️ Ingresá un nombre para el presupuesto', true); return; }
@@ -447,8 +737,9 @@ async function saveBudget() {
   try {
     const budgetData = {
       cat,
-      name: cat,
+      name,
       limit,
+      currency,
       icon,
       color: bmSelectedColor,
       notes: notes || null
@@ -499,7 +790,22 @@ async function doDeleteBudget() {
   closeBudgetDeleteModal();
 }
 
+// Helpers
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+}
 
 // --- WINDOW ATTACHMENTS ---
 window.changeBudgetMonth = changeBudgetMonth;
@@ -522,5 +828,7 @@ window.saveBudgets = saveBudgets;
 window.saveBudget = saveBudget;
 window.selectBmColor = selectBmColor;
 window.selectBmEmoji = selectBmEmoji;
+window.quickBudgetCat = quickBudgetCat;
+window.setBudgetFilter = setBudgetFilter;
+window.changeBudgetSort = changeBudgetSort;
 window.BM_COLORS = BM_COLORS;
-

@@ -486,9 +486,18 @@
       </div>
     </div>
 
-    <div class="form-full" style="margin-top:12px;">
-      <label class="field-label">Límite mensual ($)</label>
-      <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Límite mensual</label>
+        <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
+      </div>
+      <div>
+        <label class="field-label">Moneda</label>
+        <select class="field-select" id="bmCurrency">
+          <option value="ARS">ARS ($)</option>
+          <option value="USD">USD (US$)</option>
+        </select>
+      </div>
     </div>
 
     <div style="margin-top:14px;">
@@ -568,6 +577,8 @@
         <option value="Otros">📦 Otros</option>
       </select>
     </div>
+
+    <div id="mBudgetImpact" style="display:none;margin-top:12px;padding:10px 12px;border-radius:var(--radius-md);font-size:12px;line-height:1.4;"></div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>

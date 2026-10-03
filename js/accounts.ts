@@ -11,6 +11,12 @@ import { accountService } from './services/accountService.ts';
 
 let selectedAccountId = null;
 let editingAccountId = null;
+let reconcilingAccountId = null;
+let accountsFilterTab = 'active'; // 'active', 'archived', 'all'
+let accountSearchQuery = '';
+let accountTxSearchQuery = '';
+let showConsolidatedNetWorth = false;
+let cachedRates = { blue: 1350, eur: 1450 };
 
 const ACC_TYPE_LABELS = {
   banco: 'Banco', ahorro: 'Ahorro', efectivo: 'Efectivo',
@@ -37,7 +43,8 @@ function initAccounts() {
 
 /* ---- Nav entry ---- */
 function enterCuentasView() {
-  selectedAccountId = state.accounts.length > 0 ? state.accounts[0].id : null;
+  const activeAccs = state.accounts.filter(a => !a.is_archived);
+  selectedAccountId = activeAccs.length > 0 ? activeAccs[0].id : (state.accounts.length > 0 ? state.accounts[0].id : null);
   renderCuentasView();
 }
 
@@ -51,37 +58,118 @@ function renderCuentasView() {
 }
 
 /* Net worth */
-function renderCvWorth() {
-  const arsTotal = state.accounts.filter(a => (a.currency || 'ARS') === 'ARS').reduce((s, a) => s + a.balance, 0);
-  const usdTotal = state.accounts.filter(a => a.currency === 'USD').reduce((s, a) => s + a.balance, 0);
-  const eurTotal = state.accounts.filter(a => a.currency === 'EUR').reduce((s, a) => s + a.balance, 0);
+async function renderCvWorth() {
+  const elTotal = document.getElementById('cvNetWorth');
+  const btnToggle = document.getElementById('cvToggleConsolidatedBtn');
+  if (!elTotal) return;
 
-  let netWorthText = '$' + arsTotal.toLocaleString('es-AR');
-  const extras = [];
-  if (usdTotal !== 0) extras.push(`US$ ${usdTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-  if (eurTotal !== 0) extras.push(`€ ${eurTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-  if (extras.length > 0) {
-    netWorthText += ` + ${extras.join(' + ')}`;
+  const arsTotal = state.accounts.filter(a => !a.is_archived && (a.currency || 'ARS') === 'ARS').reduce((s, a) => s + a.balance, 0);
+  const usdTotal = state.accounts.filter(a => !a.is_archived && a.currency === 'USD').reduce((s, a) => s + a.balance, 0);
+  const eurTotal = state.accounts.filter(a => !a.is_archived && a.currency === 'EUR').reduce((s, a) => s + a.balance, 0);
+
+  if (showConsolidatedNetWorth) {
+    if (cachedRates.blue === 1350) {
+      try {
+        const rateUSD = await accountService.getSuggestedExchangeRate('USD', 'ARS');
+        if (rateUSD && rateUSD.rate) cachedRates.blue = rateUSD.rate;
+        const rateEUR = await accountService.getSuggestedExchangeRate('EUR', 'ARS');
+        if (rateEUR && rateEUR.rate) cachedRates.eur = rateEUR.rate;
+      } catch (e) {
+        console.warn('Usando cotizaciones de referencia:', e);
+      }
+    }
+    const consolidatedARS = arsTotal + (usdTotal * cachedRates.blue) + (eurTotal * cachedRates.eur);
+    elTotal.innerHTML = `≈ $${Math.round(consolidatedARS).toLocaleString('es-AR')} <span style="font-size:14px;color:var(--muted);font-weight:400;">ARS (Estimado)</span>`;
+    if (btnToggle) btnToggle.textContent = '💵 Mostrar Desglose por Moneda';
+  } else {
+    let netWorthText = '$' + arsTotal.toLocaleString('es-AR');
+    const extras = [];
+    if (usdTotal !== 0) extras.push(`US$ ${usdTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    if (eurTotal !== 0) extras.push(`€ ${eurTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    if (extras.length > 0) {
+      netWorthText += ` + ${extras.join(' + ')}`;
+    }
+    elTotal.textContent = netWorthText;
+    if (btnToggle) btnToggle.textContent = '💱 Mostrar Estimado Consolidado ARS';
   }
-  document.getElementById('cvNetWorth').textContent = netWorthText;
 
-  document.getElementById('cvWorthBreakdown').innerHTML = state.accounts.map(a => `
-    <div class="cv-worth-chip">
-      <div class="cv-worth-chip-dot" style="background:${ACC_TYPE_COLORS[a.type]};"></div>
-      <span style="color:var(--muted);">${escHtml(a.name)}</span>
-      <span style="color:${a.balance < 0 ? 'var(--danger)' : 'var(--text)'}; font-weight:600;">
-        ${formatMoney(a.balance, a.currency || 'ARS')}
-      </span>
-    </div>
-  `).join('');
+  const breakdownEl = document.getElementById('cvWorthBreakdown');
+  if (breakdownEl) {
+    breakdownEl.innerHTML = state.accounts.filter(a => !a.is_archived).map(a => `
+      <div class="cv-worth-chip">
+        <div class="cv-worth-chip-dot" style="background:${a.color || ACC_TYPE_COLORS[a.type] || '#5b8cff'};"></div>
+        <span style="color:var(--muted);">${escHtml(a.name)}${a.is_favorite ? ' ⭐' : ''}</span>
+        <span style="color:${a.balance < 0 ? 'var(--danger)' : 'var(--text)'}; font-weight:600;">
+          ${formatMoney(a.balance, a.currency || 'ARS')}
+        </span>
+      </div>
+    `).join('');
+  }
+}
+
+function toggleConsolidatedNetWorth() {
+  showConsolidatedNetWorth = !showConsolidatedNetWorth;
+  renderCvWorth();
+}
+
+function setAccountsFilterTab(tab) {
+  accountsFilterTab = tab;
+  ['tabAccountsActive', 'tabAccountsArchived', 'tabAccountsAll'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  const activeBtn = document.getElementById('tabAccounts' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  if (activeBtn) activeBtn.classList.add('active');
+  renderCvCards();
+}
+
+function onAccountSearchChanged() {
+  const input = document.getElementById('cvAccountSearch');
+  accountSearchQuery = input ? input.value : '';
+  renderCvCards();
+}
+
+function onAccountTxSearchChanged() {
+  const input = document.getElementById('cvTxSearch');
+  accountTxSearchQuery = input ? input.value : '';
+  renderCvTxList();
 }
 
 /* Account cards */
 function renderCvCards() {
   const el = document.getElementById('cvCards');
+  if (!el) return;
 
-  const cards = state.accounts.map(a => {
-    const color = ACC_TYPE_COLORS[a.type];
+  let filtered = state.accounts.slice();
+
+  // Filter tab
+  if (accountsFilterTab === 'active') {
+    filtered = filtered.filter(a => !a.is_archived);
+  } else if (accountsFilterTab === 'archived') {
+    filtered = filtered.filter(a => !!a.is_archived);
+  }
+
+  // Search query
+  if (accountSearchQuery.trim()) {
+    const q = accountSearchQuery.toLowerCase();
+    filtered = filtered.filter(a => 
+      (a.name && a.name.toLowerCase().includes(q)) ||
+      (a.bank && a.bank.toLowerCase().includes(q)) ||
+      (a.alias && a.alias.toLowerCase().includes(q)) ||
+      (a.cbu && a.cbu.toLowerCase().includes(q))
+    );
+  }
+
+  // Sort favorites first
+  filtered.sort((a, b) => {
+    if (a.is_favorite && !b.is_favorite) return -1;
+    if (!a.is_favorite && b.is_favorite) return 1;
+    return 0;
+  });
+
+  const cards = filtered.map(a => {
+    const color = a.color || ACC_TYPE_COLORS[a.type] || '#5b8cff';
+    const icon = a.icon || ACC_TYPE_ICONS[a.type] || '🏦';
     const cls = 'acc-' + a.type;
     const sel = a.id === selectedAccountId ? 'selected' : '';
 
@@ -96,23 +184,40 @@ function renderCvCards() {
     const mInc = monthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
     const mExp = monthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
+    const customCardStyle = a.color ? `background: linear-gradient(135deg, ${a.color}25 0%, ${a.color}50 100%); border-color: ${a.color}50;` : '';
+
+    let cardFooter = `Este mes: +${formatMoney(mInc, a.currency || 'ARS')} / -${formatMoney(mExp, a.currency || 'ARS')}`;
+    if (a.type === 'tarjeta') {
+      const disp = a.limit ? `Disponible: ${formatMoney(a.limit + a.balance, a.currency || 'ARS')}` : '';
+      const dates = (a.closing_day || a.due_day) ? ` · Cierre: día ${a.closing_day || '—'} / Vence: día ${a.due_day || '—'}` : '';
+      cardFooter = disp ? (disp + dates) : (dates || cardFooter);
+    }
+
     return `
-      <div class="acc-card ${cls} ${sel}" onclick="selectAccount(${a.id})">
+      <div class="acc-card ${cls} ${sel}" style="${customCardStyle}" onclick="selectAccount(${a.id})">
         <div class="acc-card-shine"></div>
+        ${a.is_favorite ? '<div class="acc-card-star-badge" title="Cuenta Favorita">⭐</div>' : ''}
+        ${a.is_archived ? '<div class="acc-card-archived-badge" title="Cuenta Archivada">Archivada</div>' : ''}
         <div class="acc-card-actions">
+          <button class="acc-action-btn" onclick="event.stopPropagation();toggleAccountFavorite(${a.id})" title="${a.is_favorite ? 'Quitar favorita' : 'Fijar favorita'}">
+            ${a.is_favorite ? '★' : '☆'}
+          </button>
           <button class="acc-action-btn" onclick="event.stopPropagation();openAccModal(${a.id})" title="Editar">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="acc-action-btn" onclick="event.stopPropagation();toggleAccountArchive(${a.id})" title="${a.is_archived ? 'Desarchivar' : 'Archivar'}">
+            ${a.is_archived ? '📂' : '📦'}
           </button>
           <button class="acc-action-btn" onclick="event.stopPropagation();confirmDeleteAccount(${a.id})" title="Eliminar">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
           </button>
         </div>
-        <div class="acc-card-type">${ACC_TYPE_ICONS[a.type]} ${ACC_TYPE_LABELS[a.type]}${a.currency !== 'ARS' ? ' · ' + a.currency : ''}</div>
+        <div class="acc-card-type">${icon} ${ACC_TYPE_LABELS[a.type] || 'Cuenta'}${a.currency !== 'ARS' ? ' · ' + a.currency : ''}</div>
         <div class="acc-card-name">${escHtml(a.name)}</div>
-        <div class="acc-card-bank">${escHtml(a.bank || '—')}</div>
-        <div class="acc-card-balance">${formatMoney(a.balance, a.currency || 'ARS')}</div>
+        <div class="acc-card-bank">${escHtml(a.bank || (a.alias ? '@' + a.alias : '—'))}</div>
+        <div class="acc-card-balance" style="${a.color ? `color: ${a.color};` : ''}">${formatMoney(a.balance, a.currency || 'ARS')}</div>
         <div class="acc-card-change">
-          ${a.type === 'tarjeta' && a.limit ? `Disponible: ${formatMoney(a.limit + a.balance, a.currency || 'ARS')}` : `Este mes: +${formatMoney(mInc, a.currency || 'ARS')} / -${formatMoney(mExp, a.currency || 'ARS')}`}
+          ${cardFooter}
         </div>
       </div>
     `;
@@ -122,7 +227,7 @@ function renderCvCards() {
     <div class="acc-add-card" onclick="openAccModal()">
       <div class="acc-add-icon">+</div>
       <div style="font-size:13px;font-weight:600;">Agregar cuenta</div>
-      <div style="font-size:11px;font-family:var(--font-mono);">banco, efectivo, digital…</div>
+      <div style="font-size:11px;font-family:var(--font-mono);">banco, efectivo, digital, tarjeta…</div>
     </div>
   `;
 }
@@ -186,6 +291,37 @@ function renderCvDetail() {
       </div>
     ` : ''}
 
+    ${(a.alias || a.cbu) ? `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;flex-direction:column;gap:8px;">
+        ${a.alias ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted);">Alias: <strong style="color:var(--text);">${escHtml(a.alias)}</strong></span>
+            <button type="button" class="cv-copy-btn" onclick="copyAccountData('${escHtml(a.alias)}', 'Alias')">📋 Copiar</button>
+          </div>
+        ` : ''}
+        ${a.cbu ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:11px;font-family:var(--font-mono);color:var(--muted);">CBU/CVU: <strong style="color:var(--text);">${escHtml(a.cbu)}</strong></span>
+            <button type="button" class="cv-copy-btn" onclick="copyAccountData('${escHtml(a.cbu)}', 'CBU/CVU')">📋 Copiar</button>
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
+
+    ${a.type === 'tarjeta' ? `
+      ${(a.closing_day || a.due_day) ? `
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:11px;font-family:var(--font-mono);">
+          <span>📅 Cierre: <strong>Día ${a.closing_day || '—'}</strong></span>
+          <span>⏰ Vence: <strong>Día ${a.due_day || '—'}</strong></span>
+        </div>
+      ` : ''}
+      ${a.balance < 0 ? `
+        <button class="btn" style="width:100%;justify-content:center;background:rgba(255,74,107,0.15);border:1px solid rgba(255,74,107,0.3);color:#ff4a6b;font-size:12px;font-weight:600;margin-bottom:12px;padding:10px;" onclick="quickPayCreditCard(${a.id})">
+          💳 Pagar Resumen (${fmt(Math.abs(a.balance))})
+        </button>
+      ` : ''}
+    ` : ''}
+
     <div>
       <div class="cv-detail-stat">
         <span class="cv-detail-stat-label">Ingresos este mes</span>
@@ -212,6 +348,18 @@ function renderCvDetail() {
         <span class="cv-detail-stat-label">Notas</span>
         <span class="cv-detail-stat-val" style="font-weight:400;color:var(--muted);text-align:right;max-width:180px;">${escHtml(a.notes)}</span>
       </div>` : ''}
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:11px;padding:7px;" onclick="openAccReconcileModal(${a.id})" title="Conciliar y ajustar saldo">
+        ⚡ Conciliar
+      </button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:11px;padding:7px;" onclick="toggleAccountFavorite(${a.id})" title="${a.is_favorite ? 'Quitar de favoritas' : 'Marcar como favorita'}">
+        ${a.is_favorite ? '⭐ Favorita' : '☆ Favorita'}
+      </button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:11px;padding:7px;" onclick="toggleAccountArchive(${a.id})" title="${a.is_archived ? 'Desarchivar cuenta' : 'Archivar cuenta'}">
+        ${a.is_archived ? '📂 Desarchivar' : '📦 Archivar'}
+      </button>
     </div>
 
     ${a.type === 'digital' ? `
@@ -606,27 +754,42 @@ function formatTimeAgo(date) {
 
 function renderCvTxList() {
   const el = document.getElementById('cvTxList');
+  if (!el) return;
 
   if (!selectedAccountId) {
     el.innerHTML = `<div style="padding:24px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">Seleccioná una cuenta.</div>`;
-    document.getElementById('cvTxPanelTitle').textContent = 'Movimientos';
-    document.getElementById('cvTxCount').textContent = '—';
+    if (document.getElementById('cvTxPanelTitle')) document.getElementById('cvTxPanelTitle').textContent = 'Movimientos';
+    if (document.getElementById('cvTxCount')) document.getElementById('cvTxCount').textContent = '—';
     return;
   }
 
   const a = state.accounts.find(x => x.id === selectedAccountId);
-  const list = state.transactions.filter(t => (t.account_id || t.accountId) === selectedAccountId)
-    .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 15);
+  let list = state.transactions.filter(t => (t.account_id || t.accountId) === selectedAccountId);
 
-  document.getElementById('cvTxPanelTitle').textContent = a ? `Movimientos — ${a.name}` : 'Movimientos';
-  document.getElementById('cvTxCount').textContent = list.length + ' recientes';
+  if (accountTxSearchQuery.trim()) {
+    const q = accountTxSearchQuery.toLowerCase();
+    list = list.filter(t => (t.desc && t.desc.toLowerCase().includes(q)) || (t.cat && t.cat.toLowerCase().includes(q)));
+  }
 
-  if (list.length === 0) {
-    el.innerHTML = `<div style="padding:28px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">Sin movimientos en esta cuenta.<br>Registrá una transacción y asignala a esta cuenta.</div>`;
+  list.sort((x, y) => new Date(y.date) - new Date(x.date));
+  const totalCount = list.length;
+  const displayList = list.slice(0, 25);
+
+  if (document.getElementById('cvTxPanelTitle')) {
+    document.getElementById('cvTxPanelTitle').textContent = a ? `Movimientos — ${a.name}` : 'Movimientos';
+  }
+  if (document.getElementById('cvTxCount')) {
+    document.getElementById('cvTxCount').textContent = `${totalCount} ${totalCount === 1 ? 'movimiento' : 'movimientos'}`;
+  }
+
+  if (displayList.length === 0) {
+    el.innerHTML = `<div style="padding:28px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">
+      ${accountTxSearchQuery ? 'No se encontraron movimientos con ese filtro.' : 'Sin movimientos en esta cuenta.<br>Registrá una transacción y asignala a esta cuenta.'}
+    </div>`;
     return;
   }
 
-  el.innerHTML = list.map(t => `
+  el.innerHTML = displayList.map(t => `
     <div class="cv-tx-item">
       <div class="tx-icon" style="background:${state.CAT_COLORS[t.cat] || '#ffffff'}22;width:34px;height:34px;font-size:14px;border-radius:8px;flex-shrink:0;">
         ${state.CAT_ICONS[t.cat] || '📦'}
@@ -637,11 +800,17 @@ function renderCvTxList() {
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-family:var(--font-mono);font-weight:700;font-size:13px;" class="${t.type}">
-          ${t.type === 'income' ? '+' : '-'}$${t.amount.toLocaleString('es-AR')}
+          ${t.type === 'income' ? '+' : '-'}${formatMoney(t.amount, a ? a.currency || 'ARS' : 'ARS')}
         </div>
       </div>
     </div>
-  `).join('');
+  `).join('') + (totalCount > 25 ? `
+    <div style="padding:10px 0;text-align:center;">
+      <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;" onclick="goToTransactionsWithAccountFilter()">
+        Ver los ${totalCount} movimientos en Transacciones ↗
+      </button>
+    </div>
+  ` : '');
 }
 
 /* Transfer selects & Multi-currency engine */
@@ -656,10 +825,12 @@ function renderCvTransferSelects() {
   const toEl = document.getElementById('cvTransferTo');
   if (!fromEl || !toEl) return;
 
-  const opts = state.accounts.map(a => {
+  const validAccounts = state.accounts.filter(a => !a.is_archived);
+  const opts = validAccounts.map(a => {
     const sym = getCurrencySymbol(a.currency);
     const curr = a.currency || 'ARS';
-    return `<option value="${a.id}">${ACC_TYPE_ICONS[a.type]} ${escHtml(a.name)} (${sym} ${a.balance.toLocaleString('es-AR')} ${curr})</option>`;
+    const icon = a.icon || ACC_TYPE_ICONS[a.type] || '🏦';
+    return `<option value="${a.id}">${icon} ${escHtml(a.name)} (${sym} ${a.balance.toLocaleString('es-AR')} ${curr})</option>`;
   }).join('');
 
   fromEl.innerHTML = opts;
@@ -927,6 +1098,8 @@ function selectAccount(id) {
 function openAccModal(id) {
   editingAccountId = id || null;
   document.getElementById('amLimitWrap').style.display = 'none';
+  const cardDaysWrap = document.getElementById('amCardDaysWrap');
+  if (cardDaysWrap) cardDaysWrap.style.display = 'none';
 
   if (id) {
     const a = state.accounts.find(x => x.id === id);
@@ -940,9 +1113,20 @@ function openAccModal(id) {
     document.getElementById('amBalance').value = a.balance;
     document.getElementById('amCurrency').value = a.currency || 'ARS';
     document.getElementById('amNotes').value = a.notes || '';
+    if (document.getElementById('amAlias')) document.getElementById('amAlias').value = a.alias || '';
+    if (document.getElementById('amCbu')) document.getElementById('amCbu').value = a.cbu || '';
+    if (document.getElementById('amColor')) document.getElementById('amColor').value = a.color || ACC_TYPE_COLORS[a.type] || '#5b8cff';
+    if (document.getElementById('amIcon')) document.getElementById('amIcon').value = a.icon || '';
+    if (document.getElementById('amFavorite')) document.getElementById('amFavorite').checked = !!a.is_favorite;
+
     if (a.type === 'tarjeta') {
       document.getElementById('amLimitWrap').style.display = '';
       document.getElementById('amLimit').value = a.limit || 0;
+      if (cardDaysWrap) {
+        cardDaysWrap.style.display = '';
+        document.getElementById('amClosingDay').value = a.closing_day || '';
+        document.getElementById('amDueDay').value = a.due_day || '';
+      }
     }
   } else {
     document.getElementById('accModalTitle').textContent = 'Nueva Cuenta';
@@ -955,13 +1139,26 @@ function openAccModal(id) {
     document.getElementById('amCurrency').value = 'ARS';
     document.getElementById('amNotes').value = '';
     document.getElementById('amLimit').value = '';
+    if (document.getElementById('amAlias')) document.getElementById('amAlias').value = '';
+    if (document.getElementById('amCbu')) document.getElementById('amCbu').value = '';
+    if (document.getElementById('amColor')) document.getElementById('amColor').value = '#5b8cff';
+    if (document.getElementById('amIcon')) document.getElementById('amIcon').value = '';
+    if (document.getElementById('amFavorite')) document.getElementById('amFavorite').checked = false;
+    if (document.getElementById('amClosingDay')) document.getElementById('amClosingDay').value = '';
+    if (document.getElementById('amDueDay')) document.getElementById('amDueDay').value = '';
   }
   document.getElementById('accModalOverlay').classList.add('open');
 }
 
 function onAmTypeChange() {
   const t = document.getElementById('amType').value;
-  document.getElementById('amLimitWrap').style.display = t === 'tarjeta' ? '' : 'none';
+  const isCard = t === 'tarjeta';
+  document.getElementById('amLimitWrap').style.display = isCard ? '' : 'none';
+  const cardDaysWrap = document.getElementById('amCardDaysWrap');
+  if (cardDaysWrap) cardDaysWrap.style.display = isCard ? '' : 'none';
+  if (document.getElementById('amColor') && ACC_TYPE_COLORS[t]) {
+    document.getElementById('amColor').value = ACC_TYPE_COLORS[t];
+  }
 }
 
 function closeAccModal(e) {
@@ -979,15 +1176,31 @@ async function saveAccount() {
   const currency = document.getElementById('amCurrency').value;
   const limit = parseFloat(document.getElementById('amLimit').value) || 0;
   const notes = document.getElementById('amNotes').value.trim();
+  const alias = document.getElementById('amAlias') ? document.getElementById('amAlias').value.trim() : null;
+  const cbu = document.getElementById('amCbu') ? document.getElementById('amCbu').value.trim() : null;
+  const color = document.getElementById('amColor') ? document.getElementById('amColor').value.trim() : null;
+  const icon = document.getElementById('amIcon') ? document.getElementById('amIcon').value.trim() : null;
+  const is_favorite = document.getElementById('amFavorite') ? document.getElementById('amFavorite').checked : false;
+  const closing_day = document.getElementById('amClosingDay') && document.getElementById('amClosingDay').value ? parseInt(document.getElementById('amClosingDay').value) : null;
+  const due_day = document.getElementById('amDueDay') && document.getElementById('amDueDay').value ? parseInt(document.getElementById('amDueDay').value) : null;
 
   if (!name) { showToast('⚠️ Ingresá un nombre para la cuenta', true); return; }
 
-  const payload = { name, type, bank, balance, currency, limit, notes };
+  const payload = {
+    name, type, bank, balance, currency, limit, notes,
+    alias: alias || null,
+    cbu: cbu || null,
+    color: color || null,
+    icon: icon || null,
+    is_favorite,
+    closing_day,
+    due_day
+  };
 
   try {
     const res = await accountService.saveAccount(payload, editingAccountId);
     if (res && res.ok) {
-      if (!editingAccountId) {
+      if (!editingAccountId && res.account) {
         selectedAccountId = res.account.id;
       }
       renderCuentasView();
@@ -1034,7 +1247,171 @@ async function doDeleteAccount() {
   closeAccDeleteModal();
 }
 
+/* ---- Conciliación de Saldo ---- */
+function openAccReconcileModal(accountId) {
+  reconcilingAccountId = accountId;
+  const acc = state.accounts.find(a => a.id === accountId);
+  if (!acc) return;
+  document.getElementById('arAccountName').textContent = acc.name;
+  document.getElementById('arCurrentBalance').textContent = formatMoney(acc.balance, acc.currency || 'ARS');
+  document.getElementById('arCurrencyLabel').textContent = acc.currency || 'ARS';
+  document.getElementById('arRealBalance').value = acc.balance;
+  document.getElementById('arNote').value = '';
+  document.getElementById('arDiffBox').style.display = 'none';
+  document.getElementById('accReconcileOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('arRealBalance').focus(), 100);
+}
 
+function closeAccReconcileModal(e) {
+  if (!e || e.target.id === 'accReconcileOverlay') {
+    document.getElementById('accReconcileOverlay').classList.remove('open');
+    reconcilingAccountId = null;
+  }
+}
+
+function onReconcileInputChanged() {
+  const acc = state.accounts.find(a => a.id === reconcilingAccountId);
+  if (!acc) return;
+  const realVal = parseFloat(document.getElementById('arRealBalance').value);
+  const diffBox = document.getElementById('arDiffBox');
+  if (isNaN(realVal)) {
+    diffBox.style.display = 'none';
+    return;
+  }
+  const diff = Math.round((realVal - acc.balance) * 100) / 100;
+  diffBox.style.display = 'block';
+  if (Math.abs(diff) < 0.01) {
+    diffBox.style.background = 'rgba(255,255,255,0.05)';
+    diffBox.style.color = 'var(--muted)';
+    diffBox.textContent = 'Sin diferencia de saldo.';
+  } else if (diff > 0) {
+    diffBox.style.background = 'rgba(0,229,160,0.12)';
+    diffBox.style.color = 'var(--accent)';
+    diffBox.textContent = `Ajuste necesario: +${formatMoney(diff, acc.currency || 'ARS')} (se registrará como Ingreso)`;
+  } else {
+    diffBox.style.background = 'rgba(239,68,68,0.12)';
+    diffBox.style.color = 'var(--danger)';
+    diffBox.textContent = `Ajuste necesario: -${formatMoney(Math.abs(diff), acc.currency || 'ARS')} (se registrará como Gasto)`;
+  }
+}
+
+async function doReconcileAccount() {
+  if (!reconcilingAccountId) return;
+  const realVal = parseFloat(document.getElementById('arRealBalance').value);
+  const note = document.getElementById('arNote').value.trim() || 'Ajuste de saldo';
+  if (isNaN(realVal)) {
+    showToast('⚠️ Ingresá un saldo válido', true);
+    return;
+  }
+
+  const btn = document.getElementById('arSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    const res = await accountService.reconcileAccount(reconcilingAccountId, realVal, note);
+    if (res && res.ok) {
+      showToast('✅ Saldo conciliado correctamente');
+      if (typeof loadUserData === 'function') await loadUserData();
+      renderCuentasView();
+      closeAccReconcileModal();
+    } else {
+      showToast(res.error || 'Error al conciliar saldo', true);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Error al conectar con el servidor', true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar Ajuste';
+  }
+}
+
+/* ---- Acciones Rápidas (Copiar, Pagar Tarjeta, Favoritas, Archivar) ---- */
+function copyAccountData(text, label) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast(`✅ ${label} copiado al portapapeles`);
+  }).catch(() => {
+    showToast(`⚠️ No se pudo copiar al portapapeles`, true);
+  });
+}
+
+function quickPayCreditCard(accountId) {
+  const card = state.accounts.find(a => a.id === accountId);
+  if (!card) return;
+  const fromAcc = state.accounts.find(a => a.id !== accountId && !a.is_archived && a.type !== 'tarjeta' && a.balance > 0);
+  if (!fromAcc) {
+    showToast('⚠️ No se encontró una cuenta bancaria con saldo disponible para pagar la tarjeta', true);
+    return;
+  }
+
+  const amountToPay = Math.abs(card.balance);
+  const fromEl = document.getElementById('cvTransferFrom');
+  const toEl = document.getElementById('cvTransferTo');
+  const amountEl = document.getElementById('cvTransferAmount');
+  const descEl = document.getElementById('cvTransferDesc');
+
+  if (fromEl) fromEl.value = fromAcc.id;
+  if (toEl) toEl.value = card.id;
+  if (amountEl) amountEl.value = amountToPay;
+  if (descEl) descEl.value = `Pago de resumen ${card.name}`;
+
+  if (typeof updateCustomSelectDisplay === 'function') {
+    if (fromEl) updateCustomSelectDisplay(fromEl);
+    if (toEl) updateCustomSelectDisplay(toEl);
+  }
+  onTransferAccountsChanged();
+
+  const transferForm = document.querySelector('.cv-transfer');
+  if (transferForm) transferForm.scrollIntoView({ behavior: 'smooth' });
+  showToast(`💳 Formulario de transferencia preparado para ${card.name}`);
+}
+
+async function toggleAccountArchive(accountId) {
+  try {
+    const res = await accountService.toggleArchive(accountId);
+    if (res && res.ok) {
+      const isArch = res.account ? res.account.is_archived : false;
+      showToast(isArch ? '📦 Cuenta archivada' : '📂 Cuenta desarchivada');
+      renderCuentasView();
+    } else {
+      showToast(res.error || 'Error al archivar cuenta', true);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Error al actualizar estado de la cuenta', true);
+  }
+}
+
+async function toggleAccountFavorite(accountId) {
+  try {
+    const res = await accountService.toggleFavorite(accountId);
+    if (res && res.ok) {
+      const isFav = res.account ? res.account.is_favorite : false;
+      showToast(isFav ? '⭐ Cuenta fijada como favorita' : 'Cuenta desmarcada de favoritas');
+      renderCuentasView();
+    } else {
+      showToast(res.error || 'Error al fijar favorita', true);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Error al actualizar favorita', true);
+  }
+}
+
+function goToTransactionsWithAccountFilter() {
+  if (!selectedAccountId) return;
+  if (typeof window.setPage === 'function') {
+    const navTx = document.querySelector('[onclick*="transacciones"]') || document.querySelector('[onclick*="transactions"]');
+    window.setPage(navTx, 'transacciones');
+  }
+  const sel = document.getElementById('txFilterAccount');
+  if (sel) {
+    sel.value = selectedAccountId;
+    if (typeof window.applyTxFilter === 'function') window.applyTxFilter();
+  }
+}
 
 // --- WINDOW ATTACHMENTS ---
 window.toggleMpTokenVisibility = toggleMpTokenVisibility;
@@ -1072,5 +1449,19 @@ window.onTransferAmountChanged = onTransferAmountChanged;
 window.onTransferRateChanged = onTransferRateChanged;
 window.onTransferAmountToChanged = onTransferAmountToChanged;
 window.fetchSuggestedExchangeRate = fetchSuggestedExchangeRate;
+window.setAccountsFilterTab = setAccountsFilterTab;
+window.onAccountSearchChanged = onAccountSearchChanged;
+window.onAccountTxSearchChanged = onAccountTxSearchChanged;
+window.toggleConsolidatedNetWorth = toggleConsolidatedNetWorth;
+window.toggleAccountArchive = toggleAccountArchive;
+window.toggleAccountFavorite = toggleAccountFavorite;
+window.openAccReconcileModal = openAccReconcileModal;
+window.closeAccReconcileModal = closeAccReconcileModal;
+window.onReconcileInputChanged = onReconcileInputChanged;
+window.doReconcileAccount = doReconcileAccount;
+window.copyAccountData = copyAccountData;
+window.quickPayCreditCard = quickPayCreditCard;
+window.goToTransactionsWithAccountFilter = goToTransactionsWithAccountFilter;
+
 
 

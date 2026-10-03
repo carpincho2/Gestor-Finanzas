@@ -63,6 +63,35 @@ def migrate_schema_columns():
                 conn.execute(text("ALTER TABLE goal_contributions ADD COLUMN type VARCHAR(20) DEFAULT 'deposit'"))
                 print("INFO: Migración de esquema: añadida columna type a goal_contributions")
 
+        # Check accounts new columns
+        if "accounts" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("accounts")]
+            if "is_archived" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN is_archived BOOLEAN DEFAULT 0"))
+                print("INFO: Migración de esquema: añadida columna is_archived a accounts")
+            if "is_favorite" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN is_favorite BOOLEAN DEFAULT 0"))
+                print("INFO: Migración de esquema: añadida columna is_favorite a accounts")
+            if "color" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN color VARCHAR(50)"))
+                print("INFO: Migración de esquema: añadida columna color a accounts")
+            if "icon" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN icon VARCHAR(50)"))
+                print("INFO: Migración de esquema: añadida columna icon a accounts")
+            if "cbu" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN cbu VARCHAR(100)"))
+                print("INFO: Migración de esquema: añadida columna cbu a accounts")
+            if "alias" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN alias VARCHAR(100)"))
+                print("INFO: Migración de esquema: añadida columna alias a accounts")
+            if "closing_day" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN closing_day INTEGER"))
+                print("INFO: Migración de esquema: añadida columna closing_day a accounts")
+            if "due_day" not in columns:
+                conn.execute(text("ALTER TABLE accounts ADD COLUMN due_day INTEGER"))
+                print("INFO: Migración de esquema: añadida columna due_day a accounts")
+
+
 def migrate_plaintext_tokens():
     db = SessionLocal()
     try:

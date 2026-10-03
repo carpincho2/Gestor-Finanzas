@@ -102,35 +102,28 @@ export const accountService = {
     if (!fromAcc || !toAcc) throw new Error("Account not found");
 
     if (IS_SERVER) {
-      const dateStr = new Date().toISOString().split('T')[0];
-      const linkId = Date.now();
-
-      await apiFetch('/transactions', {
+      const res = await apiFetch('/accounts/transfer', {
         method: 'POST',
         body: JSON.stringify({
-          account_id: fromId,
-          type: 'expense',
-          desc: descExpense,
-          amount: amountFrom,
-          cat: 'Otros',
-          date: dateStr,
-          transfer_id: linkId
+          from_account_id: fromId,
+          to_account_id: toId,
+          amount_from: amountFrom,
+          amount_to: amountTo,
+          desc_expense: descExpense,
+          desc_income: descIncome
         })
       });
-
-      await apiFetch('/transactions', {
-        method: 'POST',
-        body: JSON.stringify({
-          account_id: toId,
-          type: 'income',
-          desc: descIncome,
-          amount: amountTo,
-          cat: 'Otros',
-          date: dateStr,
-          transfer_id: linkId
-        })
-      });
-      return { ok: true };
+      if (res && res.ok) {
+        if (res.from_account) {
+          const idxF = state.accounts.findIndex(x => x.id === fromId);
+          if (idxF > -1) state.accounts[idxF] = res.from_account;
+        }
+        if (res.to_account) {
+          const idxT = state.accounts.findIndex(x => x.id === toId);
+          if (idxT > -1) state.accounts[idxT] = res.to_account;
+        }
+      }
+      return res;
     } else {
       fromAcc.balance -= amountFrom;
       toAcc.balance += amountTo;
@@ -140,12 +133,79 @@ export const accountService = {
       const linkId = Date.now();
       state.transactions.unshift({ id: linkId, type: 'expense', desc: descExpense, amount: amountFrom, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
       state.transactions.unshift({ id: linkId + 1, type: 'income', desc: descIncome, amount: amountTo, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
-      // In a pure service layer we'd probably have transactionService, but this suffices for separating logic from DOM.
-      
-      // we need to call global window.save() or equivalent for local mode?
-      // but the original code did `save();` so we might need to expose it or trust the caller to do it.
-      // Let's rely on the caller to call save() in local mode.
       return { ok: true, local: true };
+    }
+  },
+
+  async toggleArchive(accountId) {
+    if (IS_SERVER) {
+      const res = await apiFetch(`/accounts/${accountId}/archive`, { method: 'PATCH' });
+      if (res && res.ok && res.account) {
+        const idx = state.accounts.findIndex(x => x.id === accountId);
+        if (idx > -1) state.accounts[idx] = res.account;
+      }
+      return res;
+    } else {
+      const acc = state.accounts.find(x => x.id === accountId);
+      if (acc) {
+        acc.is_archived = !acc.is_archived;
+        this.saveAccounts();
+        return { ok: true, account: acc };
+      }
+      return { ok: false, error: 'Cuenta no encontrada' };
+    }
+  },
+
+  async toggleFavorite(accountId) {
+    if (IS_SERVER) {
+      const res = await apiFetch(`/accounts/${accountId}/favorite`, { method: 'PATCH' });
+      if (res && res.ok && res.account) {
+        const idx = state.accounts.findIndex(x => x.id === accountId);
+        if (idx > -1) state.accounts[idx] = res.account;
+      }
+      return res;
+    } else {
+      const acc = state.accounts.find(x => x.id === accountId);
+      if (acc) {
+        acc.is_favorite = !acc.is_favorite;
+        this.saveAccounts();
+        return { ok: true, account: acc };
+      }
+      return { ok: false, error: 'Cuenta no encontrada' };
+    }
+  },
+
+  async reconcileAccount(accountId, realBalance, note) {
+    if (IS_SERVER) {
+      const res = await apiFetch(`/accounts/${accountId}/reconcile`, {
+        method: 'POST',
+        body: JSON.stringify({ real_balance: realBalance, note: note || 'Ajuste de saldo' })
+      });
+      if (res && res.ok && res.account) {
+        const idx = state.accounts.findIndex(x => x.id === accountId);
+        if (idx > -1) state.accounts[idx] = res.account;
+      }
+      return res;
+    } else {
+      const acc = state.accounts.find(x => x.id === accountId);
+      if (!acc) throw new Error("Account not found");
+      const diff = Math.round((realBalance - acc.balance) * 100) / 100;
+      if (Math.abs(diff) >= 0.01) {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const txType = diff > 0 ? 'income' : 'expense';
+        state.transactions.unshift({
+          id: Date.now(),
+          type: txType,
+          desc: `${note || 'Ajuste de saldo'} (${diff > 0 ? '+' : ''}${diff})`,
+          amount: Math.abs(diff),
+          cat: 'Otros',
+          date: dateStr,
+          accountId: acc.id
+        });
+      }
+      acc.balance = realBalance;
+      this.saveAccounts();
+      return { ok: true, account: acc, diff };
     }
   },
 

@@ -93,3 +93,86 @@ def test_delete_account_not_found():
         service.delete_account(1, 1)
         
     assert excinfo.value.status_code == 404
+
+def test_toggle_archive():
+    repos = get_mock_repos()
+    service = AccountService(**repos)
+    
+    mock_account = Account(id=1, user_id=1, name="Cuenta", is_archived=False)
+    repos["account_repo"].get_by_id_and_user_id.return_value = mock_account
+    repos["account_repo"].update.side_effect = lambda a: a
+    
+    acc = service.toggle_archive(1, 1)
+    assert acc.is_archived is True
+    
+    acc2 = service.toggle_archive(1, 1)
+    assert acc2.is_archived is False
+
+def test_toggle_favorite():
+    repos = get_mock_repos()
+    service = AccountService(**repos)
+    
+    mock_account = Account(id=1, user_id=1, name="Cuenta", is_favorite=False)
+    repos["account_repo"].get_by_id_and_user_id.return_value = mock_account
+    repos["account_repo"].update.side_effect = lambda a: a
+    
+    acc = service.toggle_favorite(1, 1)
+    assert acc.is_favorite is True
+
+def test_reconcile_balance():
+    from schemas import AccountReconcileRequest
+    repos = get_mock_repos()
+    service = AccountService(**repos)
+    
+    mock_account = Account(id=1, user_id=1, name="Galicia", balance=100.0)
+    repos["account_repo"].get_by_id_and_user_id.return_value = mock_account
+    repos["account_repo"].update.side_effect = lambda a: a
+    
+    # 1. Ajuste positivo (falta dinero en app -> Ingreso)
+    res = service.reconcile_balance(1, 1, AccountReconcileRequest(real_balance=150.0, note="Conciliación"))
+    assert res["diff"] == 50.0
+    assert res["account"].balance == 150.0
+    repos["tx_repo"].create.assert_called_once()
+    assert repos["tx_repo"].create.call_args[0][0].type == "income"
+    assert repos["tx_repo"].create.call_args[0][0].amount == 50.0
+
+def test_transfer_between_accounts_success():
+    from schemas import AccountTransferRequest
+    repos = get_mock_repos()
+    service = AccountService(**repos)
+    
+    from_acc = Account(id=1, user_id=1, name="Galicia", balance=1000.0)
+    to_acc = Account(id=2, user_id=1, name="Mercado Pago", balance=200.0)
+    
+    repos["account_repo"].get_by_id_and_user_id.side_effect = lambda aid, uid: from_acc if aid == 1 else to_acc
+    
+    payload = AccountTransferRequest(
+        from_account_id=1,
+        to_account_id=2,
+        amount_from=300.0,
+        amount_to=300.0,
+        desc_expense="Transferencia a MP",
+        desc_income="Transferencia desde Galicia"
+    )
+    
+    res = service.transfer_between_accounts(1, payload)
+    assert res["ok"] is True
+    assert from_acc.balance == 700.0
+    assert to_acc.balance == 500.0
+    repos["tx_repo"].create_bulk.assert_called_once()
+
+def test_transfer_same_account_error():
+    from schemas import AccountTransferRequest
+    repos = get_mock_repos()
+    service = AccountService(**repos)
+    
+    payload = AccountTransferRequest(
+        from_account_id=1,
+        to_account_id=1,
+        amount_from=100.0,
+        amount_to=100.0
+    )
+    with pytest.raises(HTTPException) as exc:
+        service.transfer_between_accounts(1, payload)
+    assert exc.value.status_code == 400
+

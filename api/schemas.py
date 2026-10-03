@@ -48,6 +48,14 @@ class AccountCreate(BaseModel):
     limit: float = 0.0
     notes: Optional[str] = None
     mp_token: Optional[str] = None
+    is_archived: Optional[bool] = False
+    is_favorite: Optional[bool] = False
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    cbu: Optional[str] = None
+    alias: Optional[str] = None
+    closing_day: Optional[int] = None
+    due_day: Optional[int] = None
 
 class AccountUpdate(BaseModel):
     name: str
@@ -58,6 +66,28 @@ class AccountUpdate(BaseModel):
     limit: float = 0.0
     notes: Optional[str] = None
     mp_token: Optional[str] = None
+    is_archived: Optional[bool] = False
+    is_favorite: Optional[bool] = False
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    cbu: Optional[str] = None
+    alias: Optional[str] = None
+    closing_day: Optional[int] = None
+    due_day: Optional[int] = None
+
+class AccountTransferRequest(BaseModel):
+    from_account_id: int
+    to_account_id: int
+    amount_from: float
+    amount_to: float
+    desc_expense: Optional[str] = "Transferencia saliente"
+    desc_income: Optional[str] = "Transferencia entrante"
+    date: Optional[str] = None
+
+class AccountReconcileRequest(BaseModel):
+    real_balance: float
+    note: Optional[str] = "Ajuste de conciliación de saldo"
+
 
 class TransactionCreate(BaseModel):
     account_id: Optional[int] = None

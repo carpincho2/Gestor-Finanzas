@@ -38,6 +38,14 @@ class Account(Base):
     limit = Column(Float, default=0.0)
     notes = Column(String(500), nullable=True)
     mp_token = Column(String(500), nullable=True)
+    is_archived = Column(Boolean, default=False, nullable=False)
+    is_favorite = Column(Boolean, default=False, nullable=False)
+    color = Column(String(50), nullable=True)
+    icon = Column(String(50), nullable=True)
+    cbu = Column(String(100), nullable=True)
+    alias = Column(String(100), nullable=True)
+    closing_day = Column(Integer, nullable=True)
+    due_day = Column(Integer, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
 class Transaction(Base):

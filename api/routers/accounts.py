@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Account, Transaction, WalletConnection, SyncLog, User
-from schemas import AccountCreate, AccountUpdate, AccountTokenRequest
+from schemas import AccountCreate, AccountUpdate, AccountTokenRequest, AccountTransferRequest, AccountReconcileRequest
 from security import get_current_user_id, token_crypto
 from wallet_adapters import get_adapter
 from infrastructure.dependencies import get_account_service
@@ -27,11 +27,35 @@ async def create_account(payload: AccountCreate, request: Request, service: Acco
     new_acc = service.create_account(user_id, payload)
     return {"ok": True, "account": new_acc}
 
+@router.post("/transfer")
+async def transfer_accounts(payload: AccountTransferRequest, request: Request, service: AccountService = Depends(get_account_service)):
+    user_id = get_current_user_id(request)
+    result = service.transfer_between_accounts(user_id, payload)
+    return result
+
 @router.put("/{id}")
 async def update_account(id: int, payload: AccountUpdate, request: Request, service: AccountService = Depends(get_account_service)):
     user_id = get_current_user_id(request)
     acc = service.update_account(id, user_id, payload)
     return {"ok": True, "account": acc}
+
+@router.patch("/{id}/archive")
+async def toggle_archive_account(id: int, request: Request, service: AccountService = Depends(get_account_service)):
+    user_id = get_current_user_id(request)
+    acc = service.toggle_archive(id, user_id)
+    return {"ok": True, "account": acc}
+
+@router.patch("/{id}/favorite")
+async def toggle_favorite_account(id: int, request: Request, service: AccountService = Depends(get_account_service)):
+    user_id = get_current_user_id(request)
+    acc = service.toggle_favorite(id, user_id)
+    return {"ok": True, "account": acc}
+
+@router.post("/{id}/reconcile")
+async def reconcile_account(id: int, payload: AccountReconcileRequest, request: Request, service: AccountService = Depends(get_account_service)):
+    user_id = get_current_user_id(request)
+    result = service.reconcile_balance(id, user_id, payload)
+    return {"ok": True, "account": result["account"], "diff": result["diff"]}
 
 @router.delete("/{id}")
 async def delete_account(id: int, request: Request, service: AccountService = Depends(get_account_service)):

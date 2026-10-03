@@ -11,7 +11,7 @@ class SQLAlchemyAccountRepository(IAccountRepository):
         self.db = db
 
     def get_by_user_id(self, user_id: int) -> List[Account]:
-        return self.db.query(Account).filter(Account.user_id == user_id).order_by(Account.created_at.desc()).all()
+        return self.db.query(Account).filter(Account.user_id == user_id).order_by(Account.is_favorite.desc(), Account.id.asc()).all()
 
     def get_by_id_and_user_id(self, account_id: int, user_id: int) -> Optional[Account]:
         return self.db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()

@@ -1,24 +1,37 @@
-<!-- Herramientas de datos -->
-      <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <button class="btn btn-ghost" onclick="exportExcel()" style="font-size:12px;padding:7px 14px;">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar Excel
-        </button>
-        <button class="btn btn-ghost" onclick="cleanupDuplicates()" style="font-size:12px;padding:7px 14px;" title="Elimina transacciones repetidas idénticas">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          Limpiar Duplicados
-        </button>
-      </div>
+<!-- Herramientas y Toolbar -->
+<div class="cv-toolbar">
+  <div class="cv-toolbar-left">
+    <input type="text" class="cv-search-input" id="cvAccountSearch" placeholder="Buscar cuenta por nombre, banco o alias…" oninput="onAccountSearchChanged()"/>
+    <button class="cv-filter-btn active" id="tabAccountsActive" onclick="setAccountsFilterTab('active')">Activas</button>
+    <button class="cv-filter-btn" id="tabAccountsArchived" onclick="setAccountsFilterTab('archived')">Archivadas</button>
+    <button class="cv-filter-btn" id="tabAccountsAll" onclick="setAccountsFilterTab('all')">Todas</button>
+  </div>
+  <div class="cv-toolbar-right">
+    <button class="btn btn-ghost" onclick="exportExcel()" style="font-size:12px;padding:7px 14px;">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar Excel
+    </button>
+    <button class="btn btn-ghost" onclick="cleanupDuplicates()" style="font-size:12px;padding:7px 14px;" title="Elimina transacciones repetidas idénticas">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      Limpiar Duplicados
+    </button>
+  </div>
+</div>
 
 <!-- Patrimonio neto -->
-      <div class="cv-worth-bar">
-        <div class="cv-worth-label">Patrimonio Neto</div>
-        <div class="cv-worth-total" id="cvNetWorth">$0</div>
-        <div class="cv-worth-breakdown" id="cvWorthBreakdown"></div>
-      </div>
+<div class="cv-worth-bar">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+    <div class="cv-worth-label">Patrimonio Neto</div>
+    <button type="button" class="cv-toggle-rate-btn" id="cvToggleConsolidatedBtn" onclick="toggleConsolidatedNetWorth()">
+      💱 Mostrar Estimado Consolidado ARS
+    </button>
+  </div>
+  <div class="cv-worth-total" id="cvNetWorth">$0</div>
+  <div class="cv-worth-breakdown" id="cvWorthBreakdown"></div>
+</div>
 
-      <!-- Cards de cuentas -->
-      <div class="cv-top-grid" id="cvCards"></div>
+<!-- Cards de cuentas -->
+<div class="cv-top-grid" id="cvCards"></div>
 
       <!-- Grid: movimientos + detalle -->
       <div class="cv-main-grid">
@@ -86,9 +99,15 @@
 
           <!-- Movimientos de la cuenta seleccionada -->
           <div class="panel">
-            <div class="panel-head">
+            <div class="panel-head cv-tx-panel-head">
               <span class="panel-title" id="cvTxPanelTitle">Movimientos</span>
               <span class="panel-badge" id="cvTxCount">—</span>
+              <div class="cv-tx-panel-actions">
+                <input type="text" class="cv-search-input cv-tx-search-input" id="cvTxSearch" placeholder="Buscar movimientos…" oninput="onAccountTxSearchChanged()"/>
+                <button class="btn btn-ghost cv-tx-view-all-btn" id="cvViewAllInTxBtn" onclick="goToTransactionsWithAccountFilter()" title="Ver todos los movimientos en la vista de transacciones">
+                  Ver todas ↗
+                </button>
+              </div>
             </div>
             <div id="cvTxList" style="padding:0 8px 12px;"></div>
           </div>

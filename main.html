@@ -459,6 +459,46 @@
       <input class="field-input" id="amLimit" type="number" placeholder="0"/>
     </div>
 
+    <div id="amCardDaysWrap" style="margin-top:12px;display:none;">
+      <div class="form-row">
+        <div>
+          <label class="field-label">Día de cierre (1-31)</label>
+          <input class="field-input" id="amClosingDay" type="number" min="1" max="31" placeholder="Ej: 20"/>
+        </div>
+        <div>
+          <label class="field-label">Día de vencimiento (1-31)</label>
+          <input class="field-input" id="amDueDay" type="number" min="1" max="31" placeholder="Ej: 5"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Alias (opcional)</label>
+        <input class="field-input" id="amAlias" type="text" placeholder="Ej: micuenta.galicia"/>
+      </div>
+      <div>
+        <label class="field-label">CBU / CVU (opcional)</label>
+        <input class="field-input" id="amCbu" type="text" placeholder="22 dígitos"/>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <div>
+        <label class="field-label">Color distintivo</label>
+        <input class="field-input" id="amColor" type="color" value="#5b8cff" style="padding:4px;height:40px;cursor:pointer;"/>
+      </div>
+      <div>
+        <label class="field-label">Ícono / Emoji (opcional)</label>
+        <input class="field-input" id="amIcon" type="text" placeholder="Ej: 🏦, 💳, 🚀" maxlength="4"/>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" id="amFavorite" style="cursor:pointer;width:16px;height:16px;accent-color:var(--accent);">
+      <label for="amFavorite" class="field-label" style="margin-bottom:0;cursor:pointer;">Fijar como cuenta favorita ⭐</label>
+    </div>
+
     <div style="margin-top:12px;">
       <label class="field-label">Notas (opcional)</label>
       <input class="field-input" id="amNotes" type="text" placeholder="Ej: Cuenta en pesos para gastos diarios"/>
@@ -477,11 +517,39 @@
     <div class="modal-title">¿Eliminar cuenta?</div>
     <p style="font-size:13px;color:var(--muted);line-height:1.6;">
       Vas a eliminar la cuenta <strong id="adName" style="color:var(--text)"></strong>.
-      <br><span style="color:var(--red);">¡Atención! También se eliminarán todas las transacciones asociadas a esta cuenta.</span>
+      <br><span style="color:var(--red);">¡Atención! También se eliminarán todas las transacciones asociadas a esta cuenta. Si no querés perder tu historial, podés archivarla.</span>
     </p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeAccDeleteModal()">Cancelar</button>
       <button class="btn btn-danger" onclick="doDeleteAccount()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACCOUNT RECONCILE MODAL ===== -->
+<div class="modal-overlay" id="accReconcileOverlay" onclick="closeAccReconcileModal(event)">
+  <div class="modal" style="width:420px;">
+    <div class="modal-title">Conciliar Saldo</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;">
+      Ingresá el saldo real que tenés en tu banco o billetera para la cuenta <strong id="arAccountName" style="color:var(--text);"></strong>.
+      Si hay diferencia, se creará un ajuste automático en tu historial.
+    </p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:var(--muted);font-family:var(--font-mono);">Saldo actual registrado:</span>
+      <strong style="font-size:14px;font-family:var(--font-mono);" id="arCurrentBalance">$0</strong>
+    </div>
+    <div class="form-full">
+      <label class="field-label">Saldo real actual (<span id="arCurrencyLabel">ARS</span>)</label>
+      <input class="field-input" id="arRealBalance" type="number" step="any" placeholder="0.00" oninput="onReconcileInputChanged()"/>
+    </div>
+    <div id="arDiffBox" style="margin-top:10px;padding:10px 14px;border-radius:8px;font-size:12px;font-family:var(--font-mono);display:none;"></div>
+    <div class="form-full" style="margin-top:12px;">
+      <label class="field-label">Motivo o nota (opcional)</label>
+      <input class="field-input" id="arNote" type="text" placeholder="Ej: Ajuste por redondeo o propina"/>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeAccReconcileModal()">Cancelar</button>
+      <button class="btn btn-primary" id="arSubmitBtn" onclick="doReconcileAccount()">Guardar Ajuste</button>
     </div>
   </div>
 </div>

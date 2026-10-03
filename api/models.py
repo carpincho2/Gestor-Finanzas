@@ -79,6 +79,8 @@ class Goal(Base):
     target = Column(Float, nullable=False)
     current = Column(Float, default=0.0)
     deadline = Column(String(50), nullable=True)
+    start_date = Column(String(50), nullable=True)
+    currency = Column(String(10), default="ARS", nullable=False)
     notes = Column(String(500), nullable=True)
     status = Column(String(50), default="active")
     created_at = Column(DateTime, server_default=func.now())
@@ -90,6 +92,8 @@ class GoalContribution(Base):
     amount = Column(Float, nullable=False)
     date = Column(String(50), nullable=False)
     note = Column(String(255), nullable=True)
+    account_id = Column(Integer, nullable=True)
+    type = Column(String(20), default="deposit")
     created_at = Column(DateTime, server_default=func.now())
 
 class WalletConnection(Base):

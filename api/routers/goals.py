@@ -24,6 +24,18 @@ async def update_goal(id: int, payload: GoalCreate, request: Request, service: G
     updated = service.update_goal(id, user_id, payload)
     return {"ok": True, "goal": updated}
 
+@router.patch("/{id}/status")
+async def toggle_goal_status(id: int, request: Request, service: GoalService = Depends(get_goal_service)):
+    user_id = get_current_user_id(request)
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    new_status = body.get("status") if isinstance(body, dict) else None
+    updated = service.toggle_status(id, user_id, new_status)
+    return {"ok": True, "goal": updated}
+
 @router.delete("/{id}")
 async def delete_goal(id: int, request: Request, service: GoalService = Depends(get_goal_service)):
     user_id = get_current_user_id(request)

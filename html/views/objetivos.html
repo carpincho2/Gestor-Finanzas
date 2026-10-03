@@ -1,56 +1,91 @@
 <!-- Top action bar -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--text);">Objetivos de Ahorro</h2>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Planificá, ahorrá y alcanzá tus metas financieras</div>
-        </div>
-        <button class="btn btn-primary" onclick="openGoalModal()" style="font-size:12px;padding:8px 16px;">
-          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuevo Objetivo
-        </button>
+<div class="ov-header-strip">
+  <div>
+    <h2 class="ov-header-title">Objetivos de Ahorro</h2>
+    <div class="ov-header-sub">Planificá, ahorrá y alcanzá tus metas financieras con inteligencia predictiva</div>
+  </div>
+  <button class="btn btn-primary" onclick="openGoalModal()" style="font-size:12px;padding:8px 16px;">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Nuevo Objetivo
+  </button>
+</div>
+
+<!-- Summary stats -->
+<div class="ov-summary" id="ovSummary"></div>
+
+<!-- Toolbar de filtros, orden y búsqueda -->
+<div class="ov-toolbar-strip">
+  <div class="ov-filters-group">
+    <button class="ov-filter-chip active" id="ovFilterAll" onclick="setGoalFilter('all')">Todos</button>
+    <button class="ov-filter-chip" id="ovFilterActive" onclick="setGoalFilter('active')">En curso</button>
+    <button class="ov-filter-chip" id="ovFilterBehind" onclick="setGoalFilter('behind')">Demorados</button>
+    <button class="ov-filter-chip" id="ovFilterCompleted" onclick="setGoalFilter('completed')">Completados</button>
+    <button class="ov-filter-chip" id="ovFilterPaused" onclick="setGoalFilter('paused')">Pausados</button>
+  </div>
+  <div class="ov-toolbar-right">
+    <select class="field-select ov-filter-select" id="ovCurrencySelect" onchange="setGoalCurrencyFilter(this.value)" title="Filtrar por divisa">
+      <option value="all">Todas las divisas</option>
+      <option value="ARS">ARS ($)</option>
+      <option value="USD">USD (US$)</option>
+      <option value="EUR">EUR (€)</option>
+    </select>
+    <select class="field-select ov-sort-select" id="ovSortSelect" onchange="changeGoalSort(this.value)" title="Criterio de orden">
+      <option value="deadline_asc">Vencimiento más cercano</option>
+      <option value="pct_desc">Mayor progreso (%)</option>
+      <option value="left_desc">Mayor faltante ($)</option>
+      <option value="target_desc">Meta más alta</option>
+      <option value="name_asc">Nombre (A-Z)</option>
+    </select>
+    <input class="field-input ov-search-input" id="ovSearchInput" type="text" placeholder="Buscar objetivo..." oninput="handleGoalSearch(this.value)"/>
+  </div>
+</div>
+
+<!-- Main grid: cards + right panel -->
+<div class="ov-main-grid">
+
+  <!-- Goal cards list -->
+  <div style="display:flex;flex-direction:column;gap:14px;" id="ovCards"></div>
+
+  <!-- Right panel -->
+  <div class="ov-right">
+
+    <!-- Progress overview donut -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Progreso Global</span>
+        <span class="panel-badge" id="ovDonutBadge">0 objetivos</span>
       </div>
-
-      <!-- Summary stats -->
-      <div class="ov-summary" id="ovSummary"></div>
-
-      <!-- Main grid: cards + right panel -->
-      <div class="ov-main-grid">
-
-        <!-- Goal cards -->
-        <div style="display:flex;flex-direction:column;gap:14px;" id="ovCards"></div>
-
-        <!-- Right panel -->
-        <div class="ov-right">
-
-          <!-- Progress overview donut -->
-          <div class="panel">
-            <div class="panel-head">
-              <span class="panel-title">Progreso Global</span>
-              <span class="panel-badge" id="ovDonutBadge">0 objetivos</span>
-            </div>
-            <div style="padding:16px 24px 6px;display:flex;justify-content:center;position:relative;">
-              <canvas id="ovDonutChart" style="max-width:180px;max-height:180px;"></canvas>
-              <div style="position:absolute;inset:16px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;">
-                <div style="font-size:22px;font-weight:800;letter-spacing:-1px;" id="ovDonutPct">0%</div>
-                <div style="font-size:9px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;">completado</div>
-              </div>
-            </div>
-            <div style="padding:8px 20px 16px;" id="ovDonutLegend"></div>
-          </div>
-
-          <!-- Timeline / milestones -->
-          <div class="panel">
-            <div class="panel-head">
-              <span class="panel-title">Próximos Vencimientos</span>
-            </div>
-            <div class="ov-timeline" id="ovTimeline"></div>
-          </div>
-
-          <!-- Tip -->
-          <div class="panel" style="padding:20px 24px;">
-            <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Consejo</div>
-            <div id="ovTip" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
-          </div>
-
+      <div style="padding:16px 24px 6px;display:flex;justify-content:center;position:relative;">
+        <canvas id="ovDonutChart" style="max-width:180px;max-height:180px;"></canvas>
+        <div style="position:absolute;inset:16px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;">
+          <div style="font-size:22px;font-weight:800;letter-spacing:-1px;" id="ovDonutPct">0%</div>
+          <div style="font-size:9px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1px;text-transform:uppercase;">completado</div>
         </div>
       </div>
+      <div style="padding:8px 20px 16px;" id="ovDonutLegend"></div>
+    </div>
+
+    <!-- Ritmo y Proyecciones Predictivas -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Ritmo y Proyecciones</span>
+      </div>
+      <div class="ov-proj-box" id="ovProjections"></div>
+    </div>
+
+    <!-- Timeline / milestones -->
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Próximos Vencimientos</span>
+      </div>
+      <div class="ov-timeline" id="ovTimeline"></div>
+    </div>
+
+    <!-- Tip -->
+    <div class="panel" style="padding:20px 24px;">
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Inteligencia Financiera</div>
+      <div id="ovTip" style="font-size:13px;line-height:1.6;color:var(--text);"></div>
+    </div>
+
+  </div>
+</div>

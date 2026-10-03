@@ -13,3 +13,6 @@ class UserRepositoryPort(Protocol):
 
     def save(self, user: UserEntity) -> UserEntity:
         ...
+
+IUserRepository = UserRepositoryPort
+

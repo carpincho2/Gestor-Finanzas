@@ -85,6 +85,8 @@ class GoalCreate(BaseModel):
     target: float
     current: float = 0.0
     deadline: Optional[str] = None
+    start_date: Optional[str] = None
+    currency: Optional[str] = "ARS"
     notes: Optional[str] = None
     status: Optional[str] = "active"
 
@@ -92,6 +94,8 @@ class GoalContributionCreate(BaseModel):
     amount: float
     date: str
     note: Optional[str] = None
+    account_id: Optional[int] = None
+    type: Optional[str] = "deposit"
 
 class ProfileUpdateRequest(BaseModel):
     name: str

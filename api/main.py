@@ -43,6 +43,26 @@ def migrate_schema_columns():
                 conn.execute(text("ALTER TABLE budgets ADD COLUMN currency VARCHAR(10) DEFAULT 'ARS'"))
                 print("INFO: Migración de esquema: añadida columna currency a budgets")
 
+        # Check goals.currency and goals.start_date
+        if "goals" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("goals")]
+            if "currency" not in columns:
+                conn.execute(text("ALTER TABLE goals ADD COLUMN currency VARCHAR(10) DEFAULT 'ARS'"))
+                print("INFO: Migración de esquema: añadida columna currency a goals")
+            if "start_date" not in columns:
+                conn.execute(text("ALTER TABLE goals ADD COLUMN start_date VARCHAR(50)"))
+                print("INFO: Migración de esquema: añadida columna start_date a goals")
+
+        # Check goal_contributions.account_id and goal_contributions.type
+        if "goal_contributions" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("goal_contributions")]
+            if "account_id" not in columns:
+                conn.execute(text("ALTER TABLE goal_contributions ADD COLUMN account_id INTEGER"))
+                print("INFO: Migración de esquema: añadida columna account_id a goal_contributions")
+            if "type" not in columns:
+                conn.execute(text("ALTER TABLE goal_contributions ADD COLUMN type VARCHAR(20) DEFAULT 'deposit'"))
+                print("INFO: Migración de esquema: añadida columna type a goal_contributions")
+
 def migrate_plaintext_tokens():
     db = SessionLocal()
     try:

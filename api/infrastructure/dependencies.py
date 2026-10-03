@@ -28,15 +28,6 @@ def get_budget_repository(db: Session = Depends(get_db)) -> SQLAlchemyBudgetRepo
 def get_budget_service(budget_repo: SQLAlchemyBudgetRepository = Depends(get_budget_repository)) -> BudgetService:
     return BudgetService(budget_repo)
 
-from infrastructure.repositories.sqlalchemy_goal_repository import SQLAlchemyGoalRepository
-from services.goal_service import GoalService
-
-def get_goal_repository(db: Session = Depends(get_db)) -> SQLAlchemyGoalRepository:
-    return SQLAlchemyGoalRepository(db)
-
-def get_goal_service(goal_repo: SQLAlchemyGoalRepository = Depends(get_goal_repository)) -> GoalService:
-    return GoalService(goal_repo)
-
 from infrastructure.repositories.sqlalchemy_account_repository import SQLAlchemyAccountRepository
 from infrastructure.repositories.sqlalchemy_transaction_repository import SQLAlchemyTransactionRepository
 from infrastructure.repositories.sqlalchemy_wallet_repository import SQLAlchemyWalletRepository
@@ -45,6 +36,18 @@ from services.account_service import AccountService
 
 def get_account_repository(db: Session = Depends(get_db)) -> SQLAlchemyAccountRepository:
     return SQLAlchemyAccountRepository(db)
+
+from infrastructure.repositories.sqlalchemy_goal_repository import SQLAlchemyGoalRepository
+from services.goal_service import GoalService
+
+def get_goal_repository(db: Session = Depends(get_db)) -> SQLAlchemyGoalRepository:
+    return SQLAlchemyGoalRepository(db)
+
+def get_goal_service(
+    goal_repo: SQLAlchemyGoalRepository = Depends(get_goal_repository),
+    acc_repo: SQLAlchemyAccountRepository = Depends(get_account_repository)
+) -> GoalService:
+    return GoalService(goal_repo, acc_repo)
 
 def get_transaction_repository(db: Session = Depends(get_db)) -> SQLAlchemyTransactionRepository:
     return SQLAlchemyTransactionRepository(db)

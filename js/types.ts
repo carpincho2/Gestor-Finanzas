@@ -25,6 +25,35 @@ export interface Budget {
   [key: string]: any;
 }
 
+export interface GoalContribution {
+  id?: number;
+  goal_id?: number;
+  amount: number;
+  date: string;
+  note?: string | null;
+  account_id?: number | null;
+  type?: 'deposit' | 'withdraw';
+  [key: string]: any;
+}
+
+export interface Goal {
+  id: number;
+  name: string;
+  cat: string;
+  emoji?: string;
+  color: string;
+  target: number;
+  current: number;
+  deadline?: string | null;
+  start_date?: string | null;
+  currency?: string;
+  notes?: string | null;
+  status?: 'active' | 'paused' | 'completed' | string;
+  created_at?: string | null;
+  contributions?: GoalContribution[];
+  [key: string]: any;
+}
+
 declare global {
   interface Window {
     [key: string]: any;

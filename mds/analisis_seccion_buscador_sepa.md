@@ -103,17 +103,17 @@ A pesar de esta sólida base, existen **brechas funcionales críticas de product
 
 ## 5. Plan de Acción y Roadmap de Implementación
 
-| Fase | Título | Alcance | Impacto |
+| Fase | Título | Alcance | Estado |
 |---|---|---|---|
 | **Fase 1** | **Lista de Compras & Integración SEPA** | Sección de Lista del Súper con sincronización reactiva bidireccional y chips de búsqueda automática en SEPA. | **Completado ✅** |
-| **Fase 2** | **Escáner Góndola & Registro de Gasto** | Lector de código de barras con cámara nativa + botón de registrar como transacción directa. | Alto / Inmediato |
-| **Fase 3** | **Cruce con Billeteras del Usuario** | Detección reactiva de promociones según las cuentas y tarjetas registradas en la app. | Alto (Diferencial Fintech) |
-| **Fase 4** | **Canasta Familiar & Carrito Multiproducto** | Comparador de lista completa de supermercado con optimización de compra única vs dividida. | Crítico (Ahorro Masivo) |
-| **Fase 5** | **Historial de Precios & Mapa Embebido** | Tendencia de inflación por producto + visualización geográfica en mapa interactivo. | Medio / Visual |
+| **Fase 2** | **Escáner Góndola & Registro de Gasto** | Lector de código de barras con cámara nativa (`BarcodeDetector` API) + botón de registrar como transacción directa. | **Completado ✅** |
+| **Fase 3** | **Cruce con Billeteras del Usuario** | Detección reactiva de promociones bancarias y billeteras virtuales según las cuentas y tarjetas registradas en la app. | **Completado ✅** |
+| **Fase 4** | **Canasta Familiar & Carrito Multiproducto** | Comparador de lista completa de supermercado ("Changuito Óptimo") con cálculo de compra única vs compra dividida (*Split Shopping*). | **Completado ✅** |
+| **Fase 5** | **Historial de Precios & Mapa Embebido** | Tendencia de inflación por producto + visualización geográfica en mapa interactivo (Leaflet/OpenStreetMap). | Roadmap Futuro |
 
 ---
 
-## 6. Módulo Implementado: "Mi Lista de Compras" e Integración SEPA
+## 6. Módulo Implementado: "Mi Lista de Compras" e Integración SEPA (Fase 1)
 
 Se implementó una nueva sección de primer nivel en la barra lateral (**Lista del Súper**) con sinergia directa hacia el Buscador SEPA:
 1. **`ShoppingListService` (`js/services/shoppingListService.ts`):** Servicio con principios SOLID (SRP) que administra ítems, persistencia en `localStorage` (aislado por usuario con `userKey`), estado de completado, borrado por lotes, canastas básicas rápidas (*Básicos del Mes, Desayuno, Limpieza*) y suscripción reactiva.
@@ -122,4 +122,69 @@ Se implementó una nueva sección de primer nivel en la barra lateral (**Lista d
    - Al abrir el Buscador SEPA, se detecta la lista de compras del usuario y se renderizan **chips interactivos con sus productos pendientes** arriba de las sugerencias fijas.
    - Si el usuario toca cualquier chip de su lista de compras, se ejecuta la búsqueda de ofertas en supermercados inmediatamente.
    - En cada resultado de búsqueda de productos del SEPA, se incorporó el botón **`➕ A mi lista`** para agregar ofertas encontradas a la lista de compras en un solo clic.
+
+---
+
+## 7. Módulo Implementado: Escáner Góndola & Registro Directo de Gastos (Fase 2)
+
+### 7.1. Escáner de Código de Barras con Cámara (`BarcodeDetector` API)
+- **Problema resuelto:** Ya no es necesario ingresar manualmente los 13 dígitos de un código de barras EAN-13 en la góndola.
+- **Implementación técnica:**
+  - Modal `#sepaBarcodeModal` con viewport de video en tiempo real (`<video id="sepaCameraVideo">`), marco de encuadre y haz láser animado.
+  - Uso de la API nativa del navegador `BarcodeDetector` con soporte para formatos `ean_13`, `ean_8`, `upc_a`, `upc_e`, `code_128` y `qr_code`.
+  - Mecanismo de reintentos continuos a 4 FPS con `requestAnimationFrame` o `setInterval` para evitar sobrecalentamiento y consumo excesivo de batería.
+  - Fallback ergonómico: Si el navegador no soporta `BarcodeDetector` o el usuario deniega los permisos de la cámara, se ofrece un formulario modal integrado para ingresar el código manualmente sin bloquear el flujo.
+  - Al detectar el código, se reproduce una vibración háptica (`navigator.vibrate(100)`), se cierra la cámara liberando el hardware de video y se busca automáticamente el producto en SEPA.
+
+### 7.2. Conversión Inmediata a Transacción de Gasto
+- **Problema resuelto:** Tras elegir una oferta o comprar en el supermercado, el usuario tardaba en registrar el gasto en sus finanzas.
+- **Implementación técnica (`registerExpenseFromSepa`):**
+  - Botón **`💸 Gasto`** en cada sucursal de cada producto listado.
+  - Precarga automática en el modal de transacciones de la aplicación:
+    - **Descripción:** `Supermercado [Cadena] - [Nombre del Producto]`
+    - **Monto:** Precio final del producto en esa sucursal.
+    - **Categoría:** Preseleccionada en `Alimentación`.
+    - **Fecha:** Fecha del día de hoy en formato `YYYY-MM-DD`.
+  - Apertura instantánea del modal `openNewTxModal()`, permitiendo al usuario guardar el gasto en su presupuesto en menos de 2 segundos.
+
+---
+
+## 8. Módulo Implementado: Cruce Inteligente con Cuentas y Tarjetas Registradas (Fase 3)
+
+- **Problema resuelto:** Las promociones del SEPA (ej. *20% con Cuenta DNI*, *15% Santander Río*, *Modo*, etc.) antes eran pasivas; el usuario tenía que recordar qué tarjetas tenía en su billetera.
+- **Implementación técnica (`findMatchingUserAccount`):**
+  - La función inspecciona el estado global de cuentas del usuario (`state.accounts`).
+  - Analiza el nombre de la cuenta, banco emisor y tipo de cuenta contra las etiquetas de promoción devueltas por el backend SEPA.
+  - **Mapeo inteligente de entidades financieras argentinas:**
+    - Cuenta DNI / Banco Provincia
+    - Mercado Pago / Billeteras virtuales
+    - Modo / Billeteras MODO
+    - Santander, Galicia, BBVA, Macro, Nación, ICBC, Ciudad, Hipotecario, Brubank, Ualá.
+    - Tarjetas de crédito/débito VISA, Mastercard, Cabal, American Express.
+  - **Renderizado condicional:** Cuando una promoción coincide con una cuenta activa del usuario, el badge se destaca con una insignia dorada:
+    `⭐ ¡Aplica con tu Santander Débito! (-15%)`
+    facilitando la toma de decisiones al instante.
+
+---
+
+## 9. Módulo Implementado: Changuito Óptimo & Split Shopping (Fase 4)
+
+- **Problema resuelto:** Comparar un changuito mensual completo requería buscar producto por producto de manera tediosa.
+- **Implementación técnica:**
+  - **Servicio `ShoppingListService.compareFullBasket()`:**
+    1. Toma todos los ítems pendientes de la lista de compras del usuario.
+    2. Ejecuta búsquedas concurrentes en el endpoint SEPA `/api/precios/buscar`.
+    3. Agrupa las ofertas por cadena de supermercado (Coto, Carrefour, Día, ChangoMás, Jumbo, Disco, etc.).
+    4. **Supermercado Único Más Barato:** Calcula el ticket acumulado para cada cadena, considerando los productos encontrados y la cobertura porcentual de la lista.
+    5. **Algoritmo de Compra Dividida (*Split Shopping*):**
+       Calcula el escenario óptimo donde cada producto se compra en el supermercado que lo tiene al menor precio disponible:
+       $$\text{Costo Split} = \sum_{p \in \text{Canasta}} \min_{c \in \text{Cadenas}} (\text{Precio}(p, c))$$
+       $$\text{Ahorro Extra} = \text{Costo Supermercado Único} - \text{Costo Split}$$
+  - **Interfaz de Usuario en `html/views/lista_compras.html`:**
+    - Botón interactivo **`🛒 Optimizar Changuito (Comparar en SEPA)`**.
+    - Panel emergente `#shoppingBasketPanel` que muestra:
+      - Resumen del supermercado más económico con ticket total y cantidad de productos cubiertos.
+      - Tarjeta de Ahorro con la estrategia de Compra Dividida (ahorro potencial en pesos y porcentaje).
+      - Tabla comparativa de todas las cadenas evaluadas con sus totales y cobertura.
+      - Recomendación detallada producto por producto de dónde comprar cada ítem para maximizar el ahorro.
 

@@ -7,12 +7,17 @@ import {
 } from './services/sepaService.ts';
 import { ShoppingListService } from './services/shoppingListService.ts';
 import { showToast } from './utils/utils.ts';
+import { state } from './store/store.ts';
 
 // Estado de ubicación en memoria
 let currentLat = -34.6037;
 let currentLng = -58.3816;
 let isGpsActive = false;
 let currentCityName = 'Buenos Aires (CABA)';
+
+// Estado de cámara para escáner de góndola
+let sepaCameraStream: MediaStream | null = null;
+let sepaBarcodeDetectorInterval: any = null;
 
 /**
  * Detecta la ubicación del usuario mediante geolocalización del navegador.
@@ -155,17 +160,143 @@ export function quickSearchSepa(term: string): void {
 }
 
 /**
- * Asistente para ingresar o escanear código EAN/GTIN.
+ * Abre el modal de escaneo de código de barras con la cámara en góndola.
+ */
+export async function openSepaBarcodeModal(): Promise<void> {
+  const modal = document.getElementById('sepaBarcodeModal');
+  const video = document.getElementById('sepaBarcodeVideo') as HTMLVideoElement | null;
+  const statusEl = document.getElementById('sepaBarcodeCamStatus');
+  const manualInput = document.getElementById('sepaBarcodeManualInput') as HTMLInputElement | null;
+
+  if (!modal) return;
+  modal.style.display = 'flex';
+  if (manualInput) {
+    manualInput.value = '';
+    manualInput.focus();
+  }
+
+  if (!video || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (statusEl) statusEl.textContent = 'Cámara no disponible en este dispositivo. Ingresá el código abajo:';
+    return;
+  }
+
+  try {
+    if (statusEl) statusEl.textContent = 'Iniciando cámara trasera...';
+    sepaCameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'environment',
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+    video.srcObject = sepaCameraStream;
+    await video.play();
+    if (statusEl) statusEl.textContent = 'Enfocá el código de barras en el recuadro';
+
+    // Detección automática en tiempo real si el navegador soporta BarcodeDetector API
+    const win = window as any;
+    if ('BarcodeDetector' in win) {
+      try {
+        const detector = new win.BarcodeDetector({
+          formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'],
+        });
+
+        sepaBarcodeDetectorInterval = setInterval(async () => {
+          if (!video || video.readyState < 2) return;
+          try {
+            const barcodes = await detector.detect(video);
+            if (barcodes && barcodes.length > 0) {
+              const code = barcodes[0].rawValue;
+              if (code && /^\d{8,14}$/.test(code)) {
+                onBarcodeScannedSuccess(code);
+              }
+            }
+          } catch {
+            // Ignorar errores transitorios de fotograma
+          }
+        }, 300);
+      } catch {
+        // Fallback sin detector
+      }
+    }
+  } catch (err: any) {
+    console.warn('No se pudo acceder a la cámara para SEPA:', err);
+    if (statusEl) {
+      statusEl.textContent = 'Permiso de cámara no concedido. Podés escribir el código manualmente:';
+    }
+  }
+}
+
+/**
+ * Detiene la cámara y cierra el modal de escaneo.
+ */
+export function closeSepaBarcodeModal(): void {
+  const modal = document.getElementById('sepaBarcodeModal');
+  const video = document.getElementById('sepaBarcodeVideo') as HTMLVideoElement | null;
+
+  if (sepaBarcodeDetectorInterval) {
+    clearInterval(sepaBarcodeDetectorInterval);
+    sepaBarcodeDetectorInterval = null;
+  }
+
+  if (sepaCameraStream) {
+    sepaCameraStream.getTracks().forEach((t) => t.stop());
+    sepaCameraStream = null;
+  }
+
+  if (video) {
+    video.srcObject = null;
+  }
+
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+/**
+ * Se ejecuta al detectar exitosamente un código de barras.
+ */
+function onBarcodeScannedSuccess(barcode: string): void {
+  closeSepaBarcodeModal();
+
+  // Vibrar si el dispositivo lo soporta
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100]);
+  }
+
+  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+  if (input) {
+    input.value = barcode;
+  }
+  showToast(`📷 Código ${barcode} detectado en góndola`);
+  searchSepa();
+}
+
+/**
+ * Envío manual de código desde el modal.
+ */
+export function submitSepaManualBarcode(): void {
+  const manualInput = document.getElementById('sepaBarcodeManualInput') as HTMLInputElement | null;
+  if (!manualInput) return;
+  const val = manualInput.value.trim();
+  if (!val) {
+    showToast('Ingresá el número de código de barras', true);
+    return;
+  }
+  closeSepaBarcodeModal();
+  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+  if (input) {
+    input.value = val;
+  }
+  searchSepa();
+}
+
+/**
+ * Fallback compatible para prompt de código de barras.
  */
 export function promptSepaBarcode(): void {
-  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
-  if (!input) return;
-
-  const ean = prompt('Ingresá el código de barras del producto (8 a 14 dígitos):');
-  if (ean && ean.trim()) {
-    input.value = ean.trim();
-    searchSepa();
-  }
+  openSepaBarcodeModal();
 }
 
 /**
@@ -227,6 +358,82 @@ export function addFromSepaToShoppingList(name: string): void {
   } catch (err: any) {
     showToast(err.message || 'Error al agregar a la lista', true);
   }
+}
+
+/**
+ * Precarga y abre el modal de registro de gasto directamente con los datos del supermercado y producto.
+ */
+export function registerExpenseFromSepa(comercio: string, producto: string, precio: number): void {
+  const win = window as any;
+  if (win.setModalType) {
+    win.setModalType('expense');
+  }
+  if (win.openModal) {
+    win.openModal();
+  }
+
+  setTimeout(() => {
+    const descEl = document.getElementById('mDesc') as HTMLInputElement | null;
+    const amountEl = document.getElementById('mAmount') as HTMLInputElement | null;
+    const catEl = document.getElementById('mCat') as HTMLSelectElement | null;
+    const dateEl = document.getElementById('mDate') as HTMLInputElement | null;
+
+    if (descEl) descEl.value = `Supermercado ${comercio} - ${producto}`;
+    if (amountEl) amountEl.value = Math.round(precio).toString();
+    if (catEl) catEl.value = 'Alimentación';
+    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+
+    // Actualizar visualmente select personalizado si existe
+    if (win.updateCustomSelectDisplay && catEl) {
+      win.updateCustomSelectDisplay(catEl);
+    }
+
+    showToast(`💸 Gasto en ${comercio} precargado ($${Math.round(precio).toLocaleString('es-AR')})`);
+  }, 100);
+}
+
+/**
+ * Busca si alguna cuenta o tarjeta registrada por el usuario coincide con la promoción bancaria.
+ */
+export function findMatchingUserAccount(promoTag: string | null): string | null {
+  if (!promoTag) return null;
+  const accounts = (state.accounts || []) as any[];
+  const tagLower = promoTag.toLowerCase();
+
+  for (const acc of accounts) {
+    const accName = (acc.name || '').toLowerCase();
+    const accBank = (acc.bank || '').toLowerCase();
+    const accType = (acc.type || '').toLowerCase();
+
+    if (tagLower.includes('cuenta dni') && (accName.includes('dni') || accName.includes('bapro') || accBank.includes('provincia'))) {
+      return acc.name;
+    }
+    if (tagLower.includes('mercado pago') && (accName.includes('mercado pago') || accName.includes('mp') || accType.includes('billetera'))) {
+      return acc.name;
+    }
+    if (
+      (tagLower.includes('visa') || tagLower.includes('mc') || tagLower.includes('mastercard')) &&
+      (accType.includes('tarjeta') || accName.includes('visa') || accName.includes('mastercard') || accName.includes('crédito') || accName.includes('debito') || accName.includes('débito'))
+    ) {
+      return acc.name;
+    }
+    if (tagLower.includes('supervielle') && (accName.includes('supervielle') || accBank.includes('supervielle'))) {
+      return acc.name;
+    }
+    if (tagLower.includes('santander') && (accName.includes('santander') || accBank.includes('santander'))) {
+      return acc.name;
+    }
+    if (tagLower.includes('galicia') && (accName.includes('galicia') || accBank.includes('galicia'))) {
+      return acc.name;
+    }
+    if (tagLower.includes('bbva') && (accName.includes('bbva') || accBank.includes('bbva'))) {
+      return acc.name;
+    }
+    if (accName && tagLower.includes(accName)) {
+      return acc.name;
+    }
+  }
+  return null;
 }
 
 /**
@@ -466,17 +673,29 @@ function renderMultiProductResults(data: MultiProductResponse): void {
       const items = producto.sucursales
         .map((s) => {
           const isBest = s.es_mejor;
+          const matchingAccount = findMatchingUserAccount(s.promo_tag);
           let promoHtml = '';
           if (s.promo_tag) {
-            promoHtml = `
-            <span style="
-              display: inline-flex; align-items: center; gap: 4px;
-              padding: 2px 8px; background: rgba(0, 229, 160, 0.12); border-radius: 4px;
-              font-size: 11px; font-weight: 600; color: var(--accent); margin-left: 8px;
-            ">
-              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-              ${s.promo_tag} -${s.ahorro_pct}%
-            </span>`;
+            if (matchingAccount) {
+              promoHtml = `
+              <span style="
+                display: inline-flex; align-items: center; gap: 4px;
+                padding: 3px 8px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 6px;
+                font-size: 11px; font-weight: 700; color: #22c55e; margin-left: 8px;
+              " title="¡Aplica con tu cuenta ${matchingAccount} registrada en la app!">
+                ⭐ ¡Aplica con tu ${matchingAccount}! (-${s.ahorro_pct}%)
+              </span>`;
+            } else {
+              promoHtml = `
+              <span style="
+                display: inline-flex; align-items: center; gap: 4px;
+                padding: 2px 8px; background: rgba(0, 229, 160, 0.12); border-radius: 4px;
+                font-size: 11px; font-weight: 600; color: var(--accent); margin-left: 8px;
+              ">
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                ${s.promo_tag} -${s.ahorro_pct}%
+              </span>`;
+            }
           }
 
           let tachadoHtml = '';
@@ -496,7 +715,7 @@ function renderMultiProductResults(data: MultiProductResponse): void {
             ${isBest ? 'background: rgba(0, 229, 160, 0.04);' : ''}
           ">
             <div style="flex: 1; min-width: 200px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 ${isBest ? '<span style="color: var(--green); font-size: 13px;" title="Mejor precio de la zona">🏆</span>' : ''}
                 <span style="font-weight: 700; font-size: 14px; color: var(--text);">${s.comercio}</span>
                 ${promoHtml}
@@ -515,11 +734,15 @@ function renderMultiProductResults(data: MultiProductResponse): void {
               </div>
 
               <!-- Botones de acción directa -->
-              <div style="display: flex; gap: 6px;">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" title="Cómo llegar (Google Maps)" style="padding: 6px 10px; font-size: 11px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
                   Mapa
                 </a>
+                <button type="button" class="btn btn-secondary" onclick="registerExpenseFromSepa('${safeComercio}', '${safeNombre}', ${s.precio_final})" title="Registrar esta compra como un gasto en tu presupuesto" style="padding: 6px 10px; font-size: 11px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; color: var(--green); border-color: rgba(34, 197, 94, 0.3);">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  Gasto
+                </button>
                 <button type="button" class="btn btn-primary" onclick="openShoppingFromSepa('${safeNombre}', ${s.precio_final}, '${safeComercio}')" title="Calcular finanzas y cuotas con tus tarjetas" style="padding: 6px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;">
                   <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                   Calcular Cuotas

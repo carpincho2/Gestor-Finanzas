@@ -1,7 +1,27 @@
 import { userKey } from '../store/store.ts';
 import { ShoppingListItem } from '../types.ts';
+import { SepaService } from './sepaService.ts';
 
 type Listener = (items: ShoppingListItem[]) => void;
+
+export interface BasketSummaryByChain {
+  comercio: string;
+  totalEstimado: number;
+  productosEncontrados: number;
+  totalProductos: number;
+  esMasBarato: boolean;
+  detalles: Array<{ producto: string; precio: number }>;
+}
+
+export interface FullBasketComparisonResult {
+  totalProductos: number;
+  supermercadoGanador: BasketSummaryByChain | null;
+  cadenas: BasketSummaryByChain[];
+  totalCompraDividida: number;
+  ahorroDividido: number;
+  ahorroDivididoPct: number;
+  itemsDivididos: Array<{ producto: string; mejorComercio: string; mejorPrecio: number }>;
+}
 
 export class ShoppingListService {
   private static listeners: Listener[] = [];
@@ -140,6 +160,126 @@ export class ShoppingListService {
     toAdd.forEach(p => {
       this.addItem(p.name, p.quantity, p.category);
     });
+  }
+
+  /**
+   * Realiza la comparativa de la canasta completa de productos activos en supermercados cercanos.
+   * Calcula el total acumulado por cadena y la estrategia de compra dividida (split shopping).
+   */
+  static async compareFullBasket(
+    lat: number = -34.6037,
+    lng: number = -58.3816,
+    radio: number = 10
+  ): Promise<FullBasketComparisonResult | null> {
+    const activeItems = this.getActiveItems();
+    if (activeItems.length === 0) return null;
+
+    // Buscar precios para cada producto en paralelo
+    const queries = activeItems.map(async (item) => {
+      try {
+        const res = await SepaService.searchMultiProduct({
+          query: item.name,
+          lat,
+          lng,
+          radio,
+        });
+        if (res && res.productos && res.productos.length > 0) {
+          return {
+            item,
+            product: res.productos[0],
+          };
+        }
+      } catch (err) {
+        console.warn(`No se pudo cotizar ${item.name}:`, err);
+      }
+      return { item, product: null };
+    });
+
+    const results = await Promise.all(queries);
+
+    // Mapear por comercio/cadena
+    const chainTotals: Record<string, { total: number; count: number; items: Array<{ producto: string; precio: number }> }> = {};
+    const splitItems: Array<{ producto: string; mejorComercio: string; mejorPrecio: number }> = [];
+
+    results.forEach(({ item, product }) => {
+      if (!product || !product.sucursales || product.sucursales.length === 0) {
+        return;
+      }
+
+      // Mejor precio global para split shopping
+      let bestPrice = Infinity;
+      let bestStore = '';
+
+      // Registrar el mejor precio de este producto en cada cadena
+      const chainMinForProduct: Record<string, number> = {};
+
+      product.sucursales.forEach((s) => {
+        const chainName = s.comercio;
+        if (!chainMinForProduct[chainName] || s.precio_final < chainMinForProduct[chainName]) {
+          chainMinForProduct[chainName] = s.precio_final;
+        }
+
+        if (s.precio_final < bestPrice) {
+          bestPrice = s.precio_final;
+          bestStore = s.comercio;
+        }
+      });
+
+      if (bestPrice < Infinity) {
+        splitItems.push({
+          producto: item.name,
+          mejorComercio: bestStore,
+          mejorPrecio: bestPrice,
+        });
+      }
+
+      for (const [chainName, price] of Object.entries(chainMinForProduct)) {
+        if (!chainTotals[chainName]) {
+          chainTotals[chainName] = { total: 0, count: 0, items: [] };
+        }
+        chainTotals[chainName].total += price;
+        chainTotals[chainName].count += 1;
+        chainTotals[chainName].items.push({ producto: item.name, precio: price });
+      }
+    });
+
+    const totalCompraDividida = splitItems.reduce((acc, i) => acc + i.mejorPrecio, 0);
+
+    const cadenas: BasketSummaryByChain[] = Object.entries(chainTotals).map(([comercio, data]) => ({
+      comercio,
+      totalEstimado: Math.round(data.total * 100) / 100,
+      productosEncontrados: data.count,
+      totalProductos: activeItems.length,
+      esMasBarato: false,
+      detalles: data.items,
+    }));
+
+    // Ordenar cadenas por mayor cantidad de productos y menor precio
+    cadenas.sort((a, b) => {
+      if (b.productosEncontrados !== a.productosEncontrados) {
+        return b.productosEncontrados - a.productosEncontrados;
+      }
+      return a.totalEstimado - b.totalEstimado;
+    });
+
+    if (cadenas.length > 0) {
+      cadenas[0].esMasBarato = true;
+    }
+
+    const ganador = cadenas.length > 0 ? cadenas[0] : null;
+    const baseTotal = ganador ? ganador.totalEstimado : totalCompraDividida;
+    const ahorroDividido = Math.max(0, Math.round((baseTotal - totalCompraDividida) * 100) / 100);
+    const ahorroDivididoPct = baseTotal > 0 ? Math.round((ahorroDividido / baseTotal) * 100) : 0;
+
+    return {
+      totalProductos: activeItems.length,
+      supermercadoGanador: ganador,
+      cadenas,
+      totalCompraDividida: Math.round(totalCompraDividida * 100) / 100,
+      ahorroDividido,
+      ahorroDivididoPct,
+      itemsDivididos: splitItems,
+    };
   }
 
   /**

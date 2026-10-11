@@ -16,11 +16,36 @@
         </div>
       </div>
 
-      <!-- Botón de acción global hacia SEPA -->
-      <button class="btn btn-primary" onclick="compareEntireListInSepa()" type="button" style="height: 42px; padding: 0 18px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;">
-        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Comparar Lista en SEPA
-      </button>
+      <!-- Botones de acción global hacia SEPA -->
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="calculateBasketOptimization()" id="shoppingBasketCalcBtn" type="button" style="height: 42px; padding: 0 16px; font-size: 13px; font-weight: 600; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px; color: var(--accent); border-color: rgba(0, 229, 160, 0.3);">
+          ⚡ Calcular Changuito Óptimo
+        </button>
+        <button class="btn btn-primary" onclick="compareEntireListInSepa()" type="button" style="height: 42px; padding: 0 18px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Buscador SEPA
+        </button>
+      </div>
+    </div>
+
+    <!-- Panel de Comparativa de Changuito Completo -->
+    <div id="shoppingBasketPanel" style="
+      display: none;
+      margin-bottom: 24px;
+      padding: 18px;
+      background: rgba(0, 229, 160, 0.04);
+      border: 1px solid rgba(0, 229, 160, 0.25);
+      border-radius: 14px;
+    ">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px;">
+          <span>🛒</span> Comparativa de Canasta en Supermercados
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('shoppingBasketPanel').style.display='none'" style="padding: 2px 8px; font-size: 12px;">✕</button>
+      </div>
+      <div id="shoppingBasketContent">
+        <!-- Renderizado dinámico desde shoppingList.ts -->
+      </div>
     </div>
 
     <!-- Formulario para agregar productos -->

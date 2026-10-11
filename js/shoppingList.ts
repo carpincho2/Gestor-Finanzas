@@ -1,4 +1,7 @@
-import { ShoppingListService } from './services/shoppingListService.ts';
+import {
+  ShoppingListService,
+  FullBasketComparisonResult,
+} from './services/shoppingListService.ts';
 import { ShoppingListItem } from './types.ts';
 import { showToast } from './utils/utils.ts';
 
@@ -130,6 +133,133 @@ export function compareEntireListInSepa(): void {
 }
 
 /**
+ * Calcula la optimización de changuito completo y split shopping para toda la lista.
+ */
+export async function calculateBasketOptimization(): Promise<void> {
+  const panel = document.getElementById('shoppingBasketPanel');
+  const btn = document.getElementById('shoppingBasketCalcBtn') as HTMLButtonElement | null;
+  const content = document.getElementById('shoppingBasketContent');
+
+  if (!panel || !content) return;
+
+  const activeItems = ShoppingListService.getActiveItems();
+  if (activeItems.length === 0) {
+    showToast('Tu lista no tiene productos pendientes para cotizar', true);
+    return;
+  }
+
+  panel.style.display = 'block';
+  content.innerHTML = `
+    <div style="text-align: center; padding: 24px; color: var(--muted); font-size: 13px;">
+      <div class="sc-loading-spinner" style="width: 24px; height: 24px; margin: 0 auto 10px; border-width: 2px;"></div>
+      Cotizando ${activeItems.length} producto${activeItems.length !== 1 ? 's' : ''} en supermercados cercanos...
+    </div>
+  `;
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await ShoppingListService.compareFullBasket();
+    if (!res || res.cadenas.length === 0) {
+      content.innerHTML = `
+        <div style="padding: 16px; text-align: center; color: var(--muted); font-size: 13px;">
+          No se encontraron precios en la zona para los productos de tu lista. Probá buscando nombres más genéricos (ej: "leche", "aceite").
+        </div>
+      `;
+      return;
+    }
+
+    renderBasketComparisonResult(res);
+  } catch (err: any) {
+    content.innerHTML = `
+      <div style="padding: 14px; color: var(--danger); font-size: 13px;">
+        Error al cotizar la canasta: ${err.message || 'Error de conexión'}
+      </div>
+    `;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderBasketComparisonResult(res: FullBasketComparisonResult): void {
+  const content = document.getElementById('shoppingBasketContent');
+  if (!content) return;
+
+  const chainsHtml = res.cadenas
+    .map((c, idx) => {
+      const isWinner = idx === 0;
+      return `
+        <div style="
+          padding: 12px 14px;
+          background: ${isWinner ? 'rgba(0, 229, 160, 0.08)' : 'var(--surface2)'};
+          border: 1px solid ${isWinner ? 'rgba(0, 229, 160, 0.4)' : 'var(--border)'};
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        ">
+          <div>
+            <div style="font-weight: 700; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 6px;">
+              ${isWinner ? '🏆' : `${idx + 1}.`} <span>${c.comercio}</span>
+              ${isWinner ? '<span class="badge" style="background: rgba(0, 229, 160, 0.2); color: var(--accent); font-size: 10px; padding: 2px 6px;">Mejor opción única</span>' : ''}
+            </div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
+              ${c.productosEncontrados} de ${c.totalProductos} productos encontrados
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 16px; font-weight: 800; color: ${isWinner ? 'var(--green)' : 'var(--text)'};">
+              $${c.totalEstimado.toLocaleString('es-AR')}
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  let splitHtml = '';
+  if (res.ahorroDividido > 0 && res.itemsDivididos.length > 1) {
+    const details = res.itemsDivididos
+      .map(
+        (i) =>
+          `<span style="display:inline-block; margin-right:8px; margin-bottom:4px; font-size:11px; background:var(--surface); border:1px solid var(--border); padding:2px 8px; border-radius:6px;"><strong>${i.producto}</strong> en ${i.mejorComercio} ($${i.mejorPrecio.toLocaleString('es-AR')})</span>`
+      )
+      .join('');
+
+    splitHtml = `
+      <div style="
+        margin-top: 14px;
+        padding: 14px;
+        background: rgba(34, 197, 94, 0.06);
+        border: 1px dashed rgba(34, 197, 94, 0.35);
+        border-radius: 10px;
+      ">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+          <div style="font-weight: 700; font-size: 13px; color: #22c55e; display: flex; align-items: center; gap: 6px;">
+            <span>⚡</span> Estrategia de Compra Dividida (Split Shopping)
+          </div>
+          <div style="font-weight: 800; font-size: 15px; color: #22c55e;">
+            $${res.totalCompraDividida.toLocaleString('es-AR')}
+            <span style="font-size: 11px; opacity: 0.85;">(Ahorrás $${res.ahorroDividido.toLocaleString('es-AR')} extra)</span>
+          </div>
+        </div>
+        <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+          Si dividís la compra entre los comercios más baratos para cada producto:
+        </div>
+        <div>${details}</div>
+      </div>
+    `;
+  }
+
+  content.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      ${chainsHtml}
+    </div>
+    ${splitHtml}
+  `;
+}
+
+/**
  * Renderiza el DOM de la lista de compras.
  */
 function renderShoppingList(): void {
@@ -142,8 +272,8 @@ function renderShoppingList(): void {
 
   if (!activeContainer) return;
 
-  const activeItems = items.filter(i => !i.completed);
-  const completedItems = items.filter(i => i.completed);
+  const activeItems = items.filter((i) => !i.completed);
+  const completedItems = items.filter((i) => i.completed);
 
   if (countBadge) {
     countBadge.textContent = `${activeItems.length} pendiente${activeItems.length !== 1 ? 's' : ''}`;
@@ -168,14 +298,14 @@ function renderShoppingList(): void {
     `;
   } else {
     activeContainer.innerHTML = activeItems
-      .map(item => createItemCardHtml(item))
+      .map((item) => createItemCardHtml(item))
       .join('');
   }
 
   // Renderizar ítems completados
   if (completedContainer && completedItems.length > 0) {
     completedContainer.innerHTML = completedItems
-      .map(item => createItemCardHtml(item))
+      .map((item) => createItemCardHtml(item))
       .join('');
   }
 }
@@ -185,14 +315,14 @@ function createItemCardHtml(item: ShoppingListItem): string {
   const safeName = item.name.replace(/'/g, "\\'");
 
   const categoryEmojis: Record<string, string> = {
-    'Lácteos': '🥛',
-    'Almacén': '🌾',
-    'Bebidas': '🥤',
-    'Limpieza': '🧼',
-    'Desayuno': '☕',
-    'Carnicería': '🥩',
-    'Verdulería': '🥑',
-    'Otros': '📦',
+    Lácteos: '🥛',
+    Almacén: '🌾',
+    Bebidas: '🥤',
+    Limpieza: '🧼',
+    Desayuno: '☕',
+    Carnicería: '🥩',
+    Verdulería: '🥑',
+    Otros: '📦',
   };
 
   const emoji = categoryEmojis[item.category || ''] || '🛒';
@@ -238,7 +368,9 @@ function createItemCardHtml(item: ShoppingListItem): string {
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-        ${!isDone ? `
+        ${
+          !isDone
+            ? `
           <button
             type="button"
             class="btn btn-secondary"
@@ -249,7 +381,9 @@ function createItemCardHtml(item: ShoppingListItem): string {
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Precios SEPA
           </button>
-        ` : ''}
+        `
+            : ''
+        }
 
         <button
           type="button"

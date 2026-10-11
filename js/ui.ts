@@ -63,7 +63,8 @@ function setPage(el, page) {
   const titles = {
     dashboard: 'Dashboard', transacciones: 'Transacciones', presupuestos: 'Presupuestos',
     cuentas: 'Cuentas', reportes: 'Reportes', objetivos: 'Objetivos', scanner: 'Escanear Ticket',
-    insights: 'IA Insights', perfil: 'Mi Perfil', supermercados: 'Buscador SEPA', shopping: 'Asistente de Compras'
+    insights: 'IA Insights', perfil: 'Mi Perfil', supermercados: 'Buscador SEPA',
+    shopping: 'Asistente de Compras', lista_compras: 'Mi Lista de Compras'
   };
   document.getElementById('pageTitle').textContent = titles[page] || page;
 
@@ -82,6 +83,8 @@ function setPage(el, page) {
     if (sepaEl) sepaEl.style.display = 'none';
     const shopEl = document.getElementById('shoppingView');
     if (shopEl) shopEl.style.display = 'none';
+    const listEl = document.getElementById('listaComprasView');
+    if (listEl) listEl.style.display = 'none';
     document.getElementById('pageDate').style.display = 'none';
   }
 
@@ -133,6 +136,12 @@ function setPage(el, page) {
     const el = document.getElementById('supermercadosView');
     if (el) el.style.display = '';
     if (window.detectLocation) window.detectLocation();
+    if (window.renderSepaShoppingListChips) window.renderSepaShoppingListChips();
+  } else if (page === 'lista_compras') {
+    hideAll();
+    const el = document.getElementById('listaComprasView');
+    if (el) el.style.display = '';
+    if (window.initShoppingListView) window.initShoppingListView();
   } else if (page === 'shopping') {
     hideAll();
     const el = document.getElementById('shoppingView');
@@ -274,4 +283,3 @@ window.toggleSidebar = toggleSidebar;
 window.updateCustomSelectDisplay = updateCustomSelectDisplay;
 window.setPage = setPage;
 window.initCustomSelects = initCustomSelects;
-

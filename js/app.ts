@@ -15,6 +15,7 @@ import * as ai from './ai.ts';
 import * as imp from './import.ts';
 import * as shopping from './shopping.ts';
 import * as supermercados from './supermercados.ts';
+import * as shoppingList from './shoppingList.ts';
 
 // Expose to window for inline onclicks in HTML
 Object.assign(window, ui);
@@ -29,6 +30,7 @@ Object.assign(window, ai);
 Object.assign(window, imp);
 Object.assign(window, shopping);
 Object.assign(window, supermercados);
+Object.assign(window, shoppingList);
 
 /* =====================================================
    INIT
@@ -45,7 +47,8 @@ export async function loadViews() {
     'insightsView': 'insights',
     'perfilView': 'perfil',
     'supermercadosView': 'supermercados',
-    'shoppingView': 'shopping'
+    'shoppingView': 'shopping',
+    'listaComprasView': 'lista_compras'
   };
   
   for (const [id, file] of Object.entries(viewsMap)) {
@@ -176,4 +179,3 @@ if (typeof window.authCheckSession === 'function') {
   // Try directly from profile
   profile.authCheckSession();
 }
-

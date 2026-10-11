@@ -105,7 +105,21 @@ A pesar de esta sólida base, existen **brechas funcionales críticas de product
 
 | Fase | Título | Alcance | Impacto |
 |---|---|---|---|
-| **Fase 1** | **Escáner Góndola & Registro de Gasto** | Lector de código de barras con cámara nativa + botón de registrar como transacción directa. | Alto / Inmediato |
-| **Fase 2** | **Cruce con Billeteras del Usuario** | Detección reactiva de promociones según las cuentas y tarjetas registradas en la app. | Alto (Diferencial Fintech) |
-| **Fase 3** | **Canasta Familiar & Carrito Multiproducto** | Comparador de lista completa de supermercado con optimización de compra única vs dividida. | Crítico (Ahorro Masivo) |
-| **Fase 4** | **Historial de Precios & Mapa Embebido** | Tendencia de inflación por producto + visualización geográfica en mapa interactivo. | Medio / Visual |
+| **Fase 1** | **Lista de Compras & Integración SEPA** | Sección de Lista del Súper con sincronización reactiva bidireccional y chips de búsqueda automática en SEPA. | **Completado ✅** |
+| **Fase 2** | **Escáner Góndola & Registro de Gasto** | Lector de código de barras con cámara nativa + botón de registrar como transacción directa. | Alto / Inmediato |
+| **Fase 3** | **Cruce con Billeteras del Usuario** | Detección reactiva de promociones según las cuentas y tarjetas registradas en la app. | Alto (Diferencial Fintech) |
+| **Fase 4** | **Canasta Familiar & Carrito Multiproducto** | Comparador de lista completa de supermercado con optimización de compra única vs dividida. | Crítico (Ahorro Masivo) |
+| **Fase 5** | **Historial de Precios & Mapa Embebido** | Tendencia de inflación por producto + visualización geográfica en mapa interactivo. | Medio / Visual |
+
+---
+
+## 6. Módulo Implementado: "Mi Lista de Compras" e Integración SEPA
+
+Se implementó una nueva sección de primer nivel en la barra lateral (**Lista del Súper**) con sinergia directa hacia el Buscador SEPA:
+1. **`ShoppingListService` (`js/services/shoppingListService.ts`):** Servicio con principios SOLID (SRP) que administra ítems, persistencia en `localStorage` (aislado por usuario con `userKey`), estado de completado, borrado por lotes, canastas básicas rápidas (*Básicos del Mes, Desayuno, Limpieza*) y suscripción reactiva.
+2. **`ShoppingListController` (`js/shoppingList.ts`):** Controlador de la vista `html/views/lista_compras.html` que gestiona altas, bajas, checks y el botón *"Comparar en SEPA"* que redirige automáticamente al buscador precargando el producto.
+3. **Integración Predeterminada en Buscador SEPA (`js/supermercados.ts`):**
+   - Al abrir el Buscador SEPA, se detecta la lista de compras del usuario y se renderizan **chips interactivos con sus productos pendientes** arriba de las sugerencias fijas.
+   - Si el usuario toca cualquier chip de su lista de compras, se ejecuta la búsqueda de ofertas en supermercados inmediatamente.
+   - En cada resultado de búsqueda de productos del SEPA, se incorporó el botón **`➕ A mi lista`** para agregar ofertas encontradas a la lista de compras en un solo clic.
+

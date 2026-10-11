@@ -5,6 +5,7 @@ import {
   SingleProductResponse,
   ProductWithPrices,
 } from './services/sepaService.ts';
+import { ShoppingListService } from './services/shoppingListService.ts';
 import { showToast } from './utils/utils.ts';
 
 // Estado de ubicación en memoria
@@ -164,6 +165,67 @@ export function promptSepaBarcode(): void {
   if (ean && ean.trim()) {
     input.value = ean.trim();
     searchSepa();
+  }
+}
+
+/**
+ * Renderiza los chips dinámicos de los productos que el usuario tiene pendientes en su Lista de Compras.
+ */
+export function renderSepaShoppingListChips(): void {
+  const section = document.getElementById('sepaShoppingListSection');
+  const chipsContainer = document.getElementById('sepaShoppingListChips');
+  if (!section || !chipsContainer) return;
+
+  const activeItems = ShoppingListService.getActiveItems();
+  if (activeItems.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  chipsContainer.innerHTML = activeItems
+    .slice(0, 10)
+    .map((item) => {
+      const safeName = item.name.replace(/'/g, "\\'");
+      return `
+        <button
+          type="button"
+          class="badge"
+          onclick="quickSearchSepa('${safeName}')"
+          title="Buscar ${item.name} (${item.quantity || '1'}) en SEPA"
+          style="
+            cursor: pointer;
+            background: rgba(0, 229, 160, 0.12);
+            border: 1px solid rgba(0, 229, 160, 0.3);
+            color: var(--accent);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+          "
+        >
+          <span>🛒</span> ${item.name}
+          <span style="opacity:0.75; font-size:10px;">(${item.quantity || '1'})</span>
+        </button>
+      `;
+    })
+    .join('');
+}
+
+/**
+ * Agrega un producto encontrado en la búsqueda de SEPA directamente a la Lista de Compras.
+ */
+export function addFromSepaToShoppingList(name: string): void {
+  try {
+    ShoppingListService.addItem(name);
+    renderSepaShoppingListChips();
+    showToast(`🛒 "${name}" agregado a tu lista de compras`);
+  } catch (err: any) {
+    showToast(err.message || 'Error al agregar a la lista', true);
   }
 }
 
@@ -354,6 +416,7 @@ function renderMultiProductResults(data: MultiProductResponse): void {
     const mejorPrecio =
       producto.mejor_precio > 0 ? `$${producto.mejor_precio.toFixed(2)}` : 'Sin precio';
 
+    const safeNombre = producto.nombre.replace(/'/g, "\\'");
     // Header del producto
     const headerHtml = `
       <div class="sepa-product-header" data-idx="${idx}" style="
@@ -369,8 +432,20 @@ function renderMultiProductResults(data: MultiProductResponse): void {
           <div style="font-weight: 700; font-size: 15px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             ${producto.nombre}
           </div>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 3px;">
-            ${producto.total_sucursales} supermercado${producto.total_sucursales !== 1 ? 's' : ''}${marca}
+          <div style="font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span>${producto.total_sucursales} supermercado${producto.total_sucursales !== 1 ? 's' : ''}${marca}</span>
+            <button
+              type="button"
+              onclick="event.stopPropagation(); addFromSepaToShoppingList('${safeNombre}')"
+              title="Guardar en mi Lista de Compras"
+              style="
+                background: rgba(0, 229, 160, 0.1); border: 1px solid rgba(0, 229, 160, 0.25);
+                padding: 2px 7px; font-size: 11px; font-weight: 600; color: var(--accent);
+                cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; gap: 3px;
+              "
+            >
+              ➕ A mi lista
+            </button>
           </div>
         </div>
         <div style="text-align: right; flex-shrink: 0; margin-left: 16px; display: flex; align-items: center; gap: 12px;">
@@ -497,6 +572,10 @@ function renderMultiProductResults(data: MultiProductResponse): void {
 // Cargar cadenas registradas y detectar ubicación inicial
 export async function initSepaModule(): Promise<void> {
   detectLocation();
+  renderSepaShoppingListChips();
+  ShoppingListService.subscribe(() => {
+    renderSepaShoppingListChips();
+  });
 
   try {
     const chains = await SepaService.fetchStoreChains();

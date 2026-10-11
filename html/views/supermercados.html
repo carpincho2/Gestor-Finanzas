@@ -7,11 +7,17 @@
       <div style="width: 48px; height: 48px; background: rgba(0, 229, 160, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;">
         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
       </div>
-      <div>
+      <div style="flex: 1;">
         <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px;">Buscador de Precios SEPA</h2>
         <p style="color: var(--muted); font-size: 13px; margin: 0;">
           Compará precios oficiales en supermercados cercanos (Coto, Carrefour, Día, Jumbo, ChangoMás) con promociones vigentes, descuentos bancarios y costo de traslado.
         </p>
+      </div>
+      <div style="margin-left: auto;">
+        <button class="btn btn-secondary" onclick="setPage(null, 'lista_compras')" type="button" style="height: 38px; padding: 0 14px; font-size: 12px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="m9 14 2 2 4-4"/></svg>
+          Mi Lista del Súper
+        </button>
       </div>
     </div>
 
@@ -30,6 +36,22 @@
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           Buscar
         </button>
+      </div>
+    </div>
+
+    <!-- Chips de productos pendientes de la Lista de Compras -->
+    <div id="sepaShoppingListSection" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(0, 229, 160, 0.05); border: 1px dashed rgba(0, 229, 160, 0.25); border-radius: 12px; display: none;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+        <span style="font-size: 12px; color: var(--accent); font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="m9 14 2 2 4-4"/></svg>
+          De tu Lista de Compras:
+        </span>
+        <button type="button" onclick="setPage(null, 'lista_compras')" class="btn btn-ghost" style="padding: 2px 8px; font-size: 11px; height: auto; color: var(--accent);">
+          Gestionar lista →
+        </button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;" id="sepaShoppingListChips">
+        <!-- Renderizado dinámico desde shoppingListService -->
       </div>
     </div>
 

@@ -1,0 +1,132 @@
+<div style="max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px;">
+  
+  <div class="panel" style="padding: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.35);">
+    
+    <!-- Encabezado -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="width: 48px; height: 48px; background: rgba(0, 229, 160, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="m9 14 2 2 4-4"/></svg>
+        </div>
+        <div>
+          <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px;">Mi Lista de Compras</h2>
+          <p style="color: var(--muted); font-size: 13px; margin: 0;">
+            Anotá los productos que necesitás y compará sus precios en supermercados con 1 solo clic.
+          </p>
+        </div>
+      </div>
+
+      <!-- Botón de acción global hacia SEPA -->
+      <button class="btn btn-primary" onclick="compareEntireListInSepa()" type="button" style="height: 42px; padding: 0 18px; font-size: 13px; font-weight: 700; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Comparar Lista en SEPA
+      </button>
+    </div>
+
+    <!-- Formulario para agregar productos -->
+    <div style="
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    ">
+      <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+        <span>➕</span> Agregar producto a la lista
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <input
+          class="field-input"
+          id="shoppingItemInput"
+          type="text"
+          placeholder="Ej: Leche descremada, Yerba mate, Jabón líquido..."
+          onkeydown="if(event.key==='Enter') addShoppingListItem()"
+          style="flex: 2; min-width: 220px; height: 42px; font-size: 13px; padding: 0 14px; border-radius: 8px; margin: 0;"
+        />
+        <input
+          class="field-input"
+          id="shoppingItemQty"
+          type="text"
+          placeholder="Cant: 1, 2L, 500g"
+          onkeydown="if(event.key==='Enter') addShoppingListItem()"
+          style="flex: 1; min-width: 110px; max-width: 140px; height: 42px; font-size: 13px; padding: 0 12px; border-radius: 8px; margin: 0;"
+        />
+        <select
+          class="field-select"
+          id="shoppingItemCat"
+          style="flex: 1; min-width: 130px; height: 42px; font-size: 13px; padding: 0 10px; border-radius: 8px; margin: 0; background: var(--surface2);"
+        >
+          <option value="Almacén">🌾 Almacén</option>
+          <option value="Lácteos">🥛 Lácteos</option>
+          <option value="Bebidas">🥤 Bebidas</option>
+          <option value="Limpieza">🧼 Limpieza</option>
+          <option value="Desayuno">☕ Desayuno</option>
+          <option value="Carnicería">🥩 Carnicería</option>
+          <option value="Verdulería">🥑 Verdulería</option>
+          <option value="Otros">📦 Otros</option>
+        </select>
+        <button
+          class="btn btn-primary"
+          onclick="addShoppingListItem()"
+          type="button"
+          style="height: 42px; padding: 0 18px; font-size: 13px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; margin: 0;"
+        >
+          Agregar
+        </button>
+      </div>
+
+      <!-- Presets de canasta rápida -->
+      <div style="margin-top: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 11px; color: var(--muted); font-weight: 600;">Canastas rápidas:</span>
+        <button type="button" class="badge" onclick="addShoppingPreset('basica')" style="cursor: pointer; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 20px; font-size: 11px;">
+          🧺 Básicos del Mes
+        </button>
+        <button type="button" class="badge" onclick="addShoppingPreset('desayuno')" style="cursor: pointer; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 20px; font-size: 11px;">
+          ☕ Desayuno / Merienda
+        </button>
+        <button type="button" class="badge" onclick="addShoppingPreset('limpieza')" style="cursor: pointer; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 4px 10px; border-radius: 20px; font-size: 11px;">
+          🧼 Artículos de Limpieza
+        </button>
+      </div>
+    </div>
+
+    <!-- Lista de pendientes -->
+    <div style="margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <span>Por Comprar</span>
+          <span class="badge" id="shoppingPendingCount" style="background: rgba(0, 229, 160, 0.15); color: var(--accent); padding: 2px 8px; border-radius: 12px; font-size: 11px;">
+            0 pendientes
+          </span>
+        </div>
+      </div>
+
+      <div id="shoppingActiveList">
+        <!-- Renderizado dinámico desde shoppingList.ts -->
+      </div>
+    </div>
+
+    <!-- Lista de comprados -->
+    <div id="shoppingCompletedSection" style="display: none; border-top: 1px dashed var(--border); padding-top: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--muted);">
+          Ya Comprados
+        </div>
+        <button
+          id="shoppingClearCompletedBtn"
+          class="btn btn-ghost"
+          onclick="clearCompletedShoppingList()"
+          type="button"
+          style="padding: 4px 10px; font-size: 11px; color: var(--muted);"
+        >
+          Limpiar comprados
+        </button>
+      </div>
+
+      <div id="shoppingCompletedList">
+        <!-- Renderizado dinámico desde shoppingList.ts -->
+      </div>
+    </div>
+
+  </div>
+</div>

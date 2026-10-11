@@ -54,6 +54,17 @@ export interface Goal {
   [key: string]: any;
 }
 
+export interface ShoppingListItem {
+  id: string;
+  name: string;
+  quantity?: string;
+  category?: string;
+  completed: boolean;
+  notes?: string;
+  estimatedPrice?: number;
+  addedAt: string;
+}
+
 declare global {
   interface Window {
     [key: string]: any;

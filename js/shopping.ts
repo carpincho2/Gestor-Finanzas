@@ -1,174 +1,24 @@
 // @ts-nocheck
-import { apiFetch } from './api/apiClient.ts';
 import { showToast } from './utils/utils.ts';
 import { state, IS_SERVER } from './store/store.ts';
 import { TransactionService } from './services/transactionService.ts';
+import { ShoppingService, ShoppingAnalysisResponse } from './services/shoppingService.ts';
 
 let currentShoppingTab = 'link'; // 'link' | 'search' | 'barcode'
-let lastAnalyzedData = null;
+let lastAnalyzedData: ShoppingAnalysisResponse | null = null;
+let cameraStream: MediaStream | null = null;
+let barcodeInterval: any = null;
 
-export function initShopping() {
+export function initShopping(): void {
   const container = document.getElementById('shoppingView');
   if (!container) return;
 
-  // Evitar re-renderizar si ya existe el formulario inicial
-  if (container.querySelector('#shoppingUrl')) return;
-
-  container.innerHTML = `
-    <div style="max-width: 780px; margin: 0 auto; padding-bottom: 40px;">
-      
-      <!-- Main Glassmorphism Panel -->
-      <div class="panel" style="padding: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,0.35);">
-        
-        <!-- Header -->
-        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--border);">
-          <div style="width: 48px; height: 48px; background: rgba(0, 229, 160, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-          </div>
-          <div>
-            <h2 style="font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px;">Asistente de Compras Inteligente</h2>
-            <p style="color: var(--muted); font-size: 13px; margin: 0;">
-              Analizá cualquier compra online o presencial y descubrí matemáticamente con qué tarjeta o cuenta te conviene pagar para ganarle a la inflación.
-            </p>
-          </div>
-        </div>
-
-        <!-- Mode Selector Tabs -->
-        <div style="display: flex; gap: 8px; margin-bottom: 22px; background: rgba(255,255,255,0.03); padding: 5px; border-radius: 12px; border: 1px solid var(--border);">
-          <button type="button" class="btn" id="shoppingTabLink" onclick="switchShoppingTab('link')" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border-radius: 8px; justify-content: center; gap: 6px; background: var(--accent); color: #000; border: none;">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-            Link Web
-          </button>
-          <button type="button" class="btn" id="shoppingTabSearch" onclick="switchShoppingTab('search')" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border-radius: 8px; justify-content: center; gap: 6px; background: transparent; color: var(--muted); border: none;">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            Buscar Producto
-          </button>
-          <button type="button" class="btn" id="shoppingTabBarcode" onclick="switchShoppingTab('barcode')" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border-radius: 8px; justify-content: center; gap: 6px; background: transparent; color: var(--muted); border: none;">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="11" y1="8" x2="11" y2="16"/><line x1="15" y1="8" x2="15" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/></svg>
-            Código de Barras
-          </button>
-        </div>
-
-        <!-- PANEL 1: LINK WEB -->
-        <div id="shoppingPanelLink">
-          <div style="margin-bottom: 20px;">
-            <label class="field-label" style="margin-bottom: 8px;">Link del producto (Mercado Libre, Frávega, Amazon, etc.)</label>
-            <input type="text" id="shoppingUrl" class="field-input" placeholder="Ej: https://... (Cualquier tienda online)" style="width: 100%; font-size: 14px; padding: 12px 14px;">
-            <div id="shoppingTitlePreview" style="display: none; margin-top: 8px; padding: 8px 12px; background: rgba(0, 229, 160, 0.1); border: 1px solid rgba(0, 229, 160, 0.25); border-radius: 8px; color: var(--accent); font-size: 12px; font-weight: 600;"></div>
-          </div>
-        </div>
-
-        <!-- PANEL 2: BUSCAR PRODUCTO -->
-        <div id="shoppingPanelSearch" style="display: none; margin-bottom: 20px;">
-          <label class="field-label" style="margin-bottom: 8px;">Buscador de catálogo</label>
-          <div style="display: flex; gap: 10px;">
-            <input type="text" id="shoppingSearchInput" class="field-input" placeholder="Ej: Smart TV 50, Auriculares Sony, Freidora de aire..." style="flex: 1; font-size: 14px; padding: 12px 14px;" onkeydown="if(event.key==='Enter') executeShoppingSearch()">
-            <button type="button" class="btn btn-primary" onclick="executeShoppingSearch()" id="shoppingSearchBtn" style="padding: 12px 20px; font-weight: 600; gap: 6px;">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              Buscar
-            </button>
-          </div>
-          <div id="shoppingSearchResults" style="margin-top: 14px; display: none;"></div>
-        </div>
-
-        <!-- PANEL 3: CODIGO DE BARRAS -->
-        <div id="shoppingPanelBarcode" style="display: none; margin-bottom: 20px;">
-          <label class="field-label" style="margin-bottom: 8px;">Código de barras (GTIN / EAN)</label>
-          <div style="display: flex; gap: 10px;">
-            <input type="text" id="shoppingBarcodeInput" class="field-input" placeholder="Ej: 7791234567890" style="flex: 1; font-size: 14px; padding: 12px 14px;" onkeydown="if(event.key==='Enter') analyzeShoppingBarcode()">
-            <button type="button" class="btn btn-primary" onclick="analyzeShoppingBarcode()" id="shoppingBarcodeBtn" style="padding: 12px 20px; font-weight: 600; gap: 6px;">
-              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              Consultar
-            </button>
-          </div>
-          <div style="font-size: 12px; color: var(--muted); margin-top: 6px;">💡 Ingresá los números del código de barras de cualquier producto en góndola o caja.</div>
-        </div>
-        
-        <!-- PARÁMETROS FINANCIEROS (COMUNES A TODOS LOS MODOS) -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 20px;">
-          
-          <div>
-            <label class="field-label" style="margin-bottom: 8px;">Precio del producto ($) <span style="font-size: 11px; color: var(--accent); font-weight: 600;">(Autocompletable)</span></label>
-            <input type="text" id="shoppingPrice" inputmode="decimal" class="field-input" placeholder="Ej: 194799" style="width: 100%; border: 1px solid var(--accent); font-weight: 600;">
-          </div>
-
-          <div>
-            <label class="field-label" style="margin-bottom: 8px;">Cuotas deseadas</label>
-            <select id="shoppingInstallments" class="field-select" style="width: 100%;">
-              <option value="0" selected>✨ Autodetectar mejor cuota</option>
-              <option value="1">1 pago (Contado)</option>
-              <option value="3">Hasta 3 cuotas</option>
-              <option value="6">Hasta 6 cuotas</option>
-              <option value="9">Hasta 9 cuotas</option>
-              <option value="12">Hasta 12 cuotas</option>
-              <option value="18">Hasta 18 cuotas</option>
-              <option value="24">Hasta 24 cuotas</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="field-label" style="margin-bottom: 8px;">Descuento Contado (%) <span style="font-size: 11px; color: var(--muted);">(Opcional)</span></label>
-            <input type="number" id="shoppingDiscount" class="field-input" placeholder="0" min="0" max="100" value="0" style="width: 100%;">
-          </div>
-
-          <div>
-            <label class="field-label" style="margin-bottom: 8px;">TNA Rendimiento (%) <span style="font-size: 11px; color: var(--accent);">(FCI / Plazo Fijo)</span></label>
-            <input type="number" id="shoppingTna" class="field-input" placeholder="40" min="0" max="200" value="40" style="width: 100%;">
-          </div>
-          
-        </div>
-
-        <!-- Parámetros Avanzados: Cuotas con recargo -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 24px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="toggleAdvancedShoppingOptions()">
-            <span style="font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px;">
-              ⚖️ Comparador: Cuotas con Interés / Recargo vs Contado
-            </span>
-            <span id="shoppingAdvToggleIcon" style="font-size: 12px; color: var(--muted);">▼</span>
-          </div>
-          <div id="shoppingAdvancedOptions" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
-            <div>
-              <label class="field-label" style="margin-bottom: 6px;">Recargo en cuotas (%)</label>
-              <input type="number" id="shoppingSurcharge" class="field-input" placeholder="Ej: 25" min="0" max="200" value="0" style="width: 100%;">
-              <span style="font-size: 10px; color: var(--muted);">Si te cobran un % extra por financiar.</span>
-            </div>
-            <div>
-              <label class="field-label" style="margin-bottom: 6px;">O Precio Total en Cuotas ($)</label>
-              <input type="text" id="shoppingInstallmentTotal" inputmode="decimal" class="field-input" placeholder="Ej: 245000" style="width: 100%;">
-              <span style="font-size: 10px; color: var(--muted);">Si el precio financiado es un monto cerrado.</span>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn btn-primary" onclick="analyzeShoppingUrl()" id="shoppingAnalyzeBtn" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; justify-content: center; gap: 8px;">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          Analizar Opciones de Pago (VPN vs Inflación)
-        </button>
-
-        <!-- Historial Rápido de Consultas -->
-        <div id="shoppingRecentHistoryContainer" style="display: none; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <span style="font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">🕒 Consultas Recientes</span>
-            <button type="button" onclick="clearShoppingHistory()" style="background: none; border: none; font-size: 11px; color: var(--muted); cursor: pointer; text-decoration: underline;">Limpiar</button>
-          </div>
-          <div id="shoppingRecentHistoryChips" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
-        </div>
-
-      </div>
-
-      <!-- Results Container -->
-      <div id="shoppingResultsContainer" style="display: none; margin-top: 24px; transition: all 0.3s ease;">
-        <!-- Filled by JS -->
-      </div>
-      
-    </div>
-  `;
-
   setupShoppingInputs();
   renderShoppingHistory();
+  renderPinnedComparison();
 }
 
-export function switchShoppingTab(tab) {
+export function switchShoppingTab(tab: string): void {
   currentShoppingTab = tab;
   const tabLink = document.getElementById('shoppingTabLink');
   const tabSearch = document.getElementById('shoppingTabSearch');
@@ -183,51 +33,54 @@ export function switchShoppingTab(tab) {
 
   // Actualizar estilos de tabs
   [tabLink, tabSearch, tabBarcode].forEach(t => {
-    t.style.background = 'transparent';
-    t.style.color = 'var(--muted)';
+    if (t) {
+      t.classList.remove('active');
+      t.style.background = 'transparent';
+      t.style.color = 'var(--muted)';
+    }
   });
 
-  panelLink.style.display = 'none';
-  panelSearch.style.display = 'none';
-  panelBarcode.style.display = 'none';
+  if (panelLink) panelLink.style.display = 'none';
+  if (panelSearch) panelSearch.style.display = 'none';
+  if (panelBarcode) panelBarcode.style.display = 'none';
 
   if (tab === 'link') {
+    tabLink.classList.add('active');
     tabLink.style.background = 'var(--accent)';
     tabLink.style.color = '#000';
-    panelLink.style.display = 'block';
-    analyzeBtn.style.display = 'flex';
+    if (panelLink) panelLink.style.display = 'block';
+    if (analyzeBtn) analyzeBtn.style.display = 'flex';
   } else if (tab === 'search') {
+    tabSearch.classList.add('active');
     tabSearch.style.background = 'var(--accent)';
     tabSearch.style.color = '#000';
-    panelSearch.style.display = 'block';
-    analyzeBtn.style.display = 'flex';
+    if (panelSearch) panelSearch.style.display = 'block';
+    if (analyzeBtn) analyzeBtn.style.display = 'flex';
   } else if (tab === 'barcode') {
+    tabBarcode.classList.add('active');
     tabBarcode.style.background = 'var(--accent)';
     tabBarcode.style.color = '#000';
-    panelBarcode.style.display = 'block';
-    analyzeBtn.style.display = 'none'; // El panel barcode tiene su propio botón
+    if (panelBarcode) panelBarcode.style.display = 'block';
+    if (analyzeBtn) analyzeBtn.style.display = 'none';
   }
 }
 
-export function toggleAdvancedShoppingOptions() {
+export function toggleAdvancedShoppingOptions(): void {
   const panel = document.getElementById('shoppingAdvancedOptions');
   const icon = document.getElementById('shoppingAdvToggleIcon');
   if (!panel) return;
   const isHidden = panel.style.display === 'none';
   panel.style.display = isHidden ? 'grid' : 'none';
-  icon.textContent = isHidden ? '▲' : '▼';
+  if (icon) icon.textContent = isHidden ? '▲' : '▼';
 }
 
-function setupShoppingInputs() {
-  const container = document.getElementById('shoppingView');
-  if (!container) return;
-
-  const inputEl = container.querySelector('#shoppingUrl');
-  const previewBadge = container.querySelector('#shoppingTitlePreview');
+function setupShoppingInputs(): void {
+  const inputEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
+  const previewBadge = document.getElementById('shoppingTitlePreview');
   let lastFetchedUrl = '';
-  let debounceTimer = null;
+  let debounceTimer: any = null;
 
-  const triggerPriceFetch = (val) => {
+  const triggerPriceFetch = (val: string) => {
     if (!val || val === lastFetchedUrl) return;
     if (/^(https?:\/\/|[a-z0-9-]+\.[a-z]{2,})/i.test(val)) {
       lastFetchedUrl = val;
@@ -268,7 +121,7 @@ function setupShoppingInputs() {
             previewBadge.style.display = 'block';
           }
         }
-      } catch (e) {}
+      } catch (_) {}
 
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => triggerPriceFetch(val), 500);
@@ -284,10 +137,10 @@ function setupShoppingInputs() {
 }
 
 /**
- * Obtiene el precio y metadatos de un producto de cualquier tienda web.
+ * Consulta precio y metadatos de producto de cualquier tienda web.
  */
-async function fetchProductPrice(urlText) {
-  const priceEl = document.getElementById('shoppingPrice');
+async function fetchProductPrice(urlText: string): Promise<void> {
+  const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
   const previewBadge = document.getElementById('shoppingTitlePreview');
   if (!priceEl) return;
 
@@ -295,11 +148,11 @@ async function fetchProductPrice(urlText) {
 
   try {
     let price = 0;
-    let title = null;
+    let title: string | null = null;
     let domain = 'Tienda';
     let hasMpToken = false;
 
-    // 1. Extraer slug y posibles params locales
+    // 1. Extraer slug y params locales
     try {
       const fullUrl = urlText.startsWith('http') ? urlText : 'https://' + urlText;
       const u = new URL(fullUrl);
@@ -329,7 +182,7 @@ async function fetchProductPrice(urlText) {
     } catch (_) {}
 
     // 2. Extraer item_id de Mercado Libre
-    let itemId = null;
+    let itemId: string | null = null;
     const queryMatch = urlText.match(/(?:item_id|wid)(?:%3A|=)(MLA-?\d+)/i);
     const catalogMatch = urlText.match(/\/p\/(ML[A-Z]-?\d+)/i);
     const generalMatch = urlText.match(/(ML[A-Z]-?\d{6,})/i);
@@ -350,10 +203,10 @@ async function fetchProductPrice(urlText) {
       } catch (_) {}
     }
 
-    // 3. Consultar backend
+    // 3. Consultar backend a través de ShoppingService
     if (price === 0 && IS_SERVER) {
       try {
-        const serverData = await apiFetch(`/shopping/fetch-price?url=${encodeURIComponent(urlText)}`);
+        const serverData = await ShoppingService.fetchPrice(urlText);
         if (serverData) {
           hasMpToken = Boolean(serverData.has_mp_token);
           if (serverData.domain) domain = serverData.domain;
@@ -377,7 +230,7 @@ async function fetchProductPrice(urlText) {
       } else {
         const helpMsg = hasMpToken
           ? `Cuenta vinculada. Si la publicación requiere precio manual, ingresalo abajo para calcular cuotas vs inflación.`
-          : `Por políticas de seguridad o antibot de ${domain}, ingresá el precio publicado abajo para calcular cuotas vs inflación.`;
+          : `Por políticas de seguridad de ${domain}, ingresá el precio publicado abajo para calcular cuotas vs inflación.`;
         extraInfo = `<div style="font-size:11px;color:var(--muted);font-weight:400;margin-top:3px;">${helpMsg}</div>`;
       }
       previewBadge.innerHTML = `📦 <strong>${displayTitle}</strong>${extraInfo}`;
@@ -401,8 +254,7 @@ async function fetchProductPrice(urlText) {
   }
 }
 
-// Limpiar flag de auto-fill cuando el usuario edita el precio manualmente
-document.addEventListener('input', (e) => {
+document.addEventListener('input', (e: any) => {
   if (e.target && e.target.id === 'shoppingPrice') {
     delete e.target.dataset.autoFilled;
   }
@@ -411,11 +263,11 @@ document.addEventListener('input', (e) => {
 /**
  * Búsqueda directa por palabra clave en catálogo.
  */
-export async function executeShoppingSearch() {
-  const input = document.getElementById('shoppingSearchInput');
-  const btn = document.getElementById('shoppingSearchBtn');
+export async function executeShoppingSearch(): Promise<void> {
+  const input = document.getElementById('shoppingSearchInput') as HTMLInputElement | null;
+  const btn = document.getElementById('shoppingSearchBtn') as HTMLButtonElement | null;
   const resultsBox = document.getElementById('shoppingSearchResults');
-  if (!input || !resultsBox) return;
+  if (!input || !resultsBox || !btn) return;
 
   const q = input.value.trim();
   if (!q) {
@@ -428,8 +280,7 @@ export async function executeShoppingSearch() {
   btn.disabled = true;
 
   try {
-    const res = await apiFetch(`/shopping/search?q=${encodeURIComponent(q)}`);
-    const items = res.results || [];
+    const items = await ShoppingService.searchCatalog(q);
     if (items.length === 0) {
       resultsBox.innerHTML = `<div style="padding: 14px; text-align: center; color: var(--muted); font-size: 13px;">No se encontraron productos para "${q}".</div>`;
       resultsBox.style.display = 'block';
@@ -446,7 +297,7 @@ export async function executeShoppingSearch() {
               <div style="font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</div>
               <div style="font-size: 14px; font-weight: 700; color: var(--accent); margin-top: 2px;">$ ${Math.round(item.price).toLocaleString('es-AR')}</div>
             </div>
-            <button type="button" class="btn btn-primary" onclick="selectSearchProduct('${encodeURIComponent(item.permalink)}', ${item.price}, '${encodeURIComponent(item.title)}')" style="padding: 8px 14px; font-size: 12px; font-weight: 600; flex-shrink: 0;">
+            <button type="button" class="btn btn-primary" onclick="selectSearchProduct('${encodeURIComponent(item.permalink || '')}', ${item.price}, '${encodeURIComponent(item.title)}')" style="padding: 8px 14px; font-size: 12px; font-weight: 600; flex-shrink: 0;">
               ⚡ Analizar Cuotas
             </button>
           </div>
@@ -454,7 +305,7 @@ export async function executeShoppingSearch() {
       </div>
     `;
     resultsBox.style.display = 'block';
-  } catch (err) {
+  } catch (err: any) {
     showToast('Error al buscar productos: ' + (err.message || ''), true);
   } finally {
     btn.innerHTML = origBtnText;
@@ -462,13 +313,13 @@ export async function executeShoppingSearch() {
   }
 }
 
-export function selectSearchProduct(encodedUrl, price, encodedTitle) {
+export function selectSearchProduct(encodedUrl: string, price: number, encodedTitle: string): void {
   const url = decodeURIComponent(encodedUrl);
   const title = decodeURIComponent(encodedTitle);
 
   switchShoppingTab('link');
-  const urlEl = document.getElementById('shoppingUrl');
-  const priceEl = document.getElementById('shoppingPrice');
+  const urlEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
+  const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
   const previewEl = document.getElementById('shoppingTitlePreview');
 
   if (urlEl) urlEl.value = url;
@@ -487,9 +338,9 @@ export function selectSearchProduct(encodedUrl, price, encodedTitle) {
 /**
  * Consulta de producto por código de barras.
  */
-export async function analyzeShoppingBarcode() {
-  const input = document.getElementById('shoppingBarcodeInput');
-  const btn = document.getElementById('shoppingBarcodeBtn');
+export async function analyzeShoppingBarcode(): Promise<void> {
+  const input = document.getElementById('shoppingBarcodeInput') as HTMLInputElement | null;
+  const btn = document.getElementById('shoppingBarcodeBtn') as HTMLButtonElement | null;
   if (!input) return;
 
   const barcode = input.value.trim();
@@ -498,54 +349,132 @@ export async function analyzeShoppingBarcode() {
     return;
   }
 
-  const installments = parseInt(document.getElementById('shoppingInstallments')?.value) || 0;
-  const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;
-  const tna = parseFloat(document.getElementById('shoppingTna')?.value) || 40;
-  const surcharge = parseFloat(document.getElementById('shoppingSurcharge')?.value) || 0;
+  const installments = parseInt((document.getElementById('shoppingInstallments') as HTMLSelectElement)?.value) || 0;
+  const discount = parseFloat((document.getElementById('shoppingDiscount') as HTMLInputElement)?.value) || 0;
+  const maxDiscount = parseFloat((document.getElementById('shoppingMaxDiscount') as HTMLInputElement)?.value) || null;
+  const tna = parseFloat((document.getElementById('shoppingTna') as HTMLInputElement)?.value) || 40;
+  const surcharge = parseFloat((document.getElementById('shoppingSurcharge') as HTMLInputElement)?.value) || 0;
 
-  const origBtnText = btn.innerHTML;
-  btn.innerHTML = `<span class="sc-loading-spinner" style="width:14px;height:14px;border-width:2px;border-top-color:transparent;display:inline-block;"></span>`;
-  btn.disabled = true;
+  const origBtnText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = `<span class="sc-loading-spinner" style="width:14px;height:14px;border-width:2px;border-top-color:transparent;display:inline-block;"></span>`;
+    btn.disabled = true;
+  }
 
   try {
-    const res = await apiFetch('/shopping/analyze-barcode', {
-      method: 'POST',
-      body: JSON.stringify({
-        barcode: barcode,
-        installments_without_interest: installments,
-        discount_percentage: discount,
-        custom_tna: tna,
-        surcharge_percentage: surcharge
-      })
+    const res = await ShoppingService.analyzeBarcode({
+      barcode,
+      installments,
+      discount,
+      tna,
+      surcharge,
+      maxDiscount
     });
 
     if (res && res.ok) {
-      saveToShoppingHistory({
+      ShoppingService.saveHistory({
         title: res.item.title,
         price: res.item.price,
         domain: 'Código de Barras: ' + barcode,
         url: ''
       });
+      renderShoppingHistory();
       renderShoppingResults(res);
       showToast('✅ Producto analizado por código de barras');
     }
-  } catch (err) {
+  } catch (err: any) {
     showToast(err.message || 'No se encontró el código de barras', true);
   } finally {
-    btn.innerHTML = origBtnText;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = origBtnText;
+      btn.disabled = false;
+    }
   }
 }
 
 /**
- * Analiza la URL del producto y evalúa opciones financieras de pago.
+ * Escáner de código de barras con la cámara en vivo del dispositivo.
  */
-export async function analyzeShoppingUrl() {
-  const urlEl = document.getElementById('shoppingUrl');
+export async function openShoppingCameraModal(): Promise<void> {
+  const modal = document.getElementById('shoppingBarcodeModal');
+  const video = document.getElementById('shoppingBarcodeVideo') as HTMLVideoElement | null;
+  const statusEl = document.getElementById('shoppingCamStatus');
+  if (!modal) return;
+
+  modal.style.display = 'flex';
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (statusEl) statusEl.textContent = 'Cámara no soportada en este navegador. Ingresá el código manualmente.';
+    return;
+  }
+
+  try {
+    if (statusEl) statusEl.textContent = 'Iniciando cámara trasera...';
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+
+    if (video) {
+      video.srcObject = cameraStream;
+      await video.play();
+    }
+
+    if (statusEl) statusEl.textContent = 'Apuntá el código de barras al recuadro.';
+
+    if ('BarcodeDetector' in window) {
+      const barcodeDetector = new (window as any).BarcodeDetector({
+        formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'qr_code']
+      });
+
+      barcodeInterval = setInterval(async () => {
+        if (!video || video.readyState < 2) return;
+        try {
+          const barcodes = await barcodeDetector.detect(video);
+          if (barcodes && barcodes.length > 0) {
+            const code = barcodes[0].rawValue;
+            if (code) {
+              if (navigator.vibrate) navigator.vibrate(100);
+              closeShoppingCameraModal();
+              const input = document.getElementById('shoppingBarcodeInput') as HTMLInputElement | null;
+              if (input) input.value = code;
+              showToast(`🔍 Código detectado: ${code}`);
+              analyzeShoppingBarcode();
+            }
+          }
+        } catch (_) {}
+      }, 250);
+    } else {
+      if (statusEl) statusEl.textContent = 'Cámara activa. Si tu navegador no tiene BarcodeDetector, podés ingresar los números.';
+    }
+  } catch (err: any) {
+    if (statusEl) statusEl.textContent = 'Permiso denegado o cámara no disponible.';
+  }
+}
+
+export function closeShoppingCameraModal(): void {
+  const modal = document.getElementById('shoppingBarcodeModal');
+  if (modal) modal.style.display = 'none';
+
+  if (barcodeInterval) {
+    clearInterval(barcodeInterval);
+    barcodeInterval = null;
+  }
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+}
+
+/**
+ * Analiza la URL del producto o el precio manual y calcula la recomendación financiera.
+ */
+export async function analyzeShoppingUrl(): Promise<void> {
+  const urlEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
   const url = urlEl ? urlEl.value.trim() : '';
   
-  let priceStr = (document.getElementById('shoppingPrice')?.value || '').trim();
-  let priceVal = null;
+  let priceStr = ((document.getElementById('shoppingPrice') as HTMLInputElement)?.value || '').trim();
+  let priceVal: number | null = null;
   if (priceStr) {
     if (priceStr.includes('.') && !priceStr.includes(',')) {
       const parts = priceStr.split('.');
@@ -556,14 +485,15 @@ export async function analyzeShoppingUrl() {
     priceVal = parseFloat(priceStr) || null;
   }
 
-  const installments = parseInt(document.getElementById('shoppingInstallments')?.value);
+  const installments = parseInt((document.getElementById('shoppingInstallments') as HTMLSelectElement)?.value);
   const selectedInstallments = isNaN(installments) ? 0 : installments;
-  const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;
-  const tna = parseFloat(document.getElementById('shoppingTna')?.value) || 40;
-  const surcharge = parseFloat(document.getElementById('shoppingSurcharge')?.value) || 0;
+  const discount = parseFloat((document.getElementById('shoppingDiscount') as HTMLInputElement)?.value) || 0;
+  const maxDiscount = parseFloat((document.getElementById('shoppingMaxDiscount') as HTMLInputElement)?.value) || null;
+  const tna = parseFloat((document.getElementById('shoppingTna') as HTMLInputElement)?.value) || 40;
+  const surcharge = parseFloat((document.getElementById('shoppingSurcharge') as HTMLInputElement)?.value) || 0;
   
-  let installmentTotalStr = (document.getElementById('shoppingInstallmentTotal')?.value || '').trim();
-  let installmentTotalVal = null;
+  let installmentTotalStr = ((document.getElementById('shoppingInstallmentTotal') as HTMLInputElement)?.value || '').trim();
+  let installmentTotalVal: number | null = null;
   if (installmentTotalStr) {
     installmentTotalVal = parseFloat(installmentTotalStr.replace(/\./g, '').replace(',', '.')) || null;
   }
@@ -573,22 +503,15 @@ export async function analyzeShoppingUrl() {
     return;
   }
 
-  if ((!priceVal || priceVal <= 0) && !IS_SERVER) {
-    showToast('⚠️ Ingresá el precio del producto para calcular las opciones de pago', true);
-    const priceEl = document.getElementById('shoppingPrice');
-    if (priceEl) {
-      priceEl.style.border = '2px solid var(--amber)';
-      priceEl.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.4)';
-      priceEl.focus();
-    }
-    return;
+  const btn = document.getElementById('shoppingAnalyzeBtn') as HTMLButtonElement | null;
+  const origContent = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = `<span class="sc-loading-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:transparent;display:inline-block;"></span> Analizando...`;
+    btn.disabled = true;
   }
-
-  const btn = document.getElementById('shoppingAnalyzeBtn');
-  const origContent = btn.innerHTML;
-  btn.innerHTML = `<span class="sc-loading-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:transparent;display:inline-block;"></span> Analizando...`;
-  btn.disabled = true;
-  document.getElementById('shoppingResultsContainer').style.display = 'none';
+  
+  const resultsEl = document.getElementById('shoppingResultsContainer');
+  if (resultsEl) resultsEl.style.display = 'none';
 
   let detectedTitle = "Producto seleccionado";
   try {
@@ -599,24 +522,20 @@ export async function analyzeShoppingUrl() {
   } catch (_) {}
 
   try {
-    const bodyPayload = {
-      url: url || 'https://tienda-online.com/producto',
-      installments_without_interest: selectedInstallments,
-      discount_percentage: discount,
-      custom_tna: tna,
-      price: priceVal,
-      surcharge_percentage: surcharge,
-      installment_total_price: installmentTotalVal
-    };
-
-    let data = null;
+    let data: ShoppingAnalysisResponse | null = null;
     if (IS_SERVER) {
       try {
-        data = await apiFetch('/shopping/analyze-url', {
-          method: 'POST',
-          body: JSON.stringify(bodyPayload)
+        data = await ShoppingService.analyzeUrl({
+          url: url || 'https://tienda-online.com/producto',
+          price: priceVal,
+          installments: selectedInstallments,
+          discount,
+          tna,
+          surcharge,
+          installmentTotal: installmentTotalVal,
+          maxDiscount
         });
-      } catch (apiErr) {
+      } catch (apiErr: any) {
         if (!priceVal) {
           showToast(apiErr.message || '⚠️ Ingresá el precio del producto para calcular las opciones de pago', true);
           const priceEl = document.getElementById('shoppingPrice');
@@ -632,189 +551,116 @@ export async function analyzeShoppingUrl() {
     }
 
     if (!data && priceVal && priceVal > 0) {
-      data = localEvaluateShopping(url, detectedTitle, priceVal, selectedInstallments, discount, tna, surcharge, installmentTotalVal);
+      data = ShoppingService.localEvaluateShopping({
+        url,
+        title: detectedTitle,
+        price: priceVal,
+        installments: selectedInstallments,
+        discount,
+        tna,
+        surcharge,
+        installmentTotal: installmentTotalVal,
+        maxDiscount,
+        accounts: state.accounts || []
+      });
     }
     
     if (data) {
       if (data.item?.price) {
-        const priceEl = document.getElementById('shoppingPrice');
+        const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
         if (priceEl && !priceEl.value) {
           priceEl.value = Math.round(data.item.price).toString();
           priceEl.dataset.autoFilled = 'true';
         }
       }
 
-      // Guardar en historial reciente
-      saveToShoppingHistory({
+      ShoppingService.saveHistory({
         title: data.item.title,
         price: data.item.price,
         domain: data.item.domain || 'Tienda',
         url: url
       });
-
+      renderShoppingHistory();
       renderShoppingResults(data);
     }
     
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
     showToast(err.message || 'Error al analizar el producto', true);
   } finally {
-    btn.innerHTML = origContent;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = origContent;
+      btn.disabled = false;
+    }
   }
 }
 
 /**
- * Cálculo local de VPN cuando no hay backend o como fallback offline.
+ * Renderizado reactivo de resultados de la simulación.
  */
-function localEvaluateShopping(url, title, price, installments, discount, tna, surcharge = 0, installmentTotal = null) {
-  const cashPrice = price * (1 - (discount / 100));
-  const tem = (tna / 100) / 12;
-  const cuotas = installments > 0 ? [installments] : [1, 3, 6, 9, 12, 18, 24];
-
-  let totalCredit = cashPrice;
-  if (installmentTotal && installmentTotal > 0) {
-    totalCredit = installmentTotal;
-  } else if (surcharge > 0) {
-    totalCredit = cashPrice * (1 + (surcharge / 100));
-  }
-  
-  const options = [];
-  const accounts = state.accounts || [];
-
-  if (accounts.length === 0) {
-    for (const n of cuotas) {
-      const vpn = (n > 1 && tem > 0) ? (totalCredit / n) * ((1 - Math.pow(1 + tem, -n)) / tem) : totalCredit;
-      const ahorro = cashPrice - vpn;
-      const ahorroPct = cashPrice > 0 ? Math.round((ahorro / cashPrice) * 1000) / 10 : 0;
-      options.push({
-        account_name: n > 1 ? `Tarjeta de Crédito (${n} cuotas)` : 'Efectivo / Débito',
-        type: n > 1 ? 'Crédito' : 'Contado',
-        nominal_cost: totalCredit,
-        real_cost: Math.round(vpn * 100) / 100,
-        installments: n,
-        monthly_installment: Math.round((totalCredit / n) * 100) / 100,
-        inflation_adjusted_savings: Math.round(ahorro * 100) / 100,
-        reason: n > 1 
-          ? `Pagando en ${n} cuotas de $${Math.round(totalCredit / n).toLocaleString('es-AR')}, tu costo real ajustado por inflación (${tna}% TNA) es $${Math.round(vpn).toLocaleString('es-AR')} (${ahorro >= 0 ? 'ahorro' : 'sobrecosto'} del ${Math.abs(ahorroPct)}% vs contado).`
-          : `Pago al contado de $${Math.round(cashPrice).toLocaleString('es-AR')}.`
-      });
-    }
-  } else {
-    for (const acc of accounts) {
-      const accType = (acc.type || '').toLowerCase();
-      const isCredit = accType.includes('crédit') || accType.includes('credit') || (acc.limit && acc.limit > 0);
-      
-      if (isCredit) {
-        if (!acc.limit || acc.limit >= totalCredit) {
-          for (const n of cuotas) {
-            const vpn = (n > 1 && tem > 0) ? (totalCredit / n) * ((1 - Math.pow(1 + tem, -n)) / tem) : totalCredit;
-            const ahorro = cashPrice - vpn;
-            const ahorroPct = cashPrice > 0 ? Math.round((ahorro / cashPrice) * 1000) / 10 : 0;
-            options.push({
-              account_id: acc.id,
-              account_name: `${acc.name} (${n} ${n > 1 ? 'cuotas' : 'pago'})`,
-              type: 'Tarjeta de Crédito',
-              nominal_cost: totalCredit,
-              real_cost: Math.round(vpn * 100) / 100,
-              installments: n,
-              monthly_installment: Math.round((totalCredit / n) * 100) / 100,
-              inflation_adjusted_savings: Math.round(ahorro * 100) / 100,
-              reason: n > 1
-                ? `En ${n} cuotas de $${Math.round(totalCredit / n).toLocaleString('es-AR')}, tu costo real ajustado por TNA (${tna}%) es $${Math.round(vpn).toLocaleString('es-AR')} (${ahorro >= 0 ? 'ahorrás' : 'pagás un extra de'} ${Math.abs(ahorroPct)}% vs contado).`
-                : `Pago en 1 cuota con tu tarjeta ${acc.name}.`
-            });
-          }
-        }
-      } else {
-        options.push({
-          account_id: acc.id,
-          account_name: acc.name,
-          type: accType.includes('cash') || accType.includes('efectivo') ? 'Efectivo' : 'Débito / Cuenta',
-          nominal_cost: cashPrice,
-          real_cost: cashPrice,
-          installments: 1,
-          monthly_installment: cashPrice,
-          inflation_adjusted_savings: 0,
-          reason: `Pago directo con ${acc.name}. Abonás $${Math.round(cashPrice).toLocaleString('es-AR')} al contado.`
-        });
-      }
-    }
-  }
-
-  options.sort((a, b) => a.real_cost - b.real_cost);
-  if (options.length > 0) options[0].is_winner = true;
-
-  return {
-    item: {
-      title: title || 'Producto seleccionado',
-      price: price,
-      permalink: url,
-      domain: 'Tienda Online'
-    },
-    recommendation: options
-  };
-}
-
-/**
- * Renderizado de resultados de la simulación.
- */
-function renderShoppingResults(data) {
+function renderShoppingResults(data: ShoppingAnalysisResponse): void {
   const container = document.getElementById('shoppingResultsContainer');
   if (!container) return;
   lastAnalyzedData = data;
   const { item, recommendation } = data;
   
-  const formatMoney = (val) => '$ ' + parseFloat(val).toLocaleString('es-AR', {minimumFractionDigits: 2});
+  const formatMoney = (val: number) => '$ ' + Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 });
   const winner = recommendation.find(r => r.is_winner);
   const others = recommendation.filter(r => !r.is_winner);
 
-  // --- ANÁLISIS DE IMPACTO EN PRESUPUESTOS ---
+  // --- ANÁLISIS DE IMPACTO EN PRESUPUESTOS (SELECTOR DINÁMICO) ---
   let budgetImpactHtml = '';
-  if (state.budgets && state.budgets.length > 0) {
+  const budgets = state.budgets || [];
+  if (budgets.length > 0) {
     const now = new Date();
     const curMonth = now.getMonth();
     const curYear = now.getFullYear();
 
-    // Buscar presupuesto de 'Compras', 'Ocio', 'Tecnología' o el más representativo
-    let targetBudget = state.budgets.find(b => ['compras', 'shopping', 'tecnologia', 'ocio'].includes((b.cat || '').toLowerCase())) || state.budgets[0];
+    const selectedBudgetId = (window as any)._selectedShoppingBudgetId || budgets[0].id;
+    let targetBudget = budgets.find(b => b.id === selectedBudgetId) || budgets[0];
 
-    if (targetBudget) {
-      const spent = (state.transactions || [])
-        .filter(t => t.type === 'expense' && t.cat === targetBudget.cat)
-        .filter(t => { const d = new Date(t.date); return d.getMonth() === curMonth && d.getFullYear() === curYear; })
-        .reduce((sum, t) => sum + (t.amount || 0), 0);
+    const spent = (state.transactions || [])
+      .filter(t => t.type === 'expense' && t.cat === targetBudget.cat)
+      .filter(t => { const d = new Date(t.date); return d.getMonth() === curMonth && d.getFullYear() === curYear; })
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
 
-      const available = Math.max(0, targetBudget.limit - spent);
-      const purchaseAmount = (winner && winner.installments > 1) ? winner.monthly_installment : item.price;
-      const pctOfRemaining = available > 0 ? Math.round((purchaseAmount / available) * 100) : 100;
+    const available = Math.max(0, targetBudget.limit - spent);
+    const purchaseAmount = (winner && winner.installments > 1) ? winner.monthly_installment : item.price;
+    const pctOfRemaining = available > 0 ? Math.round((purchaseAmount / available) * 100) : 100;
 
-      let badgeBg = 'rgba(0, 229, 160, 0.15)';
-      let badgeColor = 'var(--accent)';
-      let alertIcon = '✅';
-      let alertMsg = `Esta compra representa el ${pctOfRemaining}% de tu presupuesto disponible en "${targetBudget.name}" ($${Math.round(available).toLocaleString('es-AR')}).`;
+    let badgeBg = 'rgba(0, 229, 160, 0.15)';
+    let badgeColor = 'var(--accent)';
+    let alertIcon = '✅';
+    let alertMsg = `Esta compra representa el ${pctOfRemaining}% de tu presupuesto disponible en "${targetBudget.name}" ($${Math.round(available).toLocaleString('es-AR')}).`;
 
-      if (pctOfRemaining > 75 || available < purchaseAmount) {
-        badgeBg = 'rgba(244, 63, 94, 0.15)';
-        badgeColor = 'var(--danger)';
-        alertIcon = '🚨';
-        alertMsg = `Atención: Esta compra supera o compromete el ${pctOfRemaining}% de tu presupuesto disponible en "${targetBudget.name}" ($${Math.round(available).toLocaleString('es-AR')}).`;
-      } else if (pctOfRemaining > 35) {
-        badgeBg = 'rgba(245, 158, 11, 0.15)';
-        badgeColor = 'var(--amber)';
-        alertIcon = '⚠️';
-        alertMsg = `Esta compra consumirá el ${pctOfRemaining}% de tu presupuesto disponible en "${targetBudget.name}".`;
-      }
+    if (pctOfRemaining > 75 || available < purchaseAmount) {
+      badgeBg = 'rgba(244, 63, 94, 0.15)';
+      badgeColor = 'var(--danger)';
+      alertIcon = '🚨';
+      alertMsg = `Atención: Esta compra supera o compromete el ${pctOfRemaining}% de tu presupuesto disponible en "${targetBudget.name}" ($${Math.round(available).toLocaleString('es-AR')}).`;
+    } else if (pctOfRemaining > 35) {
+      badgeBg = 'rgba(245, 158, 11, 0.15)';
+      badgeColor = 'var(--amber)';
+      alertIcon = '⚠️';
+      alertMsg = `Esta compra consumirá el ${pctOfRemaining}% de tu presupuesto disponible en "${targetBudget.name}".`;
+    }
 
-      budgetImpactHtml = `
-        <div style="background: ${badgeBg}; border: 1px solid ${badgeColor}; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px;">
-          <span style="font-size: 20px;">${alertIcon}</span>
+    budgetImpactHtml = `
+      <div style="background: ${badgeBg}; border: 1px solid ${badgeColor}; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 12px; align-items: center; flex: 1; min-width: 260px;">
+          <span style="font-size: 24px;">${alertIcon}</span>
           <div style="font-size: 13px; color: var(--text); line-height: 1.4;">
-            <strong>Impacto en Presupuesto (${targetBudget.name}):</strong> ${alertMsg}
+            <strong>Impacto en Presupuesto:</strong> ${alertMsg}
           </div>
         </div>
-      `;
-    }
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Evaluar en:</span>
+          <select id="shoppingBudgetSelect" onchange="onShoppingBudgetChange(this.value)" class="field-select" style="padding: 4px 8px; font-size: 12px; height: 32px;">
+            ${budgets.map(b => `<option value="${b.id}" ${b.id === targetBudget.id ? 'selected' : ''}>${b.icon || '📦'} ${b.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    `;
   }
   
   let html = `
@@ -839,12 +685,23 @@ function renderShoppingResults(data) {
   
   if (winner) {
     const savings = winner.nominal_cost - winner.real_cost;
+    const graceAdvantageTag = winner.has_grace_advantage 
+      ? `<div class="shopping-grace-badge">⭐ ¡Días de gracia! Cerró recientemente: ${winner.days_to_first_payment} días hasta el 1° pago</div>`
+      : '';
+    const breakEvenTag = winner.break_even_tna
+      ? `<div class="shopping-break-even-badge">⚖️ TNA de equilibrio: ${winner.break_even_tna}%</div>`
+      : '';
     
     html += `
       <!-- Winner Card -->
-      <h3 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
-        <svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        La mejor opción financiera para vos
+      <h3 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
+        <span style="display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          La mejor opción financiera para vos
+        </span>
+        <button type="button" class="btn btn-ghost" onclick="pinCurrentOffer()" style="padding: 6px 12px; font-size: 12px; border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+          📌 Fijar para Comparar
+        </button>
       </h3>
       
       <div style="background: linear-gradient(145deg, rgba(0, 229, 160, 0.12), rgba(0, 229, 160, 0.02)); border: 1px solid rgba(0, 229, 160, 0.35); border-radius: 16px; padding: 24px; margin-bottom: 24px; position: relative; overflow: hidden;">
@@ -855,6 +712,8 @@ function renderShoppingResults(data) {
               <div style="display: inline-block; padding: 4px 10px; background: rgba(0, 229, 160, 0.2); color: var(--accent); border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Recomendación Ganadora</div>
               <div style="font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 2px;">${winner.account_name}</div>
               <div style="font-size: 13px; color: var(--muted);">${winner.type} ${winner.installments > 1 ? `(${winner.installments} cuotas de $${Math.round(winner.monthly_installment).toLocaleString('es-AR')})` : ''}</div>
+              ${graceAdvantageTag}
+              ${breakEvenTag}
             </div>
             
             <div style="text-align: right;">
@@ -870,6 +729,40 @@ function renderShoppingResults(data) {
               ${winner.reason}
             </div>
           </div>
+
+          <!-- BOTÓN DESPLEGABLE DE CRONOGRAMA DE CUOTAS -->
+          ${winner.installments > 1 && winner.installments_breakdown && winner.installments_breakdown.length > 0 ? `
+            <div style="margin-bottom: 16px;">
+              <button type="button" class="shopping-schedule-toggle" onclick="toggleInstallmentsSchedule('winnerSchedule')">
+                <span>📉 Ver cronograma de licuación cuota a cuota (${winner.installments} cuotas)</span>
+                <span id="winnerScheduleIcon">▼</span>
+              </button>
+              <div id="winnerSchedule" class="shopping-schedule-wrap" style="display: none;">
+                <table class="shopping-schedule-table">
+                  <thead>
+                    <tr>
+                      <th>Cuota</th>
+                      <th>Fecha Estimada</th>
+                      <th>Cuota Nominal</th>
+                      <th>Valor Presente (VPN)</th>
+                      <th>Licuación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${winner.installments_breakdown.map(inst => `
+                      <tr>
+                        <td>Cuota ${inst.installment_number}/${winner.installments}</td>
+                        <td>${inst.estimated_date} (${inst.days_until_payment} días)</td>
+                        <td>$ ${inst.nominal_amount.toLocaleString('es-AR')}</td>
+                        <td style="color: var(--accent); font-weight: 600;">$ ${inst.present_value.toLocaleString('es-AR')}</td>
+                        <td style="color: var(--accent); font-weight: 700;">-${inst.depreciation_pct}%</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ''}
 
           <!-- BOTÓN DIRECTO DE REGISTRAR GASTO -->
           <button type="button" class="btn btn-primary" onclick="quickRegisterShoppingExpense(0)" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 700; justify-content: center; gap: 8px;">
@@ -891,27 +784,64 @@ function renderShoppingResults(data) {
       const isViable = opt.is_viable;
       const opacity = isViable ? '1' : '0.6';
       const actualIdx = recommendation.indexOf(opt);
+      const scheduleId = `otherSchedule_${idx}`;
       
       html += `
-        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; opacity: ${opacity};">
-          <div style="flex: 1;">
-            <div style="font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
-              ${opt.account_name}
-              ${!isViable ? '<span style="font-size: 11px; background: rgba(244,63,94,0.15); color: var(--danger); padding: 2px 8px; border-radius: 4px; font-weight: 600;">No recomendable</span>' : ''}
+        <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; opacity: ${opacity};">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+            <div style="flex: 1;">
+              <div style="font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                ${opt.account_name}
+                ${!isViable ? '<span style="font-size: 11px; background: rgba(244,63,94,0.15); color: var(--danger); padding: 2px 8px; border-radius: 4px; font-weight: 600;">No recomendable</span>' : ''}
+                ${opt.has_grace_advantage ? '<span class="shopping-grace-badge">⭐ Cierre reciente</span>' : ''}
+              </div>
+              <div style="font-size: 13px; color: var(--muted);">${opt.reason}</div>
             </div>
-            <div style="font-size: 13px; color: var(--muted);">${opt.reason}</div>
+            <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+              <div>
+                <div style="font-size: 11px; color: var(--muted); margin-bottom: 2px; text-transform: uppercase;">Costo Real</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--text);">${formatMoney(opt.real_cost)}</div>
+              </div>
+              ${isViable ? `
+                <button type="button" class="btn" onclick="quickRegisterShoppingExpense(${actualIdx})" style="padding: 6px 12px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
+                  Registrar
+                </button>
+              ` : ''}
+            </div>
           </div>
-          <div style="text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-            <div>
-              <div style="font-size: 11px; color: var(--muted); margin-bottom: 2px; text-transform: uppercase;">Costo Real</div>
-              <div style="font-size: 16px; font-weight: 700; color: var(--text);">${formatMoney(opt.real_cost)}</div>
-            </div>
-            ${isViable ? `
-              <button type="button" class="btn" onclick="quickRegisterShoppingExpense(${actualIdx})" style="padding: 6px 12px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 6px; color: var(--text);">
-                Registrar
+
+          ${opt.installments > 1 && opt.installments_breakdown && opt.installments_breakdown.length > 0 ? `
+            <div style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+              <button type="button" class="shopping-schedule-toggle" onclick="toggleInstallmentsSchedule('${scheduleId}')">
+                <span>📉 Ver desglose (${opt.installments} cuotas)</span>
+                <span id="${scheduleId}Icon">▼</span>
               </button>
-            ` : ''}
-          </div>
+              <div id="${scheduleId}" class="shopping-schedule-wrap" style="display: none;">
+                <table class="shopping-schedule-table">
+                  <thead>
+                    <tr>
+                      <th>Cuota</th>
+                      <th>Fecha</th>
+                      <th>Nominal</th>
+                      <th>VPN</th>
+                      <th>Licuación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${opt.installments_breakdown.map(inst => `
+                      <tr>
+                        <td>Cuota ${inst.installment_number}/${opt.installments}</td>
+                        <td>${inst.estimated_date}</td>
+                        <td>$ ${inst.nominal_amount.toLocaleString('es-AR')}</td>
+                        <td style="color: var(--accent);">$ ${inst.present_value.toLocaleString('es-AR')}</td>
+                        <td style="color: var(--accent);">-${inst.depreciation_pct}%</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ''}
         </div>
       `;
     });
@@ -924,10 +854,26 @@ function renderShoppingResults(data) {
   container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+export function onShoppingBudgetChange(budgetId: string): void {
+  (window as any)._selectedShoppingBudgetId = parseInt(budgetId) || null;
+  if (lastAnalyzedData) {
+    renderShoppingResults(lastAnalyzedData);
+  }
+}
+
+export function toggleInstallmentsSchedule(containerId: string): void {
+  const el = document.getElementById(containerId);
+  const icon = document.getElementById(containerId + 'Icon');
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
+  if (icon) icon.textContent = isHidden ? '▲' : '▼';
+}
+
 /**
  * Registra directamente la opción elegida como transacción en el gestor.
  */
-export async function quickRegisterShoppingExpense(optionIndex) {
+export async function quickRegisterShoppingExpense(optionIndex: number): Promise<void> {
   if (!lastAnalyzedData || !lastAnalyzedData.recommendation) {
     showToast('No hay datos de simulación disponibles', true);
     return;
@@ -942,55 +888,136 @@ export async function quickRegisterShoppingExpense(optionIndex) {
     ? `Compra: ${item.title.slice(0, 35)} (Cuota 1/${opt.installments})` 
     : `Compra: ${item.title.slice(0, 45)}`;
 
+  // Categoría según el presupuesto evaluado o 'Compras'
+  const selectedBudgetId = (window as any)._selectedShoppingBudgetId;
+  const matchingBudget = (state.budgets || []).find(b => b.id === selectedBudgetId);
+  const finalCat = matchingBudget ? matchingBudget.cat : 'Compras';
+
   try {
     const tx = {
       type: 'expense',
       desc: descText,
       amount: Math.round(amountToRegister * 100) / 100,
-      cat: 'Compras',
+      cat: finalCat,
       account_id: opt.account_id || null,
       date: new Date().toISOString().split('T')[0]
     };
 
     await TransactionService.addTransaction(tx);
-    if (typeof window.renderAll === 'function') {
-      window.renderAll();
+    if (typeof (window as any).renderAll === 'function') {
+      (window as any).renderAll();
     }
     showToast(`✅ Gasto de $${Math.round(amountToRegister).toLocaleString('es-AR')} registrado en ${opt.account_name}`);
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error al registrar compra:', err);
     showToast('Error al registrar el gasto: ' + (err.message || ''), true);
   }
 }
 
-/**
- * Persistencia de consultas recientes en localStorage.
- */
-function saveToShoppingHistory(entry) {
-  try {
-    let hist = JSON.parse(localStorage.getItem('gestor_shopping_history') || '[]');
-    // Eliminar duplicados si existe el mismo título
-    hist = hist.filter(h => h.title !== entry.title);
-    hist.unshift({
-      title: entry.title,
-      price: entry.price,
-      domain: entry.domain,
-      url: entry.url || '',
-      date: new Date().toLocaleDateString('es-AR')
-    });
-    // Guardar max 6
-    localStorage.setItem('gestor_shopping_history', JSON.stringify(hist.slice(0, 6)));
-    renderShoppingHistory();
-  } catch (_) {}
+// --- MODO COMPARADOR FIJADO ---
+
+export function pinCurrentOffer(): void {
+  if (!lastAnalyzedData || !lastAnalyzedData.recommendation) return;
+  const winner = lastAnalyzedData.recommendation.find(r => r.is_winner);
+  if (!winner) return;
+
+  const pinned = {
+    title: lastAnalyzedData.item.title,
+    domain: lastAnalyzedData.item.domain || 'Tienda A',
+    price: lastAnalyzedData.item.price,
+    winner: winner
+  };
+
+  ShoppingService.setPinnedOffer(pinned);
+  renderPinnedComparison();
+  showToast('📌 Oferta fijada para comparar contra otra tienda o producto');
 }
 
-function renderShoppingHistory() {
+export function clearPinnedOffer(): void {
+  ShoppingService.clearPinnedOffer();
+  renderPinnedComparison();
+  showToast('Comparación fijada eliminada');
+}
+
+function renderPinnedComparison(): void {
+  const container = document.getElementById('shoppingPinnedComparisonContainer');
+  if (!container) return;
+
+  const pinned = ShoppingService.getPinnedOffer();
+  if (!pinned) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  const currentWinner = (lastAnalyzedData && lastAnalyzedData.recommendation) 
+    ? lastAnalyzedData.recommendation.find(r => r.is_winner)
+    : null;
+
+  let comparisonText = '';
+  if (currentWinner) {
+    const diff = pinned.winner.real_cost - currentWinner.real_cost;
+    if (Math.abs(diff) < 1) {
+      comparisonText = `<div style="font-size: 13px; color: var(--accent); font-weight: 600;">⚖️ Ambas opciones tienen prácticamente el mismo costo real (VPN).</div>`;
+    } else if (diff > 0) {
+      comparisonText = `<div style="font-size: 13px; color: var(--accent); font-weight: 700;">🏆 ¡La opción actual es más económica! Ahorrás $${Math.round(diff).toLocaleString('es-AR')} en costo real frente a la oferta fijada.</div>`;
+    } else {
+      comparisonText = `<div style="font-size: 13px; color: var(--amber); font-weight: 700;">💡 La oferta fijada (${pinned.domain}) sigue siendo más conveniente por $${Math.round(Math.abs(diff)).toLocaleString('es-AR')} en costo real.</div>`;
+    }
+  }
+
+  container.innerHTML = `
+    <div class="shopping-pinned-panel">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed rgba(56,189,248,0.3); padding-bottom: 10px;">
+        <span style="font-size: 13px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 6px;">
+          📌 Comparador de Ofertas (Lado a Lado)
+        </span>
+        <button type="button" onclick="clearPinnedOffer()" style="background: none; border: none; font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline;">
+          Quitar fijado
+        </button>
+      </div>
+
+      <div class="shopping-compare-grid">
+        <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 11px; color: #38bdf8; text-transform: uppercase; font-weight: 700;">Oferta A (Fijada)</div>
+          <div style="font-size: 14px; font-weight: 600; color: var(--text); margin: 4px 0;">${pinned.title}</div>
+          <div style="font-size: 12px; color: var(--muted);">${pinned.domain} — Precio: $${Math.round(pinned.price).toLocaleString('es-AR')}</div>
+          <div style="font-size: 16px; font-weight: 800; color: var(--accent); margin-top: 6px;">
+            Costo Real: $${Math.round(pinned.winner.real_cost).toLocaleString('es-AR')}
+          </div>
+          <div style="font-size: 11px; color: var(--muted);">${pinned.winner.account_name} (${pinned.winner.installments > 1 ? pinned.winner.installments + ' cuotas' : 'Contado'})</div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px;">
+          <div style="font-size: 11px; color: var(--accent); text-transform: uppercase; font-weight: 700;">Oferta B (Actual)</div>
+          ${currentWinner ? `
+            <div style="font-size: 14px; font-weight: 600; color: var(--text); margin: 4px 0;">${lastAnalyzedData.item.title}</div>
+            <div style="font-size: 12px; color: var(--muted);">${lastAnalyzedData.item.domain || 'Tienda B'} — Precio: $${Math.round(lastAnalyzedData.item.price).toLocaleString('es-AR')}</div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--accent); margin-top: 6px;">
+              Costo Real: $${Math.round(currentWinner.real_cost).toLocaleString('es-AR')}
+            </div>
+            <div style="font-size: 11px; color: var(--muted);">${currentWinner.account_name} (${currentWinner.installments > 1 ? currentWinner.installments + ' cuotas' : 'Contado'})</div>
+          ` : `
+            <div style="font-size: 13px; color: var(--muted); padding: 12px 0;">Analizá otro producto arriba para contrastarlo contra la Oferta A.</div>
+          `}
+        </div>
+      </div>
+
+      ${comparisonText ? `<div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed rgba(56,189,248,0.2);">${comparisonText}</div>` : ''}
+    </div>
+  `;
+  container.style.display = 'block';
+}
+
+// --- HISTORIAL ---
+
+function renderShoppingHistory(): void {
   const container = document.getElementById('shoppingRecentHistoryContainer');
   const chips = document.getElementById('shoppingRecentHistoryChips');
   if (!container || !chips) return;
 
   try {
-    const hist = JSON.parse(localStorage.getItem('gestor_shopping_history') || '[]');
+    const hist = ShoppingService.getHistory();
     if (hist.length === 0) {
       container.style.display = 'none';
       return;
@@ -1010,13 +1037,13 @@ function renderShoppingHistory() {
   }
 }
 
-export function loadShoppingHistoryItem(encodedUrl, price, encodedTitle) {
+export function loadShoppingHistoryItem(encodedUrl: string, price: number, encodedTitle: string): void {
   const url = decodeURIComponent(encodedUrl);
   const title = decodeURIComponent(encodedTitle);
 
   switchShoppingTab('link');
-  const urlEl = document.getElementById('shoppingUrl');
-  const priceEl = document.getElementById('shoppingPrice');
+  const urlEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
+  const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
   const previewEl = document.getElementById('shoppingTitlePreview');
 
   if (urlEl) urlEl.value = url;
@@ -1032,8 +1059,8 @@ export function loadShoppingHistoryItem(encodedUrl, price, encodedTitle) {
   analyzeShoppingUrl();
 }
 
-export function clearShoppingHistory() {
-  localStorage.removeItem('gestor_shopping_history');
+export function clearShoppingHistory(): void {
+  ShoppingService.clearHistory();
   renderShoppingHistory();
   showToast('Historial de compras limpiado');
 }

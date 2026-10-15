@@ -198,5 +198,39 @@ $$VPN = \sum_{t=1}^n \frac{\text{Cuota}}{(1 + \text{TEM})^t}$$
    - Actualiza inmediatamente los balances, gráficos y presupuestos en toda la aplicación (`renderAll()`).
 
 ### D. Historial de Consultas Recientes
-- Se persisten localmente las últimas simulaciones en `localStorage` (`gestor_shopping_history`).
+- Se persisten localmente las últimas simulaciones en `localStorage` (`flujo_shopping_history_{user_id}`).
 - Se renderiza una botonera de chips interactivos con acceso rápido para re-analizar productos previamente consultados.
+
+---
+
+## 8. ACTUALIZACIÓN DE ALTA PRECISIÓN: DÍAS DE GRACIA, TOPE DE REINTEGRO, COMPARADOR LADO A LADO Y CÁMARA NATIVA
+
+### A. Mejoras Matemáticas y Financieras (Backend y Frontend)
+1. **Días de Gracia Exactos según Ciclo de Tarjeta:**
+   - Si una compra se efectúa justo después de la fecha de cierre de la tarjeta (`closing_day`), el usuario cuenta con hasta 45 o 50 días antes del vencimiento (`due_day`) para devengar intereses en una billetera remunerada antes del primer pago.
+   - Algoritmo implementado en `calculate_days_to_first_payment(closing_day, due_day, purchase_date)`:
+     $$PV_1 = \frac{\text{Cuota}}{(1 + \text{TEM})^{d / 30.4167}}$$
+     donde $d$ son los días reales de gracia.
+2. **TNA de Indiferencia (Break-even TNA por Bisección):**
+   - En planes con recargo (ej. 25% en 6 cuotas vs contado), calcula numéricamente la tasa anual exacta donde el costo real de las cuotas iguala al contado ($VPN(\text{TNA}^*) = \text{Precio Contado}$). Si la inflación o rendimiento esperado supera esa tasa, conviene financiar.
+3. **Tope de Reintegro Bancario (`max_discount_amount`):**
+   - Soporte para promociones del estilo *"20% de reintegro con tope de $15.000"*:
+     $$\text{Ahorro Efectivo} = \min(P \times \text{descuento}, \text{tope\_reintegro})$$
+4. **Cronograma Mensual de Licuación Cuota a Cuota:**
+   - Desglose detallado por cuota $t=1 \dots n$, mostrando valor nominal, valor presente real en moneda de hoy y porcentaje de pérdida de poder adquisitivo por inflación acumulada.
+
+### B. Mejoras en la Experiencia de Usuario (Web & Mobile)
+1. **Escaneo en Vivo con Cámara Nativa (`BarcodeDetector`):**
+   - Uso de la API nativa de streams de video y detección de códigos de barras (`EAN-13`, `EAN-8`, `UPC`, `Code 128`), con visor superpuesto en modal y fallback automático al catálogo SEPA si falla la red externa.
+2. **Comparador Lado a Lado (Oferta A vs Oferta B):**
+   - Posibilidad de fijar una oferta como referencia y compararla con una segunda alternativa en otro comercio para ver el diferencial de ahorro neto en pesos.
+3. **Selector Dinámico de Presupuesto para Impacto:**
+   - Proyección del consumo de cupo mensual sobre cualquiera de las categorías presupuestarias activas (`Tecnología`, `Supermercado`, etc.).
+4. **Paridad Total en Mobile (Flutter):**
+   - Soporte en `ShoppingNotifier` y `ShoppingScreen` para topes de reintegro, visualización de días de gracia, TNA de indiferencia y cronograma expandible de licuación cuota a cuota.
+
+### C. Refactorización Arquitectónica SOLID & PHAME
+- **Separación de Responsabilidades:**
+  - `js/services/shoppingService.ts`: Única fuente de verdad para peticiones a la API, motor financiero local offline de VPN y persistencia multiusuario por clave `userKey()`.
+  - `js/shopping.ts`: Controlador de vista MVC limpio, desacoplado de lógica financiera dura.
+  - `html/views/shopping.html` y `css/views/shopping.css`: Estructura y estilos externos sin código en línea.

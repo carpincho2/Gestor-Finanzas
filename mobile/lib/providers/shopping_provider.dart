@@ -29,13 +29,15 @@ class ShoppingNotifier extends Notifier<ShoppingState> {
     double? price,
     required int installments,
     required double discount,
+    double? maxDiscountAmount,
+    double? surchargePercentage,
     required double tna,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       final api = ApiService();
-      final body = {
+      final body = <String, dynamic>{
         'url': url,
         'installments_without_interest': installments,
         'discount_percentage': discount,
@@ -43,6 +45,12 @@ class ShoppingNotifier extends Notifier<ShoppingState> {
       };
       if (price != null && price > 0) {
         body['price'] = price;
+      }
+      if (maxDiscountAmount != null && maxDiscountAmount > 0) {
+        body['max_discount_amount'] = maxDiscountAmount;
+      }
+      if (surchargePercentage != null && surchargePercentage > 0) {
+        body['surcharge_percentage'] = surchargePercentage;
       }
 
       final response = await api.post('/api/shopping/analyze-url', body);

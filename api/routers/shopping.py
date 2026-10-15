@@ -28,6 +28,7 @@ class AnalyzeUrlRequest(BaseModel):
     price: Optional[float] = None       # Precio contado manual opcional
     surcharge_percentage: Optional[float] = 0.0 # % de recargo en cuotas si aplica
     installment_total_price: Optional[float] = None # Precio total financiado en cuotas si difiere
+    max_discount_amount: Optional[float] = None # Tope de reintegro en pesos si aplica
 
 class AnalyzeBarcodeRequest(BaseModel):
     barcode: str
@@ -36,14 +37,16 @@ class AnalyzeBarcodeRequest(BaseModel):
     custom_tna: Optional[float] = 40.0
     surcharge_percentage: Optional[float] = 0.0
     installment_total_price: Optional[float] = None
+    max_discount_amount: Optional[float] = None
 
 @router.get("/search")
 async def search_items(
     q: str = Query(...),
+    user_id: Optional[int] = Depends(get_optional_user_id),
     shopping_service: ShoppingService = Depends(get_shopping_service)
 ):
     """Busca productos en catálogo de e-commerce por palabra clave."""
-    return shopping_service.search_items(q)
+    return shopping_service.search_items(q, user_id)
 
 @router.post("/analyze-url")
 async def analyze_url(

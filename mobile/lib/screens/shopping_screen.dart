@@ -14,6 +14,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _discountController = TextEditingController(text: '0');
+  final TextEditingController _maxDiscountController = TextEditingController();
   final TextEditingController _tnaController = TextEditingController(text: '40');
   final FocusNode _priceFocusNode = FocusNode();
   
@@ -34,6 +35,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
     _urlController.dispose();
     _priceController.dispose();
     _discountController.dispose();
+    _maxDiscountController.dispose();
     _tnaController.dispose();
     _priceFocusNode.dispose();
     super.dispose();
@@ -138,6 +140,11 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
     }
 
     final discount = double.tryParse(_discountController.text) ?? 0.0;
+    final maxDiscountText = _maxDiscountController.text.trim();
+    double? maxDiscount;
+    if (maxDiscountText.isNotEmpty) {
+      maxDiscount = double.tryParse(maxDiscountText.replaceAll('.', '').replaceAll(',', '.'));
+    }
     final tna = double.tryParse(_tnaController.text) ?? 40.0;
 
     ref.read(shoppingProvider.notifier).analyzeUrl(
@@ -145,6 +152,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
       price: price,
       installments: _selectedInstallments,
       discount: discount,
+      maxDiscountAmount: maxDiscount,
       tna: tna,
     );
   }
@@ -260,6 +268,53 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
                       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF38BDF8), width: 2)),
                     ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Desc. Contado (%)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _discountController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: '0',
+                                hintStyle: const TextStyle(color: Colors.white30),
+                                filled: true,
+                                fillColor: const Color(0xFF0F172A),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Tope Reintegro (\$)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _maxDiscountController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Sin tope',
+                                hintStyle: const TextStyle(color: Colors.white30),
+                                filled: true,
+                                fillColor: const Color(0xFF0F172A),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   
@@ -414,6 +469,9 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
 
     if (winner != null) {
       final savings = (winner['nominal_cost'] ?? 0) - (winner['real_cost'] ?? 0);
+      final days = winner['days_to_first_payment'];
+      final breakEven = winner['break_even_tna'];
+      final breakdown = winner['installments_breakdown'] as List?;
       
       widgets.add(
         Container(
@@ -446,12 +504,57 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen> {
                   child: Text('¡Ahorrás \$${savings.toStringAsFixed(2)} vs contado!', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ],
+              if (days != null && days > 0) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                  child: Text('⏳ $days días de gracia al 1er pago', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+              if (breakEven != null && breakEven > 0) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                  child: Text('⚖️ TNA de indiferencia: ${breakEven.toStringAsFixed(1)}%', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(color: Colors.black.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
                 child: Text(winner['reason'] ?? '', style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4)),
               ),
+              if (breakdown != null && breakdown.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Theme(
+                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    dense: true,
+                    title: const Text('Cronograma de licuación cuota a cuota', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    iconColor: Colors.white,
+                    collapsedIconColor: Colors.white70,
+                    children: [
+                      for (final item in breakdown)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Cuota #${item['installment_number']}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                              Text(
+                                '\$${(item['pv_amount'] ?? 0).toStringAsFixed(0)} hoy (-${(item['depreciation_pct'] ?? 0).toStringAsFixed(1)}%)',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

@@ -207,8 +207,26 @@ function updateModalBudgetImpact() {
   }
 }
 
+function populateTxAccountSelect(selectId, selectedValue = '') {
+  const accSelect = document.getElementById(selectId);
+  if (!accSelect) return;
+  const activeAccounts = (state.accounts || []).filter(a => !a.is_archived);
+  accSelect.innerHTML = `<option value="">Sin cuenta específica</option>` +
+    activeAccounts.map(a => `<option value="${a.id}">${a.icon || '🏦'} ${escHtml(a.name)} (${a.currency || 'ARS'})</option>`).join('');
+  accSelect.value = selectedValue ? String(selectedValue) : '';
+  if (typeof window.initCustomSelects === 'function') {
+    window.initCustomSelects(accSelect.parentNode);
+  }
+  if (typeof window.updateCustomSelectDisplay === 'function') {
+    window.updateCustomSelectDisplay(accSelect);
+  }
+}
+
 function openModal() {
   document.getElementById('modalOverlay').classList.add('open');
+  const favAcc = (state.accounts || []).find(a => a.is_favorite && !a.is_archived);
+  populateTxAccountSelect('mAccount', favAcc ? favAcc.id : '');
+
   const mAmount = document.getElementById('mAmount');
   const mCat = document.getElementById('mCat');
   const mDate = document.getElementById('mDate');
@@ -273,12 +291,14 @@ function addFromModal() {
   const amount = parseFloat(document.getElementById('mAmount').value);
   const cat = document.getElementById('mCat').value;
   const date = document.getElementById('mDate').value;
+  const accEl = document.getElementById('mAccount');
+  const account_id = accEl && accEl.value ? parseInt(accEl.value, 10) : null;
 
   if (!desc) { showToast('⚠️ Ingresá una descripción', true); return; }
   if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
   if (!date) { showToast('⚠️ Seleccioná una fecha', true); return; }
 
-  addTransaction({ type: state.mCurrentType, desc, amount, cat, date });
+  addTransaction({ type: state.mCurrentType, desc, amount, cat, date, account_id });
   document.getElementById('mDesc').value = '';
   document.getElementById('mAmount').value = '';
   closeModal();
@@ -582,22 +602,54 @@ function openEditModal(id) {
   document.getElementById('editModalTitle').textContent = 'Editar Transacción';
   document.getElementById('eDesc').value = t.desc;
   document.getElementById('eAmount').value = t.amount;
-  document.getElementById('eCat').value = t.cat;
-  updateCustomSelectDisplay(document.getElementById('eCat'));
   document.getElementById('eDate').value = t.date;
-  setEditType(t.type);
+  setEditType(t.type, t.cat);
+  populateTxAccountSelect('eAccount', t.account_id || '');
 
   document.getElementById('editModalOverlay').classList.add('open');
 }
 
-function setEditType(type) {
+function setEditType(type, selectedCat = null) {
   const expBtn = document.getElementById('eTypeExpBtn');
   const incBtn = document.getElementById('eTypeIncBtn');
+  const catSelect = document.getElementById('eCat');
   expBtn.className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
   incBtn.className = 'type-btn' + (type === 'income' ? ' active-income' : '');
   expBtn.dataset.active = type === 'expense' ? '1' : '';
   incBtn.dataset.active = type === 'income' ? '1' : '';
   document.getElementById('editModalOverlay').dataset.type = type;
+
+  if (catSelect) {
+    const currentVal = selectedCat || catSelect.value;
+    if (type === 'expense') {
+      catSelect.innerHTML = `
+        <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+        <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+        <option value="Transporte">🚗 Transporte</option>
+        <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+        <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+        <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+        <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+        <option value="Educación">📚 Educación</option>
+        <option value="Otros">📦 Otros</option>
+      `;
+    } else {
+      catSelect.innerHTML = `
+        <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+        <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
+        <option value="Otros">📦 Otros</option>
+      `;
+    }
+    if (currentVal && ![...catSelect.options].some(o => o.value === currentVal)) {
+      const legacyOpt = document.createElement('option');
+      legacyOpt.value = currentVal;
+      legacyOpt.textContent = `📦 ${currentVal}`;
+      catSelect.appendChild(legacyOpt);
+    }
+    if (currentVal) catSelect.value = currentVal;
+    if (typeof window.initCustomSelects === 'function') window.initCustomSelects(catSelect.parentNode);
+    if (typeof window.updateCustomSelectDisplay === 'function') window.updateCustomSelectDisplay(catSelect);
+  }
 }
 
 async function saveEdit() {
@@ -606,6 +658,8 @@ async function saveEdit() {
   const amount = parseFloat(document.getElementById('eAmount').value);
   const cat = document.getElementById('eCat').value;
   const date = document.getElementById('eDate').value;
+  const accEl = document.getElementById('eAccount');
+  const account_id = accEl && accEl.value ? parseInt(accEl.value, 10) : null;
 
   if (!desc) { showToast('⚠️ Ingresá una descripción', true); return; }
   if (!amount || amount <= 0) { showToast('⚠️ Monto inválido', true); return; }
@@ -613,7 +667,7 @@ async function saveEdit() {
 
   try {
     const orig = state.transactions.find(x => x.id === editingId);
-    await TransactionService.updateTransaction(editingId, { type, desc, amount, cat, date }, orig);
+    await TransactionService.updateTransaction(editingId, { type, desc, amount, cat, date, account_id }, orig);
     renderAll();
     if (window.currentPage === 'transacciones') renderTxView();
     showToast('Transacción actualizada');

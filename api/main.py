@@ -1,172 +1,116 @@
+import asyncio
+import logging
 import os
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
-
 from contextlib import asynccontextmanager
 
-from sqlalchemy import inspect, text
-from database import engine, Base, DATABASE_URL, load_env, SessionLocal
-from models import Account, WalletConnection
-from security import token_crypto
-from routers import auth, accounts, transactions, budgets, goals, wallets, ai, shopping, ocr, sepa
+import httpx
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
-# Load .env variables (if any are missing)
+from database import Base, DATABASE_URL, engine, load_env
+from infrastructure.migrations import migrate_plaintext_tokens, migrate_schema_columns
+from routers import (
+    accounts,
+    ai,
+    auth,
+    budgets,
+    goals,
+    ocr,
+    sepa,
+    shopping,
+    transactions,
+    wallets,
+)
+
+# Configurar logging estructurado
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("flujo.main")
+
+# Cargar variables de entorno (.env)
 load_env()
 
-def migrate_schema_columns():
-    inspector = inspect(engine)
-    with engine.begin() as conn:
-        # Check transactions.external_id
-        if "transactions" in inspector.get_table_names():
-            columns = [c["name"] for c in inspector.get_columns("transactions")]
-            if "external_id" not in columns:
-                conn.execute(text("ALTER TABLE transactions ADD COLUMN external_id VARCHAR(100)"))
-                print("INFO: Migración de esquema: añadida columna external_id a transactions")
-                
-        # Check users.avatar and users.picture
-        if "users" in inspector.get_table_names():
-            columns = [c["name"] for c in inspector.get_columns("users")]
-            if "avatar" not in columns:
-                conn.execute(text("ALTER TABLE users ADD COLUMN avatar VARCHAR(10) DEFAULT 'JP'"))
-                print("INFO: Migración de esquema: añadida columna avatar a users")
-            if "picture" not in columns:
-                conn.execute(text("ALTER TABLE users ADD COLUMN picture VARCHAR(500)"))
-                print("INFO: Migración de esquema: añadida columna picture a users")
 
-        # Check budgets.currency
-        if "budgets" in inspector.get_table_names():
-            columns = [c["name"] for c in inspector.get_columns("budgets")]
-            if "currency" not in columns:
-                conn.execute(text("ALTER TABLE budgets ADD COLUMN currency VARCHAR(10) DEFAULT 'ARS'"))
-                print("INFO: Migración de esquema: añadida columna currency a budgets")
+async def render_keep_alive() -> None:
+    """
+    Tarea asíncrona de mantenimiento (Keep-Alive) para evitar la hibernación
+    del contenedor en entornos cloud gratuitos (como Render).
+    """
+    render_url = os.getenv("RENDER_EXTERNAL_URL")
+    if not render_url:
+        return
 
-        # Check goals.currency and goals.start_date
-        if "goals" in inspector.get_table_names():
-            columns = [c["name"] for c in inspector.get_columns("goals")]
-            if "currency" not in columns:
-                conn.execute(text("ALTER TABLE goals ADD COLUMN currency VARCHAR(10) DEFAULT 'ARS'"))
-                print("INFO: Migración de esquema: añadida columna currency a goals")
-            if "start_date" not in columns:
-                conn.execute(text("ALTER TABLE goals ADD COLUMN start_date VARCHAR(50)"))
-                print("INFO: Migración de esquema: añadida columna start_date a goals")
+    ping_url = f"{render_url.rstrip('/')}/health"
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        while True:
+            await asyncio.sleep(14 * 60)  # Cada 14 minutos
+            try:
+                await client.get(ping_url)
+                logger.debug("Keep-alive ping exitoso a %s", ping_url)
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                logger.warning("Fallo en keep-alive ping: %s", exc)
 
-        # Check goal_contributions.account_id and goal_contributions.type
-        if "goal_contributions" in inspector.get_table_names():
-            columns = [c["name"] for c in inspector.get_columns("goal_contributions")]
-            if "account_id" not in columns:
-                conn.execute(text("ALTER TABLE goal_contributions ADD COLUMN account_id INTEGER"))
-                print("INFO: Migración de esquema: añadida columna account_id a goal_contributions")
-            if "type" not in columns:
-                conn.execute(text("ALTER TABLE goal_contributions ADD COLUMN type VARCHAR(20) DEFAULT 'deposit'"))
-                print("INFO: Migración de esquema: añadida columna type a goal_contributions")
-
-        # Check accounts new columns
-        if "accounts" in inspector.get_table_names():
-            columns = [c["name"] for c in inspector.get_columns("accounts")]
-            if "is_archived" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN is_archived BOOLEAN DEFAULT 0"))
-                print("INFO: Migración de esquema: añadida columna is_archived a accounts")
-            if "is_favorite" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN is_favorite BOOLEAN DEFAULT 0"))
-                print("INFO: Migración de esquema: añadida columna is_favorite a accounts")
-            if "color" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN color VARCHAR(50)"))
-                print("INFO: Migración de esquema: añadida columna color a accounts")
-            if "icon" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN icon VARCHAR(50)"))
-                print("INFO: Migración de esquema: añadida columna icon a accounts")
-            if "cbu" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN cbu VARCHAR(100)"))
-                print("INFO: Migración de esquema: añadida columna cbu a accounts")
-            if "alias" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN alias VARCHAR(100)"))
-                print("INFO: Migración de esquema: añadida columna alias a accounts")
-            if "closing_day" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN closing_day INTEGER"))
-                print("INFO: Migración de esquema: añadida columna closing_day a accounts")
-            if "due_day" not in columns:
-                conn.execute(text("ALTER TABLE accounts ADD COLUMN due_day INTEGER"))
-                print("INFO: Migración de esquema: añadida columna due_day a accounts")
-
-
-def migrate_plaintext_tokens():
-    db = SessionLocal()
-    try:
-        migrated = 0
-        accs_with_token = db.query(Account).filter(Account.mp_token.isnot(None), Account.mp_token != "").all()
-        for acc in accs_with_token:
-            token_value = acc.mp_token.strip()
-            if not token_value:
-                continue
-
-            existing = db.query(WalletConnection).filter(
-                WalletConnection.account_id == acc.id,
-                WalletConnection.user_id == acc.user_id,
-                WalletConnection.provider == "mercadopago"
-            ).first()
-
-            if existing:
-                continue
-
-            encrypted_token = token_crypto.encrypt(token_value) if not token_crypto.is_encrypted(token_value) else token_value
-
-            new_conn = WalletConnection(
-                user_id=acc.user_id,
-                account_id=acc.id,
-                provider="mercadopago",
-                access_token_encrypted=encrypted_token,
-                status="active",
-            )
-            db.add(new_conn)
-            migrated += 1
-
-        if migrated > 0:
-            db.commit()
-            print(f"INFO: Migración completada: {migrated} token(s) cifrados y migrados a wallet_connections.")
-    except Exception as e:
-        db.rollback()
-        print(f"ERROR: Error en migración de tokens: {e}")
-    finally:
-        db.close()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Crear tablas y ejecutar migración de esquema en segundo plano para no bloquear el puerto
+    # Startup: Crear tablas, aplicar migraciones y seed inicial
     try:
         Base.metadata.create_all(bind=engine)
         migrate_schema_columns()
         migrate_plaintext_tokens()
-        # Seed de datos de prueba (idempotente: no inserta si ya existen)
         from seed_dummy import seed_db
         seed_db()
-    except Exception as e:
-        print(f"WARNING: No se pudo completar la migración o seed de DB en inicio: {e}")
+    except Exception as exc:
+        logger.warning(
+            "No se pudo completar la migración o seed de DB en inicio: %s", exc
+        )
 
     # Iniciar scheduler SEPA
     try:
-        from services.sepa.ingestion import iniciar_scheduler, detener_scheduler
+        from services.sepa.ingestion import detener_scheduler, iniciar_scheduler
         iniciar_scheduler()
-    except Exception as e:
-        print(f"WARNING: No se pudo iniciar scheduler SEPA: {e}")
+    except Exception as exc:
+        logger.warning("No se pudo iniciar scheduler SEPA: %s", exc)
 
     keep_alive_task = asyncio.create_task(render_keep_alive())
     yield
-    keep_alive_task.cancel()
 
-    # Shutdown
+    # Shutdown limpio
+    keep_alive_task.cancel()
     try:
+        await keep_alive_task
+    except asyncio.CancelledError:
+        pass
+
+    try:
+        from services.sepa.ingestion import detener_scheduler
         detener_scheduler()
     except Exception:
         pass
 
-app = FastAPI(title="Flujo Finance Manager API", lifespan=lifespan)
+
+app = FastAPI(
+    title="Flujo Finance Manager API",
+    version="2.3.0",
+    lifespan=lifespan,
+)
+
+# Configuración CORS flexible (Localhost + Dominio de Producción)
+ALLOWED_ORIGIN_REGEX = os.getenv(
+    "CORS_ORIGIN_REGEX",
+    r"https?://(localhost|127\.0\.0\.1|.*\.onrender\.com)(:\d+)?",
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -179,10 +123,11 @@ app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
     session_cookie="flujo_session",
-    max_age=86400 * 1, # 1 día (24 horas) para Web
+    max_age=86400 * 1,  # 24 horas para Web
     same_site="lax",
-    https_only=IS_PRODUCTION
+    https_only=IS_PRODUCTION,
 )
+
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
@@ -190,11 +135,15 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     if IS_PRODUCTION:
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
     return response
 
-# Include routers
+
+# Registro de Routers
 app.include_router(auth.router)
 app.include_router(accounts.router)
 app.include_router(transactions.router)
@@ -206,32 +155,55 @@ app.include_router(shopping.router)
 app.include_router(ocr.router)
 app.include_router(sepa.router)
 
-# Serve static files
+
+@app.get("/health", tags=["system"])
+async def health_check():
+    """Endpoint de monitoreo y disponibilidad del servicio."""
+    return JSONResponse({"status": "ok", "service": "flujo-api", "version": "2.3.0"})
+
+
+# Archivos estáticos públicos (sin exponer /tests ni /mds internos)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 app.mount("/js", StaticFiles(directory=os.path.join(BASE_DIR, "js")), name="js")
 app.mount("/css", StaticFiles(directory=os.path.join(BASE_DIR, "css")), name="css")
 app.mount("/html", StaticFiles(directory=os.path.join(BASE_DIR, "html")), name="html")
-app.mount("/mds", StaticFiles(directory=os.path.join(BASE_DIR, "mds")), name="mds")
 app.mount("/data", StaticFiles(directory=os.path.join(BASE_DIR, "data")), name="data")
-app.mount("/tests", StaticFiles(directory=os.path.join(BASE_DIR, "tests")), name="tests")
+
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
+    favicon_path = os.path.join(BASE_DIR, "html", "imgs", "descarga.png")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path, media_type="image/png")
     return Response(content="", media_type="image/x-icon")
 
-@app.get("/", response_class=FileResponse)
+
+@app.get("/", response_class=FileResponse, include_in_schema=False)
 async def serve_index():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"), headers={"Cache-Control": "no-cache, must-revalidate"})
+    return FileResponse(
+        os.path.join(BASE_DIR, "index.html"),
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
-@app.get("/index.html", response_class=FileResponse)
+
+@app.get("/index.html", response_class=FileResponse, include_in_schema=False)
 async def serve_index_html():
-    return FileResponse(os.path.join(BASE_DIR, "index.html"), headers={"Cache-Control": "no-cache, must-revalidate"})
+    return FileResponse(
+        os.path.join(BASE_DIR, "index.html"),
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
-@app.get("/main.html", response_class=FileResponse)
+
+@app.get("/main.html", response_class=FileResponse, include_in_schema=False)
 async def serve_main():
-    return FileResponse(os.path.join(BASE_DIR, "main.html"), headers={"Cache-Control": "no-cache, must-revalidate"})
+    return FileResponse(
+        os.path.join(BASE_DIR, "main.html"),
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
+
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

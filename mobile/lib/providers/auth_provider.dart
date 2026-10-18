@@ -3,12 +3,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../services/api_service.dart';
 
 class AuthState {
+  final bool isInitializing;
   final bool isLoading;
   final String? error;
   final bool isAuthenticated;
   final Map<String, dynamic>? user;
 
   AuthState({
+    this.isInitializing = false,
     this.isLoading = false,
     this.error,
     this.isAuthenticated = false,
@@ -16,12 +18,14 @@ class AuthState {
   });
 
   AuthState copyWith({
+    bool? isInitializing,
     bool? isLoading,
     String? error,
     bool? isAuthenticated,
     Map<String, dynamic>? user,
   }) {
     return AuthState(
+      isInitializing: isInitializing ?? this.isInitializing,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -34,15 +38,19 @@ class AuthNotifier extends Notifier<AuthState> {
   @override
   AuthState build() {
     _init();
-    return AuthState();
+    return AuthState(isInitializing: true);
   }
 
   Future<void> _init() async {
-    final api = ApiService();
-    await api.init();
-    if (api.isAuthenticated) {
-      state = state.copyWith(isAuthenticated: true);
-      // Opcional: hacer un fetch a /api/auth/me para revalidar el token
+    try {
+      final api = ApiService();
+      await api.init();
+      state = state.copyWith(
+        isInitializing: false,
+        isAuthenticated: api.isAuthenticated,
+      );
+    } catch (_) {
+      state = state.copyWith(isInitializing: false);
     }
   }
 

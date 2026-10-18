@@ -84,3 +84,24 @@ El backend de FastAPI gestiona la sesión mediante `SessionMiddleware` y respond
 }
 ```
 La función `apiFetch` en el cliente lee las cabeceras de respuesta y, en caso de fallo, procesa la respuesta de error o texto plano para alertar al usuario a través de notificaciones toast.
+
+---
+
+## 4. Arquitectura de los Puntos de Entrada (`main`) — SOLID & PHAME
+
+El proyecto cuenta con tres puntos de entrada principales (Composition Roots), cada uno diseñado bajo el **Principio de Responsabilidad Única (SRP)**:
+
+1. **Backend (`api/main.py` y `api/infrastructure/migrations.py`)**:
+   - `api/main.py` actúa exclusivamente como *Composition Root*: configura el ciclo de vida (`lifespan`), middlewares de seguridad (`SessionMiddleware`, `CORSMiddleware`, cabeceras HTTP), registra los routers modulares, provee el endpoint `/health` y ejecuta la tarea asíncrona `render_keep_alive()`.
+   - Las migraciones automáticas de columnas (`migrate_schema_columns`) y el cifrado de tokens (`migrate_plaintext_tokens`) se encuentran desacoplados en `api/infrastructure/migrations.py`.
+   - Por seguridad, solo se exponen públicamente las carpetas estáticas necesarias (`/js`, `/css`, `/html`, `/data`), manteniendo ocultos los directorios internos `/mds` y `/tests`.
+
+2. **Frontend Web (`main.html` y `js/transactions.ts`)**:
+   - Todas las vistas principales (`dashboardView`, `txView`, `perfilView`, etc.) se inyectan dinámicamente desde `html/views/*.html`.
+   - Los estilos se encuentran desacoplados en hojas modulares dentro de `css/` (`components.css`, `layout.css`, `views/*.css`) sin estilos en línea.
+   - Los modales de creación y edición de transacciones comparten las mismas categorías normalizadas y permiten vincular cada movimiento a una **Cuenta** específica (`mAccount` y `eAccount`).
+
+3. **Aplicación Móvil (`mobile/lib/main.dart` y `mobile/lib/providers/auth_provider.dart`)**:
+   - Configura manejadores globales de errores (`FlutterError.onError` y `PlatformDispatcher.instance.onError`).
+   - Gestiona el estado inicial `isInitializing` en `AuthState` mostrando una pantalla de carga antes de decidir entre `MainLayout` y `LoginScreen`, evitando parpadeos visuales al verificar el token JWT local.
+

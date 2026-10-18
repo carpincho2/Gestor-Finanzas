@@ -20,7 +20,7 @@
   <!-- ===== SIDEBAR ===== -->
   <aside class="sidebar" id="sidebar">
     <div class="logo">
-      <img src="html/imgs/descarga.png" alt="flujo. logo" style="height:40px; margin-bottom:4px;">
+      <img src="html/imgs/descarga.png" alt="flujo. logo" class="logo-img">
       <div class="logo-sub">Finance Manager</div>
     </div>
 
@@ -91,7 +91,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      <div class="user-card" onclick="setPage(null, 'perfil')" style="cursor:pointer;" title="Ver mi perfil">
+      <div class="user-card user-card-clickable" onclick="setPage(null, 'perfil')" title="Ver mi perfil">
         <div class="user-avatar">JP</div>
         <div class="user-info-col">
           <div class="user-name">Juan Pérez</div>
@@ -133,138 +133,26 @@
       </div>
     </div>
 
-    <!-- ===== DASHBOARD VIEW ===== -->
-    <div id="dashboardView">
-    </div><!-- /dashboardView -->
-
-    <!-- ===== TRANSACTIONS VIEW ===== -->
-    <div id="txView" style="display:none;">
-    </div><!-- /txView -->
-
-    <!-- ===== PRESUPUESTOS VIEW ===== -->
-    <div id="budgetView" style="display:none;">
-    </div><!-- /budgetView -->
-
-    <!-- ===== CUENTAS VIEW ===== -->
-    <div id="cuentasView" style="display:none;">
-    </div><!-- /cuentasView -->
-
-    <!-- ===== REPORTES VIEW ===== -->
-    <div id="reportesView" style="display:none;">
-    </div><!-- /reportesView -->
-
-    <!-- ===== OBJETIVOS VIEW ===== -->
-    <div id="objetivosView" style="display:none;">
-    </div><!-- /objetivosView -->
-
-    <!-- ===== SCANNER VIEW ===== -->
-    <div id="scannerView" style="display:none;">
-    </div><!-- /scannerView -->
-
-    <!-- ===== SUPERMERCADOS VIEW ===== -->
-    <div id="supermercadosView" style="display:none;">
-    </div><!-- /supermercadosView -->
-
-    <!-- ===== LISTA DE COMPRAS VIEW ===== -->
-    <div id="listaComprasView" style="display:none;">
-    </div><!-- /listaComprasView -->
-
-    <!-- ===== SHOPPING VIEW ===== -->
-    <div id="shoppingView" style="display:none;">
-    </div><!-- /shoppingView -->
-
-    <!-- ===== IA INSIGHTS VIEW ===== -->
-    <div id="insightsView" style="display:none;">
-    </div><!-- /insightsView -->
-
-    <!-- ===== PROFILE VIEW ===== -->
-    <div id="perfilView" style="display:none;">
-      <div style="max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px;">
-        
-        <!-- User Badge Panel -->
-        <div class="panel" style="padding: 24px; display: flex; align-items: center; gap: 20px; position: relative; overflow: hidden;">
-          <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: var(--accent); opacity: 0.05; border-radius: 50%; filter: blur(20px);"></div>
-          <div id="profileAvatar" class="user-avatar" style="width: 72px; height: 72px; font-size: 28px; font-weight: 800; border-radius: 50%; background: var(--accent)18; color: var(--accent); display: flex; align-items: center; justify-content: center;">JP</div>
-          <div style="flex: 1;">
-            <h2 id="profileNameHeader" style="font-size: 20px; font-weight: 800; margin: 0 0 4px 0;">Juan Pérez</h2>
-            <div id="profileEmailHeader" style="font-size: 13px; color: var(--muted); font-family: var(--font-mono);">juan.perez@example.com</div>
-          </div>
-        </div>
-
-        <!-- Personal Info Settings -->
-        <div class="panel">
-          <div class="panel-head">
-            <span class="panel-title">Información Personal</span>
-          </div>
-          <div style="padding: 20px 24px;">
-            <div class="form-full">
-              <label class="field-label">Nombre Completo</label>
-              <input class="field-input" id="profileNameInput" type="text" placeholder="Tu nombre"/>
-            </div>
-            <div style="margin-top: 16px;">
-              <button class="btn btn-primary" onclick="profileUpdateInfo()">Guardar Cambios</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Password Settings -->
-        <div class="panel" id="profilePasswordPanel">
-          <div class="panel-head">
-            <span class="panel-title">Seguridad y Contraseña</span>
-          </div>
-          <div style="padding: 20px 24px;">
-            <div class="form-full" id="profilePasswordCurrentWrap">
-              <label class="field-label">Contraseña Actual</label>
-              <input class="field-input" id="profilePasswordCurrent" type="password" placeholder="••••••••"/>
-            </div>
-            <div class="form-row" style="margin-top: 12px;">
-              <div>
-                <label class="field-label">Nueva Contraseña</label>
-                <input class="field-input" id="profilePasswordNew" type="password" placeholder="Mínimo 6 caracteres"/>
-              </div>
-              <div>
-                <label class="field-label">Confirmar Nueva Contraseña</label>
-                <input class="field-input" id="profilePasswordNewConfirm" type="password" placeholder="Repetí tu contraseña"/>
-              </div>
-            </div>
-            <div style="margin-top: 16px;">
-              <button class="btn btn-primary" onclick="profileUpdatePassword()">Actualizar Contraseña</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Account Actions Settings -->
-        <div class="panel">
-          <div class="panel-head">
-            <span class="panel-title" style="color:var(--danger);">Zona de Peligro</span>
-          </div>
-          <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
-            <div style="font-size: 13px; color: var(--muted); line-height: 1.5;">
-              Si querés cerrar tu sesión actual o borrar permanentemente tu cuenta con todos tus datos de transacciones, presupuestos y objetivos, podés hacerlo desde acá.
-            </div>
-            <div style="display: flex; gap: 12px; margin-top: 4px;">
-              <button class="btn btn-ghost" onclick="authLogout()" style="border-color: var(--border);">
-                Cerrar Sesión
-              </button>
-              <button class="btn btn-ghost" onclick="confirmResetData()" style="color:var(--orange); border-color:var(--orange);">
-                Vaciar Transacciones
-              </button>
-              <button class="btn btn-danger" onclick="authConfirmDeleteAccount()">
-                Eliminar Cuenta Permanentemente
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
+    <!-- ===== MODULAR VIEWS (Cargadas desde html/views/) ===== -->
+    <div id="dashboardView"></div>
+    <div id="txView" class="is-hidden"></div>
+    <div id="budgetView" class="is-hidden"></div>
+    <div id="cuentasView" class="is-hidden"></div>
+    <div id="reportesView" class="is-hidden"></div>
+    <div id="objetivosView" class="is-hidden"></div>
+    <div id="scannerView" class="is-hidden"></div>
+    <div id="supermercadosView" class="is-hidden"></div>
+    <div id="listaComprasView" class="is-hidden"></div>
+    <div id="shoppingView" class="is-hidden"></div>
+    <div id="insightsView" class="is-hidden"></div>
+    <div id="perfilView" class="is-hidden"></div>
 
   </main>
 </div>
 
 <!-- ===== GOAL MODAL ===== -->
 <div class="modal-overlay" id="goalModalOverlay" onclick="closeGoalModal(event)">
-  <div class="modal" style="width:500px;">
+  <div class="modal modal-lg">
     <div class="modal-title" id="goalModalTitle">Nuevo Objetivo</div>
 
     <div class="form-full">
@@ -272,7 +160,7 @@
       <input class="field-input" id="gmName" type="text" placeholder="Ej: Vacaciones en Europa, Fondo de emergencia…"/>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Meta</label>
         <input class="field-input" id="gmTarget" type="number" min="1" placeholder="0"/>
@@ -287,7 +175,7 @@
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Fecha de inicio</label>
         <input class="field-input" id="gmStartDate" type="date"/>
@@ -298,7 +186,7 @@
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Ahorro inicial</label>
         <input class="field-input" id="gmCurrent" type="number" min="0" placeholder="0"/>
@@ -319,17 +207,17 @@
       </div>
     </div>
 
-    <div style="margin-top:14px;">
+    <div class="mt-14">
       <label class="field-label">Ícono</label>
       <div class="ov-emoji-grid" id="gmEmojiGrid"></div>
     </div>
 
-    <div style="margin-top:14px;">
+    <div class="mt-14">
       <label class="field-label">Color</label>
       <div class="bv-color-grid" id="gmColorGrid"></div>
     </div>
 
-    <div style="margin-top:14px;">
+    <div class="mt-14">
       <label class="field-label">Notas (opcional)</label>
       <input class="field-input" id="gmNotes" type="text" placeholder="Descripción o motivación…"/>
     </div>
@@ -343,9 +231,9 @@
 
 <!-- ===== CONTRIBUTE MODAL ===== -->
 <div class="modal-overlay" id="contribModalOverlay" onclick="closeContribModal(event)">
-  <div class="modal" style="width:440px;">
+  <div class="modal">
     <div class="modal-title" id="contribModalTitle">Registrar Movimiento</div>
-    <p style="font-size:12px;color:var(--muted);font-family:var(--font-mono);margin-bottom:16px;" id="contribGoalInfo">—</p>
+    <p class="modal-sub-mono" id="contribGoalInfo">—</p>
 
     <div class="form-row">
       <div>
@@ -361,7 +249,7 @@
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Cuenta vinculada (opcional)</label>
         <select class="field-select" id="cmAccount">
@@ -374,7 +262,7 @@
       </div>
     </div>
 
-    <div style="margin-top:12px;">
+    <div class="mt-12">
       <label class="field-label">Nota (opcional)</label>
       <input class="field-input" id="cmNote" type="text" placeholder="Ej: Sueldo, seña, emergencia…"/>
     </div>
@@ -390,10 +278,10 @@
 
 <!-- ===== GOAL DELETE MODAL ===== -->
 <div class="modal-overlay" id="goalDeleteOverlay" onclick="closeGoalDeleteModal(event)">
-  <div class="modal" style="max-width:360px;">
+  <div class="modal modal-sm">
     <div class="modal-title">¿Eliminar objetivo?</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
-      Vas a eliminar <strong id="gdName" style="color:var(--text)"></strong> y todos sus aportes. Esta acción no se puede deshacer.
+    <p class="modal-desc-text">
+      Vas a eliminar <strong id="gdName"></strong> y todos sus aportes. Esta acción no se puede deshacer.
     </p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeGoalDeleteModal()">Cancelar</button>
@@ -404,12 +292,12 @@
 
 <!-- ===== USER DELETE MODAL ===== -->
 <div class="modal-overlay" id="userDeleteOverlay" onclick="closeUserDeleteModal(event)">
-  <div class="modal" style="max-width:370px;">
+  <div class="modal modal-sm">
     <div class="modal-title">¿Eliminar tu cuenta?</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;">
-      Esta acción eliminará de forma **permanente** tu cuenta y **todos tus datos financieros** (cuentas, transacciones, presupuestos y objetivos).
+    <p class="modal-desc-text mb-12">
+      Esta acción eliminará de forma <strong>permanente</strong> tu cuenta y <strong>todos tus datos financieros</strong> (cuentas, transacciones, presupuestos y objetivos).
     </p>
-    <p style="font-size:12px;color:var(--danger);font-weight:600;line-height:1.5;margin-bottom:16px;">
+    <p class="modal-warn-text">
       ⚠️ Esta acción no se puede deshacer.
     </p>
     <div class="modal-actions">
@@ -421,7 +309,7 @@
 
 <!-- ===== ACCOUNT MODAL ===== -->
 <div class="modal-overlay" id="accModalOverlay" onclick="closeAccModal(event)">
-  <div class="modal" style="width:460px;">
+  <div class="modal modal-md">
     <div class="modal-title" id="accModalTitle">Nueva Cuenta</div>
 
     <div class="form-full">
@@ -429,7 +317,7 @@
       <input class="field-input" id="amName" type="text" placeholder="Ej: Cuenta Corriente Galicia"/>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Tipo</label>
         <select class="field-select" id="amType" onchange="onAmTypeChange()">
@@ -448,7 +336,7 @@
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Saldo inicial ($)</label>
         <input class="field-input" id="amBalance" type="number" placeholder="0"/>
@@ -463,12 +351,12 @@
       </div>
     </div>
 
-    <div id="amLimitWrap" style="margin-top:12px;display:none;">
+    <div id="amLimitWrap" class="mt-12 is-hidden">
       <label class="field-label">Límite de crédito ($)</label>
       <input class="field-input" id="amLimit" type="number" placeholder="0"/>
     </div>
 
-    <div id="amCardDaysWrap" style="margin-top:12px;display:none;">
+    <div id="amCardDaysWrap" class="mt-12 is-hidden">
       <div class="form-row">
         <div>
           <label class="field-label">Día de cierre (1-31)</label>
@@ -481,7 +369,7 @@
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Alias (opcional)</label>
         <input class="field-input" id="amAlias" type="text" placeholder="Ej: micuenta.galicia"/>
@@ -492,10 +380,10 @@
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Color distintivo</label>
-        <input class="field-input" id="amColor" type="color" value="#5b8cff" style="padding:4px;height:40px;cursor:pointer;"/>
+        <input class="field-input color-picker-input" id="amColor" type="color" value="#5b8cff"/>
       </div>
       <div>
         <label class="field-label">Ícono / Emoji (opcional)</label>
@@ -503,12 +391,12 @@
       </div>
     </div>
 
-    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;">
-      <input type="checkbox" id="amFavorite" style="cursor:pointer;width:16px;height:16px;accent-color:var(--accent);">
-      <label for="amFavorite" class="field-label" style="margin-bottom:0;cursor:pointer;">Fijar como cuenta favorita ⭐</label>
+    <div class="checkbox-row">
+      <input type="checkbox" id="amFavorite" class="checkbox-input">
+      <label for="amFavorite" class="field-label">Fijar como cuenta favorita ⭐</label>
     </div>
 
-    <div style="margin-top:12px;">
+    <div class="mt-12">
       <label class="field-label">Notas (opcional)</label>
       <input class="field-input" id="amNotes" type="text" placeholder="Ej: Cuenta en pesos para gastos diarios"/>
     </div>
@@ -522,11 +410,11 @@
 
 <!-- ===== ACCOUNT DELETE MODAL ===== -->
 <div class="modal-overlay" id="accDeleteOverlay" onclick="closeAccDeleteModal(event)">
-  <div class="modal" style="max-width:380px;">
+  <div class="modal modal-sm">
     <div class="modal-title">¿Eliminar cuenta?</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
-      Vas a eliminar la cuenta <strong id="adName" style="color:var(--text)"></strong>.
-      <br><span style="color:var(--red);">¡Atención! También se eliminarán todas las transacciones asociadas a esta cuenta. Si no querés perder tu historial, podés archivarla.</span>
+    <p class="modal-desc-text">
+      Vas a eliminar la cuenta <strong id="adName"></strong>.
+      <br><span class="modal-warn-text">¡Atención! También se eliminarán todas las transacciones asociadas a esta cuenta. Si no querés perder tu historial, podés archivarla.</span>
     </p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeAccDeleteModal()">Cancelar</button>
@@ -537,26 +425,26 @@
 
 <!-- ===== ACCOUNT RECONCILE MODAL ===== -->
 <div class="modal-overlay" id="accReconcileOverlay" onclick="closeAccReconcileModal(event)">
-  <div class="modal" style="width:420px;">
+  <div class="modal">
     <div class="modal-title">Conciliar Saldo</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:14px;">
-      Ingresá el saldo real que tenés en tu banco o billetera para la cuenta <strong id="arAccountName" style="color:var(--text);"></strong>.
+    <p class="modal-desc-text mb-14">
+      Ingresá el saldo real que tenés en tu banco o billetera para la cuenta <strong id="arAccountName"></strong>.
       Si hay diferencia, se creará un ajuste automático en tu historial.
     </p>
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:12px;color:var(--muted);font-family:var(--font-mono);">Saldo actual registrado:</span>
-      <strong style="font-size:14px;font-family:var(--font-mono);" id="arCurrentBalance">$0</strong>
+    <div class="reconcile-balance-box">
+      <span class="modal-sub-mono">Saldo actual registrado:</span>
+      <strong id="arCurrentBalance">$0</strong>
     </div>
     <div class="form-full">
       <label class="field-label">Saldo real actual (<span id="arCurrencyLabel">ARS</span>)</label>
       <input class="field-input" id="arRealBalance" type="number" step="any" placeholder="0.00" oninput="onReconcileInputChanged()"/>
     </div>
-    <div id="arDiffBox" style="margin-top:10px;padding:10px 14px;border-radius:8px;font-size:12px;font-family:var(--font-mono);display:none;"></div>
-    <div class="form-full" style="margin-top:12px;">
+    <div id="arDiffBox" class="reconcile-diff-box"></div>
+    <div class="form-full mt-12">
       <label class="field-label">Motivo o nota (opcional)</label>
       <input class="field-input" id="arNote" type="text" placeholder="Ej: Ajuste por redondeo o propina"/>
     </div>
-    <div class="modal-actions" style="margin-top:16px;">
+    <div class="modal-actions mt-16">
       <button class="btn btn-ghost" onclick="closeAccReconcileModal()">Cancelar</button>
       <button class="btn btn-primary" id="arSubmitBtn" onclick="doReconcileAccount()">Guardar Ajuste</button>
     </div>
@@ -565,7 +453,7 @@
 
 <!-- ===== BUDGET MODAL ===== -->
 <div class="modal-overlay" id="budgetModalOverlay" onclick="closeBudgetModal(event)">
-  <div class="modal" style="width:500px;">
+  <div class="modal modal-lg">
     <div class="modal-title" id="budgetModalTitle">Nuevo Presupuesto</div>
 
     <div class="form-full">
@@ -573,7 +461,7 @@
       <input class="field-input" id="bmName" type="text" placeholder="Ej: Supermercado, Salidas, Gimnasio…"/>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Categoría</label>
         <select class="field-select" id="bmCat" onchange="onBmCatChange()">
@@ -589,13 +477,13 @@
           <option value="custom">✏️ Personalizada…</option>
         </select>
       </div>
-      <div id="bmCustomWrap" style="display:none;">
+      <div id="bmCustomWrap" class="is-hidden">
         <label class="field-label">Categoría personalizada</label>
         <input class="field-input" id="bmCustomName" type="text" placeholder="Ej: Gimnasio"/>
       </div>
     </div>
 
-    <div class="form-row" style="margin-top:12px;">
+    <div class="form-row mt-12">
       <div>
         <label class="field-label">Límite mensual</label>
         <input class="field-input" id="bmLimit" type="number" min="1" placeholder="0"/>
@@ -609,17 +497,17 @@
       </div>
     </div>
 
-    <div style="margin-top:14px;">
+    <div class="mt-14">
       <label class="field-label">Ícono</label>
       <div class="ov-emoji-grid" id="bmEmojiGrid"></div>
     </div>
 
-    <div style="margin-top:14px;">
+    <div class="mt-14">
       <label class="field-label">Color</label>
       <div class="bv-color-grid" id="bmColorGrid"></div>
     </div>
 
-    <div style="margin-top:14px;">
+    <div class="mt-14">
       <label class="field-label">Notas (opcional)</label>
       <input class="field-input" id="bmNotes" type="text" placeholder="Ej: Incluye delivery y salidas"/>
     </div>
@@ -633,10 +521,10 @@
 
 <!-- ===== BUDGET DELETE MODAL ===== -->
 <div class="modal-overlay" id="budgetDeleteOverlay" onclick="closeBudgetDeleteModal(event)">
-  <div class="modal" style="max-width:360px;">
+  <div class="modal modal-sm">
     <div class="modal-title">¿Eliminar presupuesto?</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.6;">
-      Vas a eliminar el presupuesto de <strong id="bdName" style="color:var(--text)"></strong>.
+    <p class="modal-desc-text">
+      Vas a eliminar el presupuesto de <strong id="bdName"></strong>.
       Las transacciones no se ven afectadas.
     </p>
     <div class="modal-actions">
@@ -646,12 +534,12 @@
   </div>
 </div>
 
-<!-- ===== MODAL ===== -->
+<!-- ===== NEW TRANSACTION MODAL ===== -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal">
     <div class="modal-title">Nueva Transacción</div>
 
-    <div class="type-toggle" style="margin-bottom:16px;">
+    <div class="type-toggle mb-16">
       <button class="type-btn active-expense" id="mTypeExpBtn" onclick="setModalType('expense')">— Gasto</button>
       <button class="type-btn" id="mTypeIncBtn" onclick="setModalType('income')">+ Ingreso</button>
     </div>
@@ -660,7 +548,7 @@
       <label class="field-label">Descripción</label>
       <input class="field-input" id="mDesc" type="text" placeholder="Descripción de la transacción"/>
     </div>
-    <div class="form-row" style="margin-top:10px;">
+    <div class="form-row mt-10">
       <div>
         <label class="field-label">Monto ($)</label>
         <input class="field-input" id="mAmount" type="number" min="0" placeholder="0.00"/>
@@ -670,24 +558,32 @@
         <input class="field-input" id="mDate" type="date"/>
       </div>
     </div>
-    <div style="margin-top:10px;">
-      <label class="field-label">Categoría</label>
-      <select class="field-select" id="mCat">
-        <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
-        <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
-        <option value="Transporte">🚗 Transporte</option>
-        <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
-        <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
-        <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
-        <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
-        <option value="Educación">📚 Educación</option>
-        <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
-        <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
-        <option value="Otros">📦 Otros</option>
-      </select>
+    <div class="form-row mt-10">
+      <div>
+        <label class="field-label">Categoría</label>
+        <select class="field-select" id="mCat">
+          <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+          <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+          <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+          <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+          <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+          <option value="Educación">📚 Educación</option>
+          <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+          <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
+          <option value="Otros">📦 Otros</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Cuenta vinculada</label>
+        <select class="field-select" id="mAccount">
+          <option value="">Sin cuenta específica</option>
+        </select>
+      </div>
     </div>
 
-    <div id="mBudgetImpact" style="display:none;margin-top:12px;padding:10px 12px;border-radius:var(--radius-md);font-size:12px;line-height:1.4;"></div>
+    <div id="mBudgetImpact" class="budget-impact-banner"></div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
@@ -696,12 +592,12 @@
   </div>
 </div>
 
-<!-- ===== EDIT MODAL ===== -->
+<!-- ===== EDIT TRANSACTION MODAL ===== -->
 <div class="modal-overlay" id="editModalOverlay" data-type="expense" onclick="closeEditModal(event)">
   <div class="modal">
     <div class="modal-title" id="editModalTitle">Editar Transacción</div>
 
-    <div class="type-toggle" style="margin-bottom:16px;">
+    <div class="type-toggle mb-16">
       <button class="type-btn active-expense" id="eTypeExpBtn" onclick="setEditType('expense')">— Gasto</button>
       <button class="type-btn" id="eTypeIncBtn" onclick="setEditType('income')">+ Ingreso</button>
     </div>
@@ -710,7 +606,7 @@
       <label class="field-label">Descripción</label>
       <input class="field-input" id="eDesc" type="text" placeholder="Descripción"/>
     </div>
-    <div class="form-row" style="margin-top:10px;">
+    <div class="form-row mt-10">
       <div>
         <label class="field-label">Monto ($)</label>
         <input class="field-input" id="eAmount" type="number" min="0" placeholder="0.00"/>
@@ -720,20 +616,29 @@
         <input class="field-input" id="eDate" type="date"/>
       </div>
     </div>
-    <div style="margin-top:10px;">
-      <label class="field-label">Categoría</label>
-      <select class="field-select" id="eCat">
-        <option value="Alimentación">🍔 Alimentación</option>
-        <option value="Transporte">🚗 Transporte</option>
-        <option value="Entretenimiento">🎬 Entretenimiento</option>
-        <option value="Salud">💊 Salud</option>
-        <option value="Hogar">🏠 Hogar</option>
-        <option value="Ropa">👕 Ropa</option>
-        <option value="Sueldo">💼 Sueldo</option>
-        <option value="Freelance">💻 Freelance</option>
-        <option value="Inversión">📈 Inversión</option>
-        <option value="Otros">📦 Otros</option>
-      </select>
+    <div class="form-row mt-10">
+      <div>
+        <label class="field-label">Categoría</label>
+        <select class="field-select" id="eCat">
+          <option value="Supermercado / Almacén">🛒 Supermercado / Almacén</option>
+          <option value="Salidas / Restaurantes">🍕 Salidas / Restaurantes</option>
+          <option value="Transporte">🚗 Transporte</option>
+          <option value="Hogar / Servicios">🏠 Hogar / Servicios</option>
+          <option value="Entretenimiento / Suscripciones">🎬 Entretenimiento / Suscripciones</option>
+          <option value="Salud / Farmacia">💊 Salud / Farmacia</option>
+          <option value="Compras / Ropa">🛍️ Compras / Ropa</option>
+          <option value="Educación">📚 Educación</option>
+          <option value="Ingresos (Sueldo/Freelance)">💼 Ingresos (Sueldo/Freelance)</option>
+          <option value="Ahorro / Inversiones">📈 Ahorro / Inversiones</option>
+          <option value="Otros">📦 Otros</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Cuenta vinculada</label>
+        <select class="field-select" id="eAccount">
+          <option value="">Sin cuenta específica</option>
+        </select>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -745,13 +650,13 @@
 
 <!-- ===== DELETE MODAL ===== -->
 <div class="modal-overlay" id="deleteModalOverlay" onclick="closeDeleteModal(event)">
-  <div class="modal" style="max-width:380px;">
+  <div class="modal modal-sm">
     <div class="modal-title">¿Eliminar transacción?</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:8px;">
+    <p class="modal-desc-text mb-8">
       Estás por eliminar:
     </p>
-    <div id="deleteModalDesc" style="font-family:var(--font-mono);font-size:13px;color:var(--text);background:var(--surface2);border-radius:8px;padding:10px 14px;margin-bottom:4px;"></div>
-    <p style="font-size:12px;color:var(--muted);margin-top:8px;">Esta acción no se puede deshacer.</p>
+    <div id="deleteModalDesc" class="modal-highlight-box"></div>
+    <p class="modal-sub-mono mt-10">Esta acción no se puede deshacer.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancelar</button>
       <button class="btn btn-danger" onclick="doDelete()">Eliminar</button>
@@ -761,31 +666,19 @@
 
 <!-- ===== SCANNER RESULT MODAL ===== -->
 <div class="modal-overlay" id="scResultOverlay" onclick="scCloseResultModal(event)">
-  <div class="modal" style="width:560px;max-height:90vh;overflow-y:auto;">
+  <div class="modal modal-xl">
     <div class="sc-result-header">
-      <div class="modal-title" style="margin-bottom:0;">📋 Datos del Ticket</div>
-      <div style="font-size:11px;font-family:var(--font-mono);color:var(--muted);margin-top:4px;">Revisá y editá los datos antes de guardar</div>
+      <div class="modal-title">📋 Datos del Ticket</div>
+      <div class="modal-sub-mono">Revisá y editá los datos antes de guardar</div>
     </div>
 
-    <!-- Confidence Bar (Deshabilitada en producción para Enfoque de Producto Premium)
-    <div class="sc-confidence" id="scConfidenceRow" style="display:none; margin-top:12px;">
-      <div class="sc-confidence-label">Confianza OCR</div>
-      <div class="sc-confidence-bar-wrap">
-        <div class="sc-confidence-bar" id="scConfidenceBar" style="width: 0%;"></div>
-      </div>
-      <div class="sc-confidence-val" id="scConfidenceVal">0%</div>
-    </div>
-    -->
-
-    <!-- Fields -->
     <div class="sc-result-fields">
-
       <div class="form-full">
         <label class="field-label">Nombre del local / lugar <span class="sc-field-status" id="scStatusName"></span></label>
         <input class="field-input" id="scfName" type="text" placeholder="Ej: Supermercado Disco"/>
       </div>
 
-      <div class="form-row" style="margin-top:12px;">
+      <div class="form-row mt-12">
         <div>
           <label class="field-label">Fecha <span class="sc-field-status" id="scStatusDate"></span></label>
           <input class="field-input" id="scfDate" type="date"/>
@@ -796,7 +689,7 @@
         </div>
       </div>
 
-      <div class="form-row" style="margin-top:12px;">
+      <div class="form-row mt-12">
         <div>
           <label class="field-label">Total ($) <span class="sc-field-status" id="scStatusAmount"></span></label>
           <input class="field-input" id="scfAmount" type="number" min="0" step="0.01" placeholder="0.00"/>
@@ -819,7 +712,7 @@
         </div>
       </div>
 
-      <div class="form-row" style="margin-top:12px;">
+      <div class="form-row mt-12">
         <div>
           <label class="field-label">Forma de pago <span class="sc-field-status" id="scStatusPayment"></span></label>
           <select class="field-select" id="scfPayment">
@@ -844,21 +737,19 @@
         </div>
       </div>
 
-      <div class="form-full" style="margin-top:12px;">
+      <div class="form-full mt-12">
         <label class="field-label">Descripción / notas adicionales</label>
         <input class="field-input" id="scfDesc" type="text" placeholder="Ej: Compra supermercado, artículos del hogar…"/>
       </div>
 
       <!-- Preview of items (collapsible) -->
-      <div class="sc-raw-wrap" id="scItemsWrap" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
-        <button class="sc-raw-toggle" onclick="scToggleItems()" style="margin-bottom:8px;">
+      <div class="sc-raw-wrap is-hidden mt-12" id="scItemsWrap">
+        <button class="sc-raw-toggle mb-8" onclick="scToggleItems()">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           Ver artículos detectados (<span id="scItemsCount">0</span>)
         </button>
-        <div id="scItemsList" style="display:none;font-size:11px;font-family:var(--font-mono);color:var(--muted);background:var(--surface2);border-radius:8px;padding:10px 14px;max-height:150px;overflow-y:auto;flex-direction:column;gap:4px;">
-        </div>
+        <div id="scItemsList" class="sc-raw-text is-hidden"></div>
       </div>
-
     </div>
 
     <!-- Raw ticket text (collapsible) -->
@@ -867,10 +758,10 @@
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         Ver texto crudo del ticket
       </button>
-      <div class="sc-raw-text" id="scRawText" style="display:none;"></div>
+      <div class="sc-raw-text is-hidden" id="scRawText"></div>
     </div>
 
-    <div class="modal-actions" style="margin-top:16px;">
+    <div class="modal-actions mt-16">
       <button class="btn btn-ghost" onclick="scCloseResultModal()">
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         Cancelar
@@ -884,7 +775,7 @@
 </div>
 
 <!-- ===== SCANNER LOADING OVERLAY ===== -->
-<div class="sc-loading-overlay" id="scLoadingOverlay" style="display:none;">
+<div class="sc-loading-overlay is-hidden" id="scLoadingOverlay">
   <div class="sc-loading-box">
     <div class="sc-loading-spinner"></div>
     <div class="sc-loading-title">Analizando ticket con IA…</div>
@@ -894,34 +785,32 @@
 
 <!-- ===== MODAL MP BALANCE ===== -->
 <div class="modal-overlay" id="mpBalanceModalOverlay">
-  <div class="modal" style="max-width:420px; text-align:center; padding:32px 24px;">
-    
-    <div style="width:56px;height:56px;background:rgba(56,189,248,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+  <div class="modal modal-mp">
+    <div class="mp-icon-circle">
       <svg width="28" height="28" fill="none" stroke="#38bdf8" stroke-width="2" viewBox="0 0 24 24">
         <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
       </svg>
     </div>
-    
-    <div class="modal-title" style="color:var(--text);font-size:20px;margin-bottom:8px;">¡Conexión Exitosa!</div>
-    
-    <div style="font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.5;">
-      Por seguridad, Mercado Pago no nos permite leer tu saldo. Por favor ingresá tu <strong>saldo inicial</strong> para la cuenta <span id="mpBalanceAccName" style="color:var(--text);font-weight:600;"></span>.
+
+    <div class="modal-title mb-8">¡Conexión Exitosa!</div>
+
+    <div class="modal-desc-text mb-24">
+      Por seguridad, Mercado Pago no nos permite leer tu saldo. Por favor ingresá tu <strong>saldo inicial</strong> para la cuenta <strong id="mpBalanceAccName"></strong>.
     </div>
-    
+
     <input type="hidden" id="mpBalanceAccId">
-    
-    <div style="background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;">
-      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px;">Saldo actual</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
-        <span style="font-size:24px;color:var(--text);font-weight:600;">$</span>
-        <input type="text" inputmode="decimal" id="mpBalanceInput" placeholder="0,00" style="background:transparent;border:none;color:var(--text);font-size:32px;font-weight:700;width:150px;text-align:center;outline:none;" onfocus="this.select()" oninput="formatMpBalanceInput(this)" onkeydown="if(event.key === 'Enter') saveMpBalance()">
+
+    <div class="mp-balance-card">
+      <div class="mp-balance-label">Saldo actual</div>
+      <div class="mp-balance-input-wrap">
+        <span class="mp-balance-currency">$</span>
+        <input type="text" inputmode="decimal" id="mpBalanceInput" class="mp-balance-field" placeholder="0,00" onfocus="this.select()" oninput="formatMpBalanceInput(this)" onkeydown="if(event.key === 'Enter') saveMpBalance()">
       </div>
     </div>
-    
-    <button class="btn btn-primary" onclick="saveMpBalance()" id="mpBalanceSaveBtn" style="width:100%;justify-content:center;padding:14px;font-size:15px;font-weight:600;">
+
+    <button class="btn btn-primary btn-block-lg" onclick="saveMpBalance()" id="mpBalanceSaveBtn">
       Guardar Saldo Inicial
     </button>
-    
   </div>
 </div>
 
@@ -929,19 +818,19 @@
 <div id="toast"></div>
 
 <!-- ===== CHART.JS ===== -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.ts"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <!-- ===== TESSERACT.JS OCR ===== -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.ts"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <!-- ===== EXCELJS ===== -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.ts"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 
 <!-- ===== GOOGLE IDENTITY SERVICES ===== -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <!-- ===== EXCEL IMPORT & CSV PARSER ===== -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.ts"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <!-- ===== FLOATING CHATBOT ===== -->
 <div class="chatbot-widget">
@@ -975,4 +864,3 @@
 
 </body>
 </html>
-

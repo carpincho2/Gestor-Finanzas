@@ -51,5 +51,18 @@ Una vez estructurado el macro, atacamos el código línea por línea.
 - **Unit Testing (Pruebas Unitarias):** Un índice de mantenibilidad no se sostiene sin pruebas. Obligaremos a tener una cobertura de test (Coverage) > 80% usando `pytest` para backend y `Jest` para JS.
 - **CI/CD Pipeline:** Implementar GitHub Actions. Si un commit no pasa el linter de SOLID/PHAME o reduce el índice de mantenibilidad, no se permite hacer "Merge" a la rama principal (rama `main`).
 
+## FASE 5: Auditoría Automatizada de las 7 Métricas y Exportación a PDF
+El proyecto cuenta con un motor automatizado (`generar.js` y `generar_reporte.py`) que audita los archivos fuente propios (`api/`, `js/` en TypeScript y `mobile/lib/` en Dart), excluyendo entornos virtuales (`venv`, `fluxo_venv`, `node_modules`), y aplica las 7 ecuaciones oficiales:
+1. **Índice de Mantenibilidad ($\text{MI}$):** $\max(0, ((171 - 25 \times \ln(\text{LOC}) - 0.23 \times G) / 171) \times 100)$
+2. **Deuda Técnica (Horas):** $\max(0, (75 - \text{MI}) \times \text{LOC} \times K)$
+3. **Costo de Reparación:** $\text{Deuda Técnica (Horas)} \times \text{Salario por Hora}$
+4. **Tiempo Equivalente en Meses:** $\text{Deuda Técnica (Horas)} / \text{Horas por Mes}$
+5. **Interés Anual:** $10 \times (14 - 7) \times \text{Salario por Hora}$
+6. **Tiempo de Payback:** $\text{Costo de Reparación} / \text{Interés Anual}$
+7. **ROI Proyectado:** $100 \times (((\text{Interés Anual} \times 2) - \text{Costo de Reparación}) / \text{Costo de Reparación})$
+
+La vista HTML se genera en `html/reporte_deuda.html` vinculada a su hoja de estilos independiente `css/reporte_deuda.css` y se compila automáticamente en `Reporte de Deuda Técnica.pdf`.
+
 ---
 *Este documento será la hoja de ruta viva para las próximas sesiones de refactorización del proyecto.*
+

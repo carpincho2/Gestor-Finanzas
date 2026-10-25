@@ -3,167 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flujo Finance Manager - Arquitectura & Defensa</title>
+    <title>Flujo - Cómo funciona nuestro proyecto</title>
     <link rel="stylesheet" href="../css/defensa_arquitectura.css">
 </head>
 <body>
     <header class="hero">
-        <div class="badge">Defensa de Capacidades Profesionales</div>
-        <h1>Flujo Finance Manager &amp; SEPA Comparator</h1>
-        <p class="subtitle">Ecosistema FinTech Multiplataforma con Arquitectura Hexagonal, Patrones SOLID/PHAME y Motor ETL de Precios Claros</p>
+        <div class="badge">Presentación del Proyecto</div>
+        <h1>Flujo: Gestor de Finanzas y Comparador de Precios</h1>
+        <p class="subtitle">Una app web y móvil para controlar tus gastos, conectar tus billeteras y saber dónde comprar más barato</p>
     </header>
 
     <main class="container">
-        <!-- SECCIÓN 1: EL PROBLEMA Y LA IDEA (AMPLITUD E INTERÉS) -->
+        <!-- SECCIÓN 1: LA IDEA Y QUÉ HACE -->
         <section class="problem-solution">
             <div class="card problem-card">
-                <span class="card-tag tag-danger">El Problema Real</span>
-                <h2>Fragmentación Financiera e Inflación</h2>
+                <span class="card-tag tag-danger">¿Por qué hicimos esto?</span>
+                <h2>El problema del día a día</h2>
                 <ul>
-                    <li><strong>Múltiples billeteras y bancos:</strong> El usuario pierde el control de su liquidez real entre Mercado Pago, bancos y efectivo.</li>
-                    <li><strong>Dispersión de precios:</strong> En contextos inflacionarios, el mismo producto varía hasta un 40% entre supermercados cercanos.</li>
-                    <li><strong>Falta de asesoramiento en vivo:</strong> Decidir si conviene pagar al contado, con reintegro o en cuotas requiere cálculos financieros complejos.</li>
+                    <li><strong>Plata por todos lados:</strong> Hoy tenés plata en Mercado Pago, en el banco y en efectivo, y a mitad de mes no sabés cuánto gastaste realmente.</li>
+                    <li><strong>Precios que cambian todo el tiempo:</strong> Vas a un supermercado y un producto sale mucho más caro que a tres cuadras.</li>
+                    <li><strong>Dudas al pagar:</strong> Cuando querés comprar algo grande (como en Mercado Libre), cuesta calcular rápido con qué tarjeta o billetera te conviene pagar.</li>
                 </ul>
             </div>
 
             <div class="card solution-card">
-                <span class="card-tag tag-success">Nuestra Solución (Amplitud Funcional)</span>
-                <h2>Un Asistente Financiero 360°</h2>
+                <span class="card-tag tag-success">¿Qué hace nuestra App?</span>
+                <h2>Todo en un solo lugar</h2>
                 <ul>
-                    <li><strong>Core Financiero &amp; Open Banking:</strong> Consolidación de cuentas, presupuestos, metas y sincronización automática con billeteras virtuales.</li>
-                    <li><strong>Motor SEPA Geolocalizado:</strong> Comparador de precios en tiempo real con datos oficiales de comercios cercanos por código EAN.</li>
-                    <li><strong>Smart Shopping + OCR + IA:</strong> Analizador de enlaces (Mercado Libre), lector de tickets por cámara y recomendador inteligente de medios de pago.</li>
+                    <li><strong>Control de gastos y metas:</strong> Cargás tus cuentas, armás presupuestos por categoría, escaneás tickets con la cámara (OCR) y conectás Mercado Pago.</li>
+                    <li><strong>Buscador de Supermercados (SEPA):</strong> Buscás un producto y te muestra en qué súper cercano está más barato usando los datos oficiales de Precios Claros.</li>
+                    <li><strong>Asistente de Compras + IA:</strong> Pegás el link de un producto o le preguntás al chatbot y te recomienda cómo pagarlo según tus promociones.</li>
                 </ul>
             </div>
         </section>
 
-        <!-- SECCIÓN 2: EL DIAGRAMA DE ARQUITECTURA (ORGANIZACIÓN Y CONSISTENCIA) -->
+        <!-- SECCIÓN 2: EL DIAGRAMA SIMPLE DE CÓMO FUNCIONA -->
         <section class="diagram-section">
             <div class="section-header">
-                <h2>Diagrama de Arquitectura (Clean Architecture / Hexagonal)</h2>
-                <p>Separación estricta de responsabilidades aplicando principios <strong>SOLID</strong> y <strong>PHAME</strong></p>
+                <h2>¿Cómo está armado por dentro? (Arquitectura)</h2>
+                <p>Dividimos el proyecto en 4 partes bien separadas para no mezclar todo y trabajar ordenados</p>
             </div>
 
             <div class="arch-grid">
-                <!-- CAPA 1: CLIENTES -->
+                <!-- PASO 1 -->
                 <div class="arch-column col-clients">
-                    <div class="col-header">1. Capa de Presentación (Clientes)</div>
+                    <div class="col-header">1. Pantallas (Frontend)</div>
                     <div class="arch-box">
-                        <div class="box-title">Web App / PWA</div>
-                        <div class="box-tech">TypeScript + Vite + CSS Modular</div>
-                        <div class="box-desc">Estado encapsulado (Store Pattern) y vistas desacopladas del DOM.</div>
+                        <div class="box-title">Versión Web</div>
+                        <div class="box-tech">HTML + CSS + TypeScript</div>
+                        <div class="box-desc">Para usarla desde la compu o el navegador del celu.</div>
                     </div>
                     <div class="arch-box">
-                        <div class="box-title">App Móvil Nativa</div>
-                        <div class="box-tech">Flutter / Dart</div>
-                        <div class="box-desc">Experiencia móvil multiplataforma consumiendo la misma API REST.</div>
+                        <div class="box-title">App del Celular</div>
+                        <div class="box-tech">Flutter (Android)</div>
+                        <div class="box-desc">Se conecta exactamente al mismo servidor que la web.</div>
                     </div>
                 </div>
 
                 <div class="arch-arrow">➔</div>
 
-                <!-- CAPA 2: ENTRADA & SEGURIDAD -->
+                <!-- PASO 2 -->
                 <div class="arch-column col-api">
-                    <div class="col-header">2. Capa de Entrada (API Gateway)</div>
+                    <div class="col-header">2. Entrada al Servidor</div>
                     <div class="arch-box">
-                        <div class="box-title">Controladores REST (Routers)</div>
-                        <div class="box-tech">FastAPI + Pydantic Schemas</div>
-                        <div class="box-desc">Validación estricta de contratos de entrada/salida. Cero lógica de negocio.</div>
+                        <div class="box-title">Rutas (Routers)</div>
+                        <div class="box-tech">Python + FastAPI</div>
+                        <div class="box-desc">Reciben los pedidos de la web o la app y revisan que los datos estén bien.</div>
                     </div>
                     <div class="arch-box">
-                        <div class="box-title">Seguridad &amp; Auth</div>
-                        <div class="box-tech">JWT Stateless + Hashing Bcrypt</div>
-                        <div class="box-desc">Protección de rutas e inyección del usuario autenticado.</div>
-                    </div>
-                    <div class="arch-box highlight-box">
-                        <div class="box-title">Inyector de Dependencias</div>
-                        <div class="box-tech">Inversión de Control (DIP)</div>
-                        <div class="box-desc">Conecta Servicios con Puertos sin acoplarlos a la base de datos.</div>
+                        <div class="box-title">Login y Seguridad</div>
+                        <div class="box-tech">Tokens JWT + Claves encriptadas</div>
+                        <div class="box-desc">Verifica que cada usuario vea solo sus propias cuentas y gastos.</div>
                     </div>
                 </div>
 
                 <div class="arch-arrow">➔</div>
 
-                <!-- CAPA 3: DOMINIO Y LÓGICA -->
+                <!-- PASO 3 -->
                 <div class="arch-column col-domain">
-                    <div class="col-header">3. Núcleo de Negocio (Domain &amp; Services)</div>
+                    <div class="col-header">3. Lógica (Servicios)</div>
                     <div class="arch-box">
-                        <div class="box-title">Servicios FinTech Core</div>
-                        <div class="box-tech">Accounts, Budgets, Goals, Transactions</div>
-                        <div class="box-desc">Reglas de negocio puras, cálculo de saldos multi-moneda y alertas.</div>
+                        <div class="box-title">Cuentas y Presupuestos</div>
+                        <div class="box-tech">Cálculos y Reglas</div>
+                        <div class="box-desc">Suma y resta saldos, controla límites de gasto y progreso de ahorros.</div>
                     </div>
                     <div class="arch-box">
-                        <div class="box-title">Pipeline ETL SEPA</div>
-                        <div class="box-tech">Downloader ➔ Cleaner ➔ Loader</div>
-                        <div class="box-desc">Ingesta masiva de precios oficiales y cruce geoespacial (Haversine).</div>
+                        <div class="box-title">Comparador SEPA</div>
+                        <div class="box-tech">Descarga y Limpieza</div>
+                        <div class="box-desc">Baja la lista de precios del gobierno, la limpia y busca los súper más cercanos.</div>
                     </div>
                     <div class="arch-box">
-                        <div class="box-title">Smart Shopping &amp; IA</div>
-                        <div class="box-tech">Strategy Pattern + OCR + Gemini AI</div>
-                        <div class="box-desc">Extracción de productos y motor matemático de recomendación de pago.</div>
+                        <div class="box-title">Compras, OCR e IA</div>
+                        <div class="box-tech">Lectura de links y tickets</div>
+                        <div class="box-desc">Saca el precio de una publicación, lee fotos de tickets y arma consejos.</div>
                     </div>
                 </div>
 
                 <div class="arch-arrow">➔</div>
 
-                <!-- CAPA 4: INFRAESTRUCTURA Y ADAPTADORES -->
+                <!-- PASO 4 -->
                 <div class="arch-column col-infra">
-                    <div class="col-header">4. Infraestructura (Puertos y Adaptadores)</div>
+                    <div class="col-header">4. Datos y Conexiones</div>
                     <div class="arch-box">
-                        <div class="box-title">Patrón Repositorio</div>
-                        <div class="box-tech">Puertos (Interfaces) + SQLAlchemy</div>
-                        <div class="box-desc">Permite cambiar SQLite por PostgreSQL sin tocar una sola línea de negocio.</div>
+                        <div class="box-title">Base de Datos</div>
+                        <div class="box-tech">Repositorios (SQLAlchemy)</div>
+                        <div class="box-desc">Guarda usuarios, gastos y precios sin ensuciar la lógica del programa.</div>
                     </div>
                     <div class="arch-box">
-                        <div class="box-title">Wallet Adapters (OCP)</div>
-                        <div class="box-tech">Mercado Pago / Belvo / Plaid</div>
-                        <div class="box-desc">Polimorfismo puro: agregar un banco nuevo no modifica el código existente.</div>
+                        <div class="box-title">Adaptadores de Billeteras</div>
+                        <div class="box-tech">Mercado Pago y otros</div>
+                        <div class="box-desc">Un molde común para conectar distintas billeteras sin romper el resto.</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- SECCIÓN 3: LAS 4 DECISIONES CLAVE DE ARQUITECTURA (PRECISIÓN Y VOCABULARIO) -->
+        <!-- SECCIÓN 3: DECISIONES EXPLICADAS NORMAL -->
         <section class="decisions-section">
             <div class="section-header">
-                <h2>4 Decisiones Clave de Ingeniería (Defensa Técnica)</h2>
-                <p>Por qué diseñamos el sistema de esta manera y qué problemas evitamos</p>
+                <h2>4 Decisiones que tomamos al programarlo</h2>
+                <p>Cómo organizamos el trabajo para que sea fácil de arreglar y agregarle cosas</p>
             </div>
 
             <div class="decisions-grid">
                 <article class="decision-card">
                     <div class="decision-num">01</div>
-                    <h3>Inversión de Dependencias (DIP) y Patrón Repositorio</h3>
-                    <p><strong>Decisión:</strong> Los servicios de negocio no conocen SQL ni SQLAlchemy; dependen de interfaces abstractas (<em>Puertos</em>).</p>
-                    <p><strong>Justificación:</strong> Garantiza <strong>Consistencia</strong>, facilita los tests unitarios con mocks y permite escalar el motor de base de datos sin reescribir reglas financieras.</p>
+                    <h3>Un solo Backend para Web y Celular</h3>
+                    <p><strong>Qué hicimos:</strong> En vez de programar la lógica dos veces, hicimos una API en FastAPI y tanto la web como la app en Flutter le piden todo ahí.</p>
+                    <p><strong>Por qué:</strong> Si cambiamos cómo se calcula un presupuesto, se arregla en los dos lados al mismo tiempo.</p>
                 </article>
 
                 <article class="decision-card">
                     <div class="decision-num">02</div>
-                    <h3>Patrón Adapter &amp; Strategy en Integraciones Externas</h3>
-                    <p><strong>Decisión:</strong> Unificamos las billeteras (Mercado Pago, Belvo, Plaid) y los scrapers de tiendas bajo contratos polimórficos (Principio Abierto/Cerrado - <strong>OCP</strong>).</p>
-                    <p><strong>Justificación:</strong> El sistema es abierto a la extensión pero cerrado a la modificación. Agregar una nueva billetera o tienda no rompe el flujo principal.</p>
+                    <h3>Separar Rutas, Lógica y Base de Datos</h3>
+                    <p><strong>Qué hicimos:</strong> Al principio teníamos todo mezclado en el mismo archivo. Lo separamos en capas (Rutas ➔ Servicios ➔ Repositorios).</p>
+                    <p><strong>Por qué:</strong> Quedó mucho más ordenado. Si hay un error en una cuenta o en la base de datos, sabemos exactamente a qué carpeta ir a buscarlo.</p>
                 </article>
 
                 <article class="decision-card">
                     <div class="decision-num">03</div>
-                    <h3>Pipeline ETL Desacoplado para Datos Masivos SEPA</h3>
-                    <p><strong>Decisión:</strong> Separamos el motor de Precios Claros en 4 etapas independientes: <em>Descarga, Limpieza, Carga y Comparación Geoespacial</em> (<strong>SRP</strong>).</p>
-                    <p><strong>Justificación:</strong> Procesar cientos de miles de precios gubernamentales en tiempo real bloquearía la API; con un pipeline ETL modular logramos respuestas en milisegundos.</p>
+                    <h3>Usar "Adaptadores" para las Billeteras</h3>
+                    <p><strong>Qué hicimos:</strong> Cada billetera (como Mercado Pago) devuelve los datos a su manera. Creamos un archivo adaptador para cada una que traduce todo al mismo formato.</p>
+                    <p><strong>Por qué:</strong> Si mañana queremos agregar otra billetera o tienda, solo creamos un archivo nuevo sin tocar lo que ya anda.</p>
                 </article>
 
                 <article class="decision-card">
                     <div class="decision-num">04</div>
-                    <h3>Auditoría Matemática de Mantenibilidad y Deuda Técnica</h3>
-                    <p><strong>Decisión:</strong> Medimos objetivamente el código con Complejidad Ciclomática de McCabe (<em>G</em>) e Índice de Mantenibilidad (<em>MI</em>).</p>
-                    <p><strong>Justificación:</strong> En lugar de evaluar la calidad subjetivamente, calculamos horas de deuda técnica, costo de reparación, Payback y ROI sobre los <strong>136 archivos (20,450 LOC)</strong> del proyecto.</p>
+                    <h3>Guardar y limpiar antes los precios del súper</h3>
+                    <p><strong>Qué hicimos:</strong> Los archivos del gobierno (SEPA) son gigantes y vienen desprolijos. Armamos un proceso que primero los descarga, los limpia y los guarda en nuestra base.</p>
+                    <p><strong>Por qué:</strong> Así, cuando el usuario busca un producto en la app, el resultado sale al instante en vez de quedarse colgado.</p>
                 </article>
             </div>
         </section>
     </main>
 
     <footer class="footer">
-        <p><strong>Resumen de Síntesis:</strong> Arquitectura Limpia + Principios SOLID/PHAME + Ecosistema Web/Mobile + Impacto Real en la Economía Personal</p>
+        <p><strong>En resumen:</strong> Un gestor de finanzas pensado para los problemas reales de acá, con Web + App Móvil y un código bien separado en capas.</p>
     </footer>
 </body>
 </html>

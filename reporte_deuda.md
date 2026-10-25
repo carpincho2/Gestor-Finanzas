@@ -9,10 +9,10 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 - **Interés Anual por Módulo:** `$1400.00 USD` ($10 \times (14 - 7) \times \text{Salario}$)
 
 ## Resumen Ejecutivo del Proyecto
-- **Archivos Analizados:** `137` (`20,382` LOC efectivos)
-- **Índice de Mantenibilidad Promedio (MI):** `33.59`
-- **Deuda Técnica Total:** `12214.14 horas` (`76.34 meses`)
-- **Costo Total de Reparación:** `$244,282.61 USD`
+- **Archivos Analizados:** `137` (`20,489` LOC efectivos)
+- **Índice de Mantenibilidad Promedio (MI):** `33.46`
+- **Deuda Técnica Total:** `12281.00 horas` (`76.76 meses`)
+- **Costo Total de Reparación:** `$245,619.71 USD`
 
 ## Backend (Python) (73 archivos)
 
@@ -24,7 +24,7 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/routers/wallets.py` | 265 | 46 | 12.24 🔴 | 166.32 hs | $3,326.39 | 1.04 m | $1,400 | 2.38 a | -15.8% |
 | `api/routers/accounts.py` | 235 | 36 | 15.34 🔴 | 140.20 hs | $2,804.05 | 0.88 m | $1,400 | 2.00 a | -0.1% |
 | `api/tests/test_sepa.py` | 240 | 1 | 19.74 🔴 | 132.63 hs | $2,652.52 | 0.83 m | $1,400 | 1.89 a | 5.6% |
-| `api/services/auth_service.py` | 205 | 46 | 15.99 🔴 | 120.97 hs | $2,419.37 | 0.76 m | $1,400 | 1.73 a | 15.7% |
+| `api/services/auth_service.py` | 208 | 46 | 15.78 🔴 | 123.18 hs | $2,463.61 | 0.77 m | $1,400 | 1.76 a | 13.7% |
 | `api/services/shopping/generic_extractor.py` | 184 | 84 | 12.46 🔴 | 115.07 hs | $2,301.47 | 0.72 m | $1,400 | 1.64 a | 21.7% |
 | `api/services/shopping_service.py` | 191 | 51 | 16.35 🔴 | 112.02 hs | $2,240.33 | 0.70 m | $1,400 | 1.60 a | 25.0% |
 | `api/services/ai_service.py` | 185 | 44 | 17.76 🔴 | 105.89 hs | $2,117.85 | 0.66 m | $1,400 | 1.51 a | 32.2% |
@@ -33,17 +33,17 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/services/shopping/mercadolibre_extractor.py` | 162 | 75 | 15.53 🔴 | 96.34 hs | $1,926.76 | 0.60 m | $1,400 | 1.38 a | 45.3% |
 | `api/infrastructure/repositories/sqlalchemy_price_repository.py` | 178 | 24 | 21.01 🔴 | 96.09 hs | $1,921.87 | 0.60 m | $1,400 | 1.37 a | 45.7% |
 | `api/seed_dummy.py` | 180 | 13 | 22.33 🔴 | 94.80 hs | $1,896.08 | 0.59 m | $1,400 | 1.35 a | 47.7% |
+| `api/main.py` | 176 | 17 | 22.12 🔴 | 93.07 hs | $1,861.32 | 0.58 m | $1,400 | 1.33 a | 50.4% |
 | `api/alembic/versions/4faf7655fc78_baseline_migration.py` | 181 | 1 | 23.86 🔴 | 92.56 hs | $1,851.12 | 0.58 m | $1,400 | 1.32 a | 51.3% |
+| `api/routers/auth.py` | 171 | 16 | 22.68 🔴 | 89.47 hs | $1,789.43 | 0.56 m | $1,400 | 1.28 a | 56.5% |
 | `api/services/sepa/loader.py` | 166 | 30 | 21.23 🔴 | 89.26 hs | $1,785.22 | 0.56 m | $1,400 | 1.28 a | 56.8% |
 | `api/services/account_service.py` | 163 | 36 | 20.69 🔴 | 88.53 hs | $1,770.58 | 0.55 m | $1,400 | 1.26 a | 58.1% |
 | `api/services/goal_service.py` | 158 | 47 | 19.66 🔴 | 87.43 hs | $1,748.62 | 0.55 m | $1,400 | 1.25 a | 60.1% |
-| `api/main.py` | 159 | 14 | 24.01 🔴 | 81.07 hs | $1,621.48 | 0.51 m | $1,400 | 1.16 a | 72.7% |
 | `api/services/transaction_service.py` | 126 | 27 | 25.66 🔴 | 62.17 hs | $1,243.30 | 0.39 m | $1,400 | 0.89 a | 125.2% |
 | `api/tests/test_accounts.py` | 131 | 5 | 28.05 🔴 | 61.50 hs | $1,230.02 | 0.38 m | $1,400 | 0.88 a | 127.6% |
-| `api/routers/auth.py` | 125 | 15 | 27.39 🔴 | 59.51 hs | $1,190.17 | 0.37 m | $1,400 | 0.85 a | 135.3% |
+| `api/infrastructure/migrations.py` | 121 | 16 | 27.73 🔴 | 57.19 hs | $1,143.84 | 0.36 m | $1,400 | 0.82 a | 144.8% |
 | `api/schemas.py` | 117 | 1 | 30.24 🔴 | 52.37 hs | $1,047.31 | 0.33 m | $1,400 | 0.75 a | 167.4% |
 | `api/tests/test_goals.py` | 110 | 1 | 31.15 🔴 | 48.24 hs | $964.81 | 0.30 m | $1,400 | 0.69 a | 190.2% |
-| `api/infrastructure/migrations.py` | 103 | 13 | 30.49 🔴 | 45.84 hs | $916.86 | 0.29 m | $1,400 | 0.65 a | 205.4% |
 | `api/services/sepa/promociones.py` | 95 | 11 | 31.94 🔴 | 40.90 hs | $818.08 | 0.26 m | $1,400 | 0.58 a | 242.3% |
 | `api/services/sepa/downloader.py` | 81 | 9 | 34.54 🔴 | 32.77 hs | $655.40 | 0.20 m | $1,400 | 0.47 a | 327.2% |
 | `api/services/sepa/ingestion.py` | 79 | 4 | 35.58 🔴 | 31.14 hs | $622.82 | 0.19 m | $1,400 | 0.44 a | 349.6% |
@@ -51,6 +51,7 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/security.py` | 73 | 15 | 35.26 🔴 | 29.01 hs | $580.26 | 0.18 m | $1,400 | 0.41 a | 382.5% |
 | `api/tests/test_recommendation.py` | 65 | 13 | 37.22 🔴 | 24.56 hs | $491.11 | 0.15 m | $1,400 | 0.35 a | 470.1% |
 | `api/tests/test_budgets.py` | 64 | 3 | 38.79 🔴 | 23.17 hs | $463.44 | 0.14 m | $1,400 | 0.33 a | 504.2% |
+| `api/database.py` | 60 | 18 | 37.72 🔴 | 22.37 hs | $447.36 | 0.14 m | $1,400 | 0.32 a | 525.9% |
 | `api/infrastructure/dependencies.py` | 60 | 1 | 40.01 🟡 | 21.00 hs | $419.92 | 0.13 m | $1,400 | 0.30 a | 566.8% |
 | `api/wallet_adapters/plaid_adapter.py` | 57 | 2 | 40.62 🟡 | 19.60 hs | $391.91 | 0.12 m | $1,400 | 0.28 a | 614.5% |
 | `api/routers/ai.py` | 56 | 8 | 40.07 🟡 | 19.56 hs | $391.17 | 0.12 m | $1,400 | 0.28 a | 615.8% |
@@ -67,7 +68,6 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/services/sepa/cleaner.py` | 40 | 11 | 44.59 🟡 | 12.16 hs | $243.28 | 0.08 m | $1,400 | 0.17 a | 1050.9% |
 | `api/services/ocr.py` | 40 | 5 | 45.40 🟡 | 11.84 hs | $236.83 | 0.07 m | $1,400 | 0.17 a | 1082.3% |
 | `api/services/budget_service.py` | 39 | 7 | 45.50 🟡 | 11.51 hs | $230.12 | 0.07 m | $1,400 | 0.16 a | 1116.8% |
-| `api/database.py` | 37 | 15 | 45.19 🟡 | 11.03 hs | $220.58 | 0.07 m | $1,400 | 0.16 a | 1169.4% |
 | `api/infrastructure/repositories/sqlalchemy_transaction_repository.py` | 38 | 1 | 46.68 🟡 | 10.76 hs | $215.20 | 0.07 m | $1,400 | 0.15 a | 1201.1% |
 | `api/infrastructure/repositories/sqlalchemy_goal_repository.py` | 36 | 1 | 47.47 🟡 | 9.91 hs | $198.18 | 0.06 m | $1,400 | 0.14 a | 1312.9% |
 | `api/ports/repositories/price_repository_port.py` | 34 | 1 | 48.31 🟡 | 9.07 hs | $181.49 | 0.06 m | $1,400 | 0.13 a | 1442.8% |
@@ -92,7 +92,7 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/domain/entities/__init__.py` | 3 | 1 | 83.80 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
 | `api/wallet_adapters/__init__.py` | 5 | 1 | 76.34 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
 
-**Subtotal Backend (Python):** `3349.05 horas` | **Costo:** `$66,980.57 USD`
+**Subtotal Backend (Python):** `3415.91 horas` | **Costo:** `$68,317.67 USD`
 
 ## Frontend (TypeScript / JS) (32 archivos)
 

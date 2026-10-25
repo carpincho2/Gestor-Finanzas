@@ -249,4 +249,23 @@ services:
 
 ---
 
-¡Excelente trabajo! Con esto, Flujo cumple con altos estándares de seguridad en autenticación web y brinda una experiencia de usuario premium en cualquier dispositivo móvil.
+## 🛡️ 4. Resiliencia de Base de Datos (Failover Automático a SQLite y Migraciones Transaccionales)
+
+En entornos cloud gratuitos (como el plan gratuito de PostgreSQL en **Render**), las instancias de base de datos pueden suspenderse o expirar tras el período de prueba, o enfrentar incompatibilidades de dialecto SQL entre **PostgreSQL** y **SQLite**. Si el backend no maneja esto de forma resiliente, cualquier petición que consulte la base de datos (como `POST /api/auth/login`, `POST /api/auth/register` o `GET /api/precios/comercios`) arrojaría un error `HTTP 500 (Internal Server Error)`.
+
+Para garantizar **alta disponibilidad 24/7**, implementamos tres mecanismos de defensa en profundidad:
+
+1. **Verificación Activa y Failover Automático en [`api/database.py`](file:///h:/Gestor%20de%20Finanzas/api/database.py)**:
+   * Al inicializar el motor SQLAlchemy (`_create_verified_engine`), si `DATABASE_URL` apunta a un servidor PostgreSQL remoto, se ejecuta inmediatamente una prueba de conectividad rápida (`SELECT 1` con `connect_timeout=5`).
+   * Si la instancia PostgreSQL remota expiró o no responde, el sistema **conmuta automáticamente (failover)** a la base de datos local `sqlite:///./database.db`, evitando caídas `HTTP 500` en producción.
+
+2. **Migraciones de Esquema Compatibles con PostgreSQL y Aisladas por Columna en [`api/infrastructure/migrations.py`](file:///h:/Gestor%20de%20Finanzas/api/infrastructure/migrations.py)**:
+   * Se estandarizaron los valores por defecto booleanos a `BOOLEAN DEFAULT FALSE` (compatible tanto con PostgreSQL como con SQLite, evitando el error `DatatypeMismatch` que producía `BOOLEAN DEFAULT 0` en Postgres).
+   * Cada sentencia `ALTER TABLE` se ejecuta en su propia transacción independiente (`with engine.begin() as conn:`) dentro de un bloque `try/except`, de modo que si una columna ya existe o presenta una restricción particular, no revierte (rollback) el resto de las migraciones ni interrumpe la carga inicial (`seed_db`) en [`api/main.py`](file:///h:/Gestor%20de%20Finanzas/api/main.py).
+
+3. **Manejador Global de Excepciones JSON en [`api/main.py`](file:///h:/Gestor%20de%20Finanzas/api/main.py) y [`api/routers/auth.py`](file:///h:/Gestor%20de%20Finanzas/api/routers/auth.py)**:
+   * Todos los endpoints de autenticación y el middleware global de FastAPI capturan cualquier excepción inesperada, la registran en el log del servidor y devuelven una respuesta `JSONResponse` estructurada en lugar de un texto plano `Internal Server Error`.
+
+---
+
+¡Excelente trabajo! Con esto, Flujo cumple con altos estándares de seguridad en autenticación web, resiliencia en la nube y brinda una experiencia de usuario premium en cualquier dispositivo móvil.

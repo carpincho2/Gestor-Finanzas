@@ -64,17 +64,27 @@ async def render_keep_alive() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Crear tablas, aplicar migraciones y seed inicial
+    # Startup: Crear tablas, aplicar migraciones y seed inicial de forma aislada
     try:
         Base.metadata.create_all(bind=engine)
+    except Exception as exc:
+        logger.warning("Error en Base.metadata.create_all: %s", exc)
+
+    try:
         migrate_schema_columns()
+    except Exception as exc:
+        logger.warning("Error en migrate_schema_columns: %s", exc)
+
+    try:
         migrate_plaintext_tokens()
+    except Exception as exc:
+        logger.warning("Error en migrate_plaintext_tokens: %s", exc)
+
+    try:
         from seed_dummy import seed_db
         seed_db()
     except Exception as exc:
-        logger.warning(
-            "No se pudo completar la migración o seed de DB en inicio: %s", exc
-        )
+        logger.warning("No se pudo completar seed_db en inicio: %s", exc)
 
     # Iniciar scheduler SEPA
     try:
@@ -131,6 +141,18 @@ app.add_middleware(
     same_site="lax",
     https_only=IS_PRODUCTION,
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error("Excepción no controlada en %s: %s", request.url.path, exc, exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Error interno del servidor",
+            "detail": str(exc),
+        },
+    )
 
 
 @app.middleware("http")

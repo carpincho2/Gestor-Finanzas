@@ -122,7 +122,10 @@ class AuthService:
             else:
                 _login_attempts[client_ip] = (1, current_time)
                 
-            raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+            raise HTTPException(
+                status_code=401,
+                detail="Email o contraseña incorrectos. ¿Todavía no tenés cuenta? Registrate en la pestaña Registrarse.",
+            )
             
         if client_ip in _login_attempts:
             del _login_attempts[client_ip]

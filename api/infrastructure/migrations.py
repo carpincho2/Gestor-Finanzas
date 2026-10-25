@@ -9,11 +9,16 @@ logger = logging.getLogger(__name__)
 
 def migrate_schema_columns() -> None:
     """
-    Asegura de forma idempotente que todas las columnas requeridas existan
-    en la base de datos activa (SQLite o PostgreSQL).
+    Asegura de forma idempotente y con aislamiento transaccional por columna
+    que todas las columnas requeridas existan en la base de datos activa
+    (compatible con SQLite y PostgreSQL).
     """
-    inspector = inspect(engine)
-    existing_tables = set(inspector.get_table_names())
+    try:
+        inspector = inspect(engine)
+        existing_tables = set(inspector.get_table_names())
+    except Exception as exc:
+        logger.warning("No se pudo inspeccionar el esquema de DB: %s", exc)
+        return
 
     migrations = {
         "transactions": [
@@ -35,8 +40,8 @@ def migrate_schema_columns() -> None:
             ("type", "VARCHAR(20) DEFAULT 'deposit'"),
         ],
         "accounts": [
-            ("is_archived", "BOOLEAN DEFAULT 0"),
-            ("is_favorite", "BOOLEAN DEFAULT 0"),
+            ("is_archived", "BOOLEAN DEFAULT FALSE"),
+            ("is_favorite", "BOOLEAN DEFAULT FALSE"),
             ("color", "VARCHAR(50)"),
             ("icon", "VARCHAR(50)"),
             ("cbu", "VARCHAR(100)"),
@@ -46,20 +51,35 @@ def migrate_schema_columns() -> None:
         ],
     }
 
-    with engine.begin() as conn:
-        for table_name, columns_to_add in migrations.items():
-            if table_name not in existing_tables:
-                continue
+    for table_name, columns_to_add in migrations.items():
+        if table_name not in existing_tables:
+            continue
+        try:
             existing_cols = {c["name"] for c in inspector.get_columns(table_name)}
-            for col_name, col_type in columns_to_add:
-                if col_name not in existing_cols:
-                    conn.execute(
-                        text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}")
-                    )
+        except Exception as exc:
+            logger.warning("Error inspeccionando tabla '%s': %s", table_name, exc)
+            continue
+
+        for col_name, col_type in columns_to_add:
+            if col_name not in existing_cols:
+                try:
+                    with engine.begin() as conn:
+                        conn.execute(
+                            text(
+                                f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}"
+                            )
+                        )
                     logger.info(
                         "Migración de esquema: añadida columna '%s' a '%s'",
                         col_name,
                         table_name,
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Omitiendo migración de '%s.%s': %s",
+                        table_name,
+                        col_name,
+                        exc,
                     )
 
 

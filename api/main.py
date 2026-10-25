@@ -1,7 +1,11 @@
 import asyncio
 import logging
+import mimetypes
 import os
 from contextlib import asynccontextmanager
+
+# Registrar tipo MIME válido para que el navegador ejecute módulos .ts nativamente
+mimetypes.add_type("application/javascript", ".ts")
 
 import httpx
 from fastapi import FastAPI, Request, Response

@@ -1,23 +1,19 @@
-import { chatService, ChatMessage } from '../services/chatService.js';
+// @ts-nocheck
+import { chatService } from '../services/chatService.ts';
 
 export class Chatbot {
-  private container: HTMLElement;
-  private messagesContainer: HTMLElement;
-  private inputField: HTMLInputElement;
-  private sendButton: HTMLButtonElement;
-  private isOpen: boolean = false;
-  private history: ChatMessage[] = [];
-
   constructor() {
-    this.container = document.getElementById('chatbotWindow') as HTMLElement;
-    this.messagesContainer = document.getElementById('chatbotMessages') as HTMLElement;
-    this.inputField = document.getElementById('chatbotInput') as HTMLInputElement;
-    this.sendButton = document.getElementById('chatbotSendBtn') as HTMLButtonElement;
+    this.container = document.getElementById('chatbotWindow');
+    this.messagesContainer = document.getElementById('chatbotMessages');
+    this.inputField = document.getElementById('chatbotInput');
+    this.sendButton = document.getElementById('chatbotSendBtn');
+    this.isOpen = false;
+    this.history = [];
 
     this.initListeners();
   }
 
-  private initListeners() {
+  initListeners() {
     const toggleBtn = document.getElementById('chatbotToggleBtn');
     if (toggleBtn) {
       toggleBtn.addEventListener('click', () => this.toggleChat());
@@ -41,7 +37,7 @@ export class Chatbot {
     }
   }
 
-  public toggleChat() {
+  toggleChat() {
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
       this.container.classList.add('is-open');
@@ -51,12 +47,12 @@ export class Chatbot {
     }
   }
 
-  public closeChat() {
+  closeChat() {
     this.isOpen = false;
     this.container.classList.remove('is-open');
   }
 
-  private addMessageToUI(content: string, role: 'user' | 'assistant') {
+  addMessageToUI(content, role) {
     const msgEl = document.createElement('div');
     msgEl.classList.add('chat-message', role === 'user' ? 'user' : 'ai');
     msgEl.textContent = content;
@@ -64,7 +60,7 @@ export class Chatbot {
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
   }
 
-  private showTypingIndicator() {
+  showTypingIndicator() {
     const indicator = document.createElement('div');
     indicator.classList.add('chat-message', 'ai');
     indicator.id = 'typingIndicator';
@@ -79,14 +75,14 @@ export class Chatbot {
     this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
   }
 
-  private removeTypingIndicator() {
+  removeTypingIndicator() {
     const indicator = document.getElementById('typingIndicator');
     if (indicator) {
       indicator.remove();
     }
   }
 
-  public async sendMessage() {
+  async sendMessage() {
     const text = this.inputField.value.trim();
     if (!text) return;
 
@@ -102,9 +98,9 @@ export class Chatbot {
     try {
       // Send to backend
       const response = await chatService.sendMessage(text, this.history);
-      
+
       this.removeTypingIndicator();
-      
+
       // Add AI response to UI and history
       this.addMessageToUI(response, 'assistant');
       this.history.push({ role: 'assistant', content: response });
@@ -119,9 +115,12 @@ export class Chatbot {
 }
 
 // Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  // Only initialize if the chatbot HTML exists
-  if (document.getElementById('chatbotWindow')) {
-    new Chatbot();
-  }
-});
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('chatbotWindow')) {
+      new Chatbot();
+    }
+  });
+} else if (document.getElementById('chatbotWindow')) {
+  new Chatbot();
+}

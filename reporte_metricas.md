@@ -9,12 +9,12 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 - **Interés Anual por Módulo:** `$1400.00 USD` ($10 \times (14 - 7) \times \text{Salario}$)
 
 ## Resumen Ejecutivo del Proyecto
-- **Archivos Analizados:** `136` (`20,450` LOC efectivos)
-- **Índice de Mantenibilidad Promedio (MI):** `33.11`
-- **Deuda Técnica Total:** `12281.72 horas` (`76.76 meses`)
-- **Costo Total de Reparación:** `$245,634.30 USD`
+- **Archivos Analizados:** `137` (`20,382` LOC efectivos)
+- **Índice de Mantenibilidad Promedio (MI):** `33.59`
+- **Deuda Técnica Total:** `12214.14 horas` (`76.34 meses`)
+- **Costo Total de Reparación:** `$244,282.61 USD`
 
-## Backend (Python) (72 archivos)
+## Backend (Python) (73 archivos)
 
 | Archivo | LOC | G | 1. MI | 2. Deuda (Hs) | 3. Costo ($) | 4. Meses | 5. Interés Anual | 6. Payback (Años) | 7. ROI (%) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -27,7 +27,6 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/services/auth_service.py` | 205 | 46 | 15.99 🔴 | 120.97 hs | $2,419.37 | 0.76 m | $1,400 | 1.73 a | 15.7% |
 | `api/services/shopping/generic_extractor.py` | 184 | 84 | 12.46 🔴 | 115.07 hs | $2,301.47 | 0.72 m | $1,400 | 1.64 a | 21.7% |
 | `api/services/shopping_service.py` | 191 | 51 | 16.35 🔴 | 112.02 hs | $2,240.33 | 0.70 m | $1,400 | 1.60 a | 25.0% |
-| `api/main.py` | 191 | 46 | 17.03 🔴 | 110.73 hs | $2,214.64 | 0.69 m | $1,400 | 1.58 a | 26.4% |
 | `api/services/ai_service.py` | 185 | 44 | 17.76 🔴 | 105.89 hs | $2,117.85 | 0.66 m | $1,400 | 1.51 a | 32.2% |
 | `api/routers/sepa.py` | 194 | 9 | 21.77 🔴 | 103.26 hs | $2,065.17 | 0.65 m | $1,400 | 1.48 a | 35.6% |
 | `api/models.py` | 187 | 1 | 23.39 🔴 | 96.52 hs | $1,930.31 | 0.60 m | $1,400 | 1.38 a | 45.1% |
@@ -38,11 +37,13 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/services/sepa/loader.py` | 166 | 30 | 21.23 🔴 | 89.26 hs | $1,785.22 | 0.56 m | $1,400 | 1.28 a | 56.8% |
 | `api/services/account_service.py` | 163 | 36 | 20.69 🔴 | 88.53 hs | $1,770.58 | 0.55 m | $1,400 | 1.26 a | 58.1% |
 | `api/services/goal_service.py` | 158 | 47 | 19.66 🔴 | 87.43 hs | $1,748.62 | 0.55 m | $1,400 | 1.25 a | 60.1% |
+| `api/main.py` | 159 | 14 | 24.01 🔴 | 81.07 hs | $1,621.48 | 0.51 m | $1,400 | 1.16 a | 72.7% |
 | `api/services/transaction_service.py` | 126 | 27 | 25.66 🔴 | 62.17 hs | $1,243.30 | 0.39 m | $1,400 | 0.89 a | 125.2% |
 | `api/tests/test_accounts.py` | 131 | 5 | 28.05 🔴 | 61.50 hs | $1,230.02 | 0.38 m | $1,400 | 0.88 a | 127.6% |
 | `api/routers/auth.py` | 125 | 15 | 27.39 🔴 | 59.51 hs | $1,190.17 | 0.37 m | $1,400 | 0.85 a | 135.3% |
 | `api/schemas.py` | 117 | 1 | 30.24 🔴 | 52.37 hs | $1,047.31 | 0.33 m | $1,400 | 0.75 a | 167.4% |
 | `api/tests/test_goals.py` | 110 | 1 | 31.15 🔴 | 48.24 hs | $964.81 | 0.30 m | $1,400 | 0.69 a | 190.2% |
+| `api/infrastructure/migrations.py` | 103 | 13 | 30.49 🔴 | 45.84 hs | $916.86 | 0.29 m | $1,400 | 0.65 a | 205.4% |
 | `api/services/sepa/promociones.py` | 95 | 11 | 31.94 🔴 | 40.90 hs | $818.08 | 0.26 m | $1,400 | 0.58 a | 242.3% |
 | `api/services/sepa/downloader.py` | 81 | 9 | 34.54 🔴 | 32.77 hs | $655.40 | 0.20 m | $1,400 | 0.47 a | 327.2% |
 | `api/services/sepa/ingestion.py` | 79 | 4 | 35.58 🔴 | 31.14 hs | $622.82 | 0.19 m | $1,400 | 0.44 a | 349.6% |
@@ -91,7 +92,7 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `api/domain/entities/__init__.py` | 3 | 1 | 83.80 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
 | `api/wallet_adapters/__init__.py` | 5 | 1 | 76.34 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
 
-**Subtotal Backend (Python):** `3332.87 horas` | **Costo:** `$66,656.87 USD`
+**Subtotal Backend (Python):** `3349.05 horas` | **Costo:** `$66,980.57 USD`
 
 ## Frontend (TypeScript / JS) (32 archivos)
 
@@ -100,37 +101,37 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `js/accounts.ts` | 1268 | 462 | 0.00 🔴 | 951.00 hs | $19,020.00 | 5.94 m | $1,400 | 13.59 a | -85.3% |
 | `js/shopping.ts` | 911 | 265 | 0.00 🔴 | 683.25 hs | $13,665.00 | 4.27 m | $1,400 | 9.76 a | -79.5% |
 | `js/services/scannerService.ts` | 827 | 312 | 0.00 🔴 | 620.25 hs | $12,405.00 | 3.88 m | $1,400 | 8.86 a | -77.4% |
-| `js/goals.ts` | 757 | 204 | 0.00 🔴 | 567.75 hs | $11,355.00 | 3.55 m | $1,400 | 8.11 a | -75.3% |
+| `js/goals.ts` | 755 | 200 | 0.00 🔴 | 566.25 hs | $11,325.00 | 3.54 m | $1,400 | 8.09 a | -75.3% |
 | `js/budgets.ts` | 695 | 173 | 0.00 🔴 | 521.25 hs | $10,425.00 | 3.26 m | $1,400 | 7.45 a | -73.1% |
-| `js/supermercados.ts` | 678 | 170 | 0.00 🔴 | 508.50 hs | $10,170.00 | 3.18 m | $1,400 | 7.26 a | -72.5% |
+| `js/supermercados.ts` | 675 | 170 | 0.00 🔴 | 506.25 hs | $10,125.00 | 3.16 m | $1,400 | 7.23 a | -72.3% |
 | `js/reports.ts` | 468 | 74 | 0.16 🔴 | 350.27 hs | $7,005.31 | 2.19 m | $1,400 | 5.00 a | -60.0% |
-| `js/services/shoppingService.ts` | 429 | 127 | 0.00 🔴 | 321.75 hs | $6,435.00 | 2.01 m | $1,400 | 4.60 a | -56.5% |
-| `js/transactions.ts` | 362 | 147 | 0.00 🔴 | 271.50 hs | $5,430.00 | 1.70 m | $1,400 | 3.88 a | -48.4% |
-| `js/shoppingList.ts` | 326 | 53 | 8.27 🔴 | 217.55 hs | $4,350.95 | 1.36 m | $1,400 | 3.11 a | -35.6% |
+| `js/transactions.ts` | 413 | 170 | 0.00 🔴 | 309.75 hs | $6,195.00 | 1.94 m | $1,400 | 4.42 a | -54.8% |
+| `js/services/shoppingService.ts` | 350 | 92 | 1.98 🔴 | 255.56 hs | $5,111.16 | 1.60 m | $1,400 | 3.65 a | -45.2% |
+| `js/shoppingList.ts` | 324 | 53 | 8.36 🔴 | 215.92 hs | $4,318.43 | 1.35 m | $1,400 | 3.08 a | -35.2% |
 | `js/scanner.ts` | 310 | 75 | 6.04 🔴 | 213.76 hs | $4,275.26 | 1.34 m | $1,400 | 3.05 a | -34.5% |
 | `js/import.ts` | 302 | 62 | 8.18 🔴 | 201.81 hs | $4,036.23 | 1.26 m | $1,400 | 2.88 a | -30.6% |
 | `js/services/accountService.ts` | 244 | 84 | 8.33 🔴 | 162.67 hs | $3,253.31 | 1.02 m | $1,400 | 2.32 a | -13.9% |
-| `js/services/shoppingListService.ts` | 233 | 32 | 16.00 🔴 | 137.46 hs | $2,749.29 | 0.86 m | $1,400 | 1.96 a | 1.8% |
 | `js/ui.ts` | 221 | 58 | 13.28 🔴 | 136.40 hs | $2,728.10 | 0.85 m | $1,400 | 1.95 a | 2.6% |
+| `js/profile.ts` | 201 | 75 | 12.38 🔴 | 125.87 hs | $2,517.38 | 0.79 m | $1,400 | 1.80 a | 11.2% |
+| `js/services/shoppingListService.ts` | 214 | 32 | 17.25 🔴 | 123.59 hs | $2,471.87 | 0.77 m | $1,400 | 1.77 a | 13.3% |
 | `js/ai.ts` | 206 | 50 | 15.38 🔴 | 122.81 hs | $2,456.26 | 0.77 m | $1,400 | 1.75 a | 14.0% |
-| `js/profile.ts` | 182 | 64 | 15.31 🔴 | 108.64 hs | $2,172.72 | 0.68 m | $1,400 | 1.55 a | 28.9% |
-| `js/services/goalService.ts` | 171 | 44 | 18.91 🔴 | 95.91 hs | $1,918.23 | 0.60 m | $1,400 | 1.37 a | 46.0% |
-| `js/services/sepaService.ts` | 165 | 33 | 20.91 🔴 | 89.24 hs | $1,784.87 | 0.56 m | $1,400 | 1.27 a | 56.9% |
-| `js/app.ts` | 153 | 50 | 19.73 🔴 | 84.56 hs | $1,691.25 | 0.53 m | $1,400 | 1.21 a | 65.6% |
+| `js/services/goalService.ts` | 170 | 42 | 19.27 🔴 | 94.75 hs | $1,894.95 | 0.59 m | $1,400 | 1.35 a | 47.8% |
+| `js/app.ts` | 157 | 55 | 18.68 🔴 | 88.42 hs | $1,768.43 | 0.55 m | $1,400 | 1.26 a | 58.3% |
 | `js/auth.ts` | 158 | 30 | 21.95 🔴 | 83.82 hs | $1,676.37 | 0.52 m | $1,400 | 1.20 a | 67.0% |
-| `js/types.ts` | 126 | 33 | 24.86 🔴 | 63.18 hs | $1,263.64 | 0.39 m | $1,400 | 0.90 a | 121.6% |
-| `js/components/chatbot.ts` | 102 | 13 | 30.63 🔴 | 45.25 hs | $905.05 | 0.28 m | $1,400 | 0.65 a | 209.4% |
+| `js/services/authService.ts` | 128 | 35 | 24.36 🔴 | 64.82 hs | $1,296.48 | 0.41 m | $1,400 | 0.93 a | 116.0% |
+| `js/components/chatbot.ts` | 102 | 14 | 30.50 🔴 | 45.39 hs | $907.79 | 0.28 m | $1,400 | 0.65 a | 208.4% |
 | `js/utils/utils.ts` | 83 | 29 | 31.50 🔴 | 36.11 hs | $722.16 | 0.23 m | $1,400 | 0.52 a | 287.7% |
-| `js/services/authService.ts` | 84 | 20 | 32.53 🔴 | 35.67 hs | $713.46 | 0.22 m | $1,400 | 0.51 a | 292.5% |
+| `js/services/transactionService.ts` | 81 | 26 | 32.26 🔴 | 34.62 hs | $692.44 | 0.22 m | $1,400 | 0.49 a | 304.4% |
+| `js/services/sepaService.ts` | 81 | 24 | 32.53 🔴 | 34.40 hs | $688.09 | 0.22 m | $1,400 | 0.49 a | 306.9% |
 | `js/store/store.ts` | 68 | 13 | 36.56 🔴 | 26.14 hs | $522.75 | 0.16 m | $1,400 | 0.37 a | 435.6% |
-| `js/services/transactionService.ts` | 60 | 9 | 38.93 🔴 | 21.64 hs | $432.83 | 0.14 m | $1,400 | 0.31 a | 546.9% |
 | `js/services/budgetService.ts` | 54 | 7 | 40.74 🟡 | 18.50 hs | $370.01 | 0.12 m | $1,400 | 0.26 a | 656.7% |
 | `js/api/apiClient.ts` | 39 | 14 | 44.56 🟡 | 11.87 hs | $237.46 | 0.07 m | $1,400 | 0.17 a | 1079.1% |
 | `js/api/authApi.ts` | 40 | 1 | 45.93 🟡 | 11.63 hs | $232.52 | 0.07 m | $1,400 | 0.17 a | 1104.2% |
 | `js/services/cameraService.ts` | 39 | 8 | 45.36 🟡 | 11.56 hs | $231.17 | 0.07 m | $1,400 | 0.17 a | 1111.2% |
 | `js/services/chatService.ts` | 30 | 7 | 49.33 🟡 | 7.70 hs | $154.00 | 0.05 m | $1,400 | 0.11 a | 1718.2% |
+| `js/types.ts` | 1 | 1 | 99.87 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
 
-**Subtotal Frontend (TypeScript / JS):** `6739.40 horas` | **Costo:** `$134,788.20 USD`
+**Subtotal Frontend (TypeScript / JS):** `6636.39 horas` | **Costo:** `$132,727.93 USD`
 
 ## Mobile (Flutter / Dart) (32 archivos)
 
@@ -149,19 +150,19 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `mobile/lib/screens/dashboard_screen.dart` | 156 | 13 | 24.42 🔴 | 78.90 hs | $1,578.00 | 0.49 m | $1,400 | 1.13 a | 77.4% |
 | `mobile/lib/providers/insights_provider.dart` | 145 | 36 | 22.40 🔴 | 76.27 hs | $1,525.44 | 0.48 m | $1,400 | 1.09 a | 83.6% |
 | `mobile/lib/screens/main_layout.dart` | 152 | 9 | 25.34 🔴 | 75.48 hs | $1,509.64 | 0.47 m | $1,400 | 1.08 a | 85.5% |
+| `mobile/lib/providers/auth_provider.dart` | 140 | 27 | 24.12 🔴 | 71.23 hs | $1,424.58 | 0.45 m | $1,400 | 1.02 a | 96.5% |
 | `mobile/lib/services/api_service.dart` | 134 | 28 | 24.63 🔴 | 67.50 hs | $1,349.97 | 0.42 m | $1,400 | 0.96 a | 107.4% |
-| `mobile/lib/providers/auth_provider.dart` | 131 | 25 | 25.36 🔴 | 65.02 hs | $1,300.50 | 0.41 m | $1,400 | 0.93 a | 115.3% |
 | `mobile/lib/screens/reports_screen.dart` | 125 | 11 | 27.93 🔴 | 58.84 hs | $1,176.72 | 0.37 m | $1,400 | 0.84 a | 137.9% |
 | `mobile/lib/providers/supermercado_provider.dart` | 116 | 41 | 24.99 🔴 | 58.01 hs | $1,160.27 | 0.36 m | $1,400 | 0.83 a | 141.3% |
 | `mobile/lib/models/supermercado_model.dart` | 96 | 25 | 29.91 🔴 | 43.29 hs | $865.78 | 0.27 m | $1,400 | 0.62 a | 223.4% |
 | `mobile/lib/providers/shopping_provider.dart` | 61 | 20 | 37.21 🔴 | 23.05 hs | $461.04 | 0.14 m | $1,400 | 0.33 a | 507.3% |
+| `mobile/lib/main.dart` | 62 | 3 | 39.26 🔴 | 22.16 hs | $443.20 | 0.14 m | $1,400 | 0.32 a | 531.8% |
 | `mobile/lib/providers/accounts_provider.dart` | 48 | 16 | 41.25 🟡 | 16.20 hs | $323.99 | 0.10 m | $1,400 | 0.23 a | 764.2% |
 | `mobile/lib/providers/transactions_provider.dart` | 48 | 16 | 41.25 🟡 | 16.20 hs | $323.99 | 0.10 m | $1,400 | 0.23 a | 764.2% |
 | `mobile/lib/providers/goals_provider.dart` | 46 | 15 | 42.01 🟡 | 15.18 hs | $303.52 | 0.09 m | $1,400 | 0.22 a | 822.5% |
 | `mobile/lib/providers/scanner_provider.dart` | 41 | 11 | 44.23 🟡 | 12.62 hs | $252.33 | 0.08 m | $1,400 | 0.18 a | 1009.7% |
 | `mobile/lib/providers/budgets_provider.dart` | 39 | 13 | 44.69 🟡 | 11.82 hs | $236.41 | 0.07 m | $1,400 | 0.17 a | 1084.4% |
 | `mobile/lib/providers/dashboard_provider.dart` | 38 | 12 | 45.20 🟡 | 11.32 hs | $226.44 | 0.07 m | $1,400 | 0.16 a | 1136.5% |
-| `mobile/lib/main.dart` | 34 | 2 | 48.18 🟡 | 9.12 hs | $182.40 | 0.06 m | $1,400 | 0.13 a | 1435.1% |
 | `mobile/lib/models/goal.dart` | 27 | 18 | 49.39 🟡 | 6.91 hs | $138.27 | 0.04 m | $1,400 | 0.10 a | 1925.0% |
 | `mobile/lib/services/supermercado_service.dart` | 23 | 6 | 53.35 🟡 | 4.98 hs | $99.58 | 0.03 m | $1,400 | 0.07 a | 2711.8% |
 | `mobile/lib/models/account.dart` | 20 | 8 | 55.13 🟡 | 3.97 hs | $79.49 | 0.02 m | $1,400 | 0.06 a | 3422.3% |
@@ -169,5 +170,5 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `mobile/lib/models/transaction.dart` | 20 | 3 | 55.80 🟡 | 3.84 hs | $76.80 | 0.02 m | $1,400 | 0.05 a | 3545.7% |
 | `mobile/lib/services/api_config.dart` | 3 | 1 | 83.80 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
 
-**Subtotal Mobile (Flutter / Dart):** `2209.45 horas` | **Costo:** `$44,189.23 USD`
+**Subtotal Mobile (Flutter / Dart):** `2228.70 horas` | **Costo:** `$44,574.11 USD`
 

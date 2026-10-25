@@ -1,9 +1,7 @@
+// @ts-nocheck
 import {
   SepaService,
   PRESET_CITIES,
-  MultiProductResponse,
-  SingleProductResponse,
-  ProductWithPrices,
 } from './services/sepaService.ts';
 import { ShoppingListService } from './services/shoppingListService.ts';
 import { showToast } from './utils/utils.ts';
@@ -16,18 +14,18 @@ let isGpsActive = false;
 let currentCityName = 'Buenos Aires (CABA)';
 
 // Estado de cámara para escáner de góndola
-let sepaCameraStream: MediaStream | null = null;
-let sepaBarcodeDetectorInterval: any = null;
+let sepaCameraStream = null;
+let sepaBarcodeDetectorInterval = null;
 
 /**
  * Detecta la ubicación del usuario mediante geolocalización del navegador.
  * Si falla o el usuario la deniega, aplica un fallback elegante sin bloquear la app.
  */
-export function detectLocation(): void {
+export function detectLocation() {
   const textEl = document.getElementById('sepaLocationText');
   const coordsEl = document.getElementById('sepaLocationCoords');
   const banner = document.getElementById('sepaLocationBanner');
-  const citySelect = document.getElementById('sepaCityPresetSelect') as HTMLSelectElement | null;
+  const citySelect = document.getElementById('sepaCityPresetSelect');
 
   if (!textEl || !banner) return;
 
@@ -67,7 +65,7 @@ export function detectLocation(): void {
   );
 }
 
-function applyFallbackLocation(name: string): void {
+function applyFallbackLocation(name) {
   const textEl = document.getElementById('sepaLocationText');
   const coordsEl = document.getElementById('sepaLocationCoords');
   const banner = document.getElementById('sepaLocationBanner');
@@ -92,8 +90,8 @@ function applyFallbackLocation(name: string): void {
 /**
  * Permite cambiar la ubicación manualmente desde el selector de ciudades argentinas.
  */
-export function onCityPresetChange(): void {
-  const select = document.getElementById('sepaCityPresetSelect') as HTMLSelectElement | null;
+export function onCityPresetChange() {
+  const select = document.getElementById('sepaCityPresetSelect');
   if (!select) return;
 
   const val = select.value;
@@ -102,7 +100,7 @@ export function onCityPresetChange(): void {
     return;
   }
 
-  const mapPresets: Record<string, { lat: number; lng: number; name: string }> = {
+  const mapPresets = {
     caba: { lat: -34.6037, lng: -58.3816, name: 'Buenos Aires (CABA)' },
     gba_norte: { lat: -34.4716, lng: -58.5284, name: 'GBA Norte (San Isidro)' },
     gba_sur: { lat: -34.7242, lng: -58.2525, name: 'GBA Sur (Quilmes)' },
@@ -131,7 +129,7 @@ export function onCityPresetChange(): void {
     }
 
     // Si ya hay un producto buscado, refrescar automáticamente
-    const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+    const input = document.getElementById('sepaSearchInput');
     if (input && input.value.trim().length >= 2) {
       searchSepa();
     }
@@ -141,8 +139,8 @@ export function onCityPresetChange(): void {
 /**
  * Re-ejecuta la búsqueda cuando el usuario cambia el radio, cadena o criterio de ordenamiento.
  */
-export function onFilterChange(): void {
-  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+export function onFilterChange() {
+  const input = document.getElementById('sepaSearchInput');
   if (input && input.value.trim().length >= 2) {
     searchSepa();
   }
@@ -151,8 +149,8 @@ export function onFilterChange(): void {
 /**
  * Búsqueda con un clic mediante los chips de productos esenciales.
  */
-export function quickSearchSepa(term: string): void {
-  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+export function quickSearchSepa(term) {
+  const input = document.getElementById('sepaSearchInput');
   if (input) {
     input.value = term;
     searchSepa();
@@ -162,11 +160,11 @@ export function quickSearchSepa(term: string): void {
 /**
  * Abre el modal de escaneo de código de barras con la cámara en góndola.
  */
-export async function openSepaBarcodeModal(): Promise<void> {
+export async function openSepaBarcodeModal() {
   const modal = document.getElementById('sepaBarcodeModal');
-  const video = document.getElementById('sepaBarcodeVideo') as HTMLVideoElement | null;
+  const video = document.getElementById('sepaBarcodeVideo');
   const statusEl = document.getElementById('sepaBarcodeCamStatus');
-  const manualInput = document.getElementById('sepaBarcodeManualInput') as HTMLInputElement | null;
+  const manualInput = document.getElementById('sepaBarcodeManualInput');
 
   if (!modal) return;
   modal.style.display = 'flex';
@@ -195,7 +193,7 @@ export async function openSepaBarcodeModal(): Promise<void> {
     if (statusEl) statusEl.textContent = 'Enfocá el código de barras en el recuadro';
 
     // Detección automática en tiempo real si el navegador soporta BarcodeDetector API
-    const win = window as any;
+    const win = window;
     if ('BarcodeDetector' in win) {
       try {
         const detector = new win.BarcodeDetector({
@@ -220,7 +218,7 @@ export async function openSepaBarcodeModal(): Promise<void> {
         // Fallback sin detector
       }
     }
-  } catch (err: any) {
+  } catch (err) {
     console.warn('No se pudo acceder a la cámara para SEPA:', err);
     if (statusEl) {
       statusEl.textContent = 'Permiso de cámara no concedido. Podés escribir el código manualmente:';
@@ -231,9 +229,9 @@ export async function openSepaBarcodeModal(): Promise<void> {
 /**
  * Detiene la cámara y cierra el modal de escaneo.
  */
-export function closeSepaBarcodeModal(): void {
+export function closeSepaBarcodeModal() {
   const modal = document.getElementById('sepaBarcodeModal');
-  const video = document.getElementById('sepaBarcodeVideo') as HTMLVideoElement | null;
+  const video = document.getElementById('sepaBarcodeVideo');
 
   if (sepaBarcodeDetectorInterval) {
     clearInterval(sepaBarcodeDetectorInterval);
@@ -257,7 +255,7 @@ export function closeSepaBarcodeModal(): void {
 /**
  * Se ejecuta al detectar exitosamente un código de barras.
  */
-function onBarcodeScannedSuccess(barcode: string): void {
+function onBarcodeScannedSuccess(barcode) {
   closeSepaBarcodeModal();
 
   // Vibrar si el dispositivo lo soporta
@@ -265,7 +263,7 @@ function onBarcodeScannedSuccess(barcode: string): void {
     navigator.vibrate([100, 50, 100]);
   }
 
-  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+  const input = document.getElementById('sepaSearchInput');
   if (input) {
     input.value = barcode;
   }
@@ -276,8 +274,8 @@ function onBarcodeScannedSuccess(barcode: string): void {
 /**
  * Envío manual de código desde el modal.
  */
-export function submitSepaManualBarcode(): void {
-  const manualInput = document.getElementById('sepaBarcodeManualInput') as HTMLInputElement | null;
+export function submitSepaManualBarcode() {
+  const manualInput = document.getElementById('sepaBarcodeManualInput');
   if (!manualInput) return;
   const val = manualInput.value.trim();
   if (!val) {
@@ -285,7 +283,7 @@ export function submitSepaManualBarcode(): void {
     return;
   }
   closeSepaBarcodeModal();
-  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+  const input = document.getElementById('sepaSearchInput');
   if (input) {
     input.value = val;
   }
@@ -295,14 +293,14 @@ export function submitSepaManualBarcode(): void {
 /**
  * Fallback compatible para prompt de código de barras.
  */
-export function promptSepaBarcode(): void {
+export function promptSepaBarcode() {
   openSepaBarcodeModal();
 }
 
 /**
  * Renderiza los chips dinámicos de los productos que el usuario tiene pendientes en su Lista de Compras.
  */
-export function renderSepaShoppingListChips(): void {
+export function renderSepaShoppingListChips() {
   const section = document.getElementById('sepaShoppingListSection');
   const chipsContainer = document.getElementById('sepaShoppingListChips');
   if (!section || !chipsContainer) return;
@@ -350,12 +348,12 @@ export function renderSepaShoppingListChips(): void {
 /**
  * Agrega un producto encontrado en la búsqueda de SEPA directamente a la Lista de Compras.
  */
-export function addFromSepaToShoppingList(name: string): void {
+export function addFromSepaToShoppingList(name) {
   try {
     ShoppingListService.addItem(name);
     renderSepaShoppingListChips();
     showToast(`🛒 "${name}" agregado a tu lista de compras`);
-  } catch (err: any) {
+  } catch (err) {
     showToast(err.message || 'Error al agregar a la lista', true);
   }
 }
@@ -363,8 +361,8 @@ export function addFromSepaToShoppingList(name: string): void {
 /**
  * Precarga y abre el modal de registro de gasto directamente con los datos del supermercado y producto.
  */
-export function registerExpenseFromSepa(comercio: string, producto: string, precio: number): void {
-  const win = window as any;
+export function registerExpenseFromSepa(comercio, producto, precio) {
+  const win = window;
   if (win.setModalType) {
     win.setModalType('expense');
   }
@@ -373,10 +371,10 @@ export function registerExpenseFromSepa(comercio: string, producto: string, prec
   }
 
   setTimeout(() => {
-    const descEl = document.getElementById('mDesc') as HTMLInputElement | null;
-    const amountEl = document.getElementById('mAmount') as HTMLInputElement | null;
-    const catEl = document.getElementById('mCat') as HTMLSelectElement | null;
-    const dateEl = document.getElementById('mDate') as HTMLInputElement | null;
+    const descEl = document.getElementById('mDesc');
+    const amountEl = document.getElementById('mAmount');
+    const catEl = document.getElementById('mCat');
+    const dateEl = document.getElementById('mDate');
 
     if (descEl) descEl.value = `Supermercado ${comercio} - ${producto}`;
     if (amountEl) amountEl.value = Math.round(precio).toString();
@@ -395,9 +393,9 @@ export function registerExpenseFromSepa(comercio: string, producto: string, prec
 /**
  * Busca si alguna cuenta o tarjeta registrada por el usuario coincide con la promoción bancaria.
  */
-export function findMatchingUserAccount(promoTag: string | null): string | null {
+export function findMatchingUserAccount(promoTag) {
   if (!promoTag) return null;
-  const accounts = (state.accounts || []) as any[];
+  const accounts = state.accounts || [];
   const tagLower = promoTag.toLowerCase();
 
   for (const acc of accounts) {
@@ -439,8 +437,8 @@ export function findMatchingUserAccount(promoTag: string | null): string | null 
 /**
  * Conecta el producto encontrado en el SEPA directamente con el Asistente de Compras Inteligente.
  */
-export function openShoppingFromSepa(nombre: string, precio: number, comercio: string): void {
-  const win = window as any;
+export function openShoppingFromSepa(nombre, precio, comercio) {
+  const win = window;
   if (win.setPage) {
     win.setPage(null, 'shopping');
   }
@@ -449,8 +447,8 @@ export function openShoppingFromSepa(nombre: string, precio: number, comercio: s
   }
 
   setTimeout(() => {
-    const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
-    const urlEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
+    const priceEl = document.getElementById('shoppingPrice');
+    const urlEl = document.getElementById('shoppingUrl');
     const previewBadge = document.getElementById('shoppingTitlePreview');
 
     if (priceEl) {
@@ -474,8 +472,8 @@ export function openShoppingFromSepa(nombre: string, precio: number, comercio: s
 /**
  * Ejecuta la búsqueda principal de productos en el SEPA.
  */
-export async function searchSepa(): Promise<void> {
-  const input = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+export async function searchSepa() {
+  const input = document.getElementById('sepaSearchInput');
   if (!input) return;
 
   const query = input.value.trim();
@@ -487,10 +485,10 @@ export async function searchSepa(): Promise<void> {
   const loading = document.getElementById('sepaLoading');
   const errorEl = document.getElementById('sepaError');
   const resultsWrap = document.getElementById('sepaResultsWrap');
-  const btn = document.getElementById('sepaSearchBtn') as HTMLButtonElement | null;
-  const radiusSelect = document.getElementById('sepaRadiusSelect') as HTMLSelectElement | null;
-  const chainSelect = document.getElementById('sepaChainSelect') as HTMLSelectElement | null;
-  const sortSelect = document.getElementById('sepaSortSelect') as HTMLSelectElement | null;
+  const btn = document.getElementById('sepaSearchBtn');
+  const radiusSelect = document.getElementById('sepaRadiusSelect');
+  const chainSelect = document.getElementById('sepaChainSelect');
+  const sortSelect = document.getElementById('sepaSortSelect');
 
   const radio = radiusSelect ? parseFloat(radiusSelect.value) || 10 : 10;
   const cadena = chainSelect ? chainSelect.value : 'todas';
@@ -503,7 +501,7 @@ export async function searchSepa(): Promise<void> {
 
   try {
     const isEan = /^\d{8,14}$/.test(query);
-    let multiData: MultiProductResponse;
+    let multiData;
 
     if (isEan) {
       const singleRes = await SepaService.searchSingleProduct({
@@ -532,7 +530,7 @@ export async function searchSepa(): Promise<void> {
     }
 
     renderMultiProductResults(multiData);
-  } catch (error: any) {
+  } catch (error) {
     let msg = error?.message || 'Error al buscar productos';
     if (errorEl) {
       errorEl.innerHTML = `
@@ -557,7 +555,7 @@ export async function searchSepa(): Promise<void> {
 /**
  * Convierte el resultado de producto individual al formato multi-producto.
  */
-function convertSingleToMulti(query: string, data: SingleProductResponse): MultiProductResponse {
+function convertSingleToMulti(query, data) {
   const preciosMinimos = (data.resultados || []).map((r) => r.precios.precio_minimo);
   const promedio =
     preciosMinimos.length > 0
@@ -597,7 +595,7 @@ function convertSingleToMulti(query: string, data: SingleProductResponse): Multi
 /**
  * Renderiza los resultados en el DOM.
  */
-function renderMultiProductResults(data: MultiProductResponse): void {
+function renderMultiProductResults(data) {
   const list = document.getElementById('sepaResultsList');
   const count = document.getElementById('sepaResultsCount');
   const queryInfo = document.getElementById('sepaQueryInfo');
@@ -609,7 +607,7 @@ function renderMultiProductResults(data: MultiProductResponse): void {
   count.textContent = `${data.total_productos} producto${data.total_productos !== 1 ? 's' : ''} disponible${data.total_productos !== 1 ? 's' : ''}`;
   queryInfo.textContent = `Búsqueda: "${data.query}" en ${currentCityName}`;
 
-  data.productos.forEach((producto: ProductWithPrices, idx: number) => {
+  data.productos.forEach((producto, idx) => {
     const card = document.createElement('div');
     card.style.cssText = `
       background: var(--surface2);
@@ -764,8 +762,8 @@ function renderMultiProductResults(data: MultiProductResponse): void {
     const header = card.querySelector('.sepa-product-header');
     if (header) {
       header.addEventListener('click', () => {
-        const body = card.querySelector(`.sepa-sucursales-${idx}`) as HTMLElement | null;
-        const chevron = card.querySelector(`.sepa-chevron-${idx}`) as HTMLElement | null;
+        const body = card.querySelector(`.sepa-sucursales-${idx}`);
+        const chevron = card.querySelector(`.sepa-chevron-${idx}`);
         if (!body) return;
 
         const isOpen = body.style.display !== 'none';
@@ -779,8 +777,8 @@ function renderMultiProductResults(data: MultiProductResponse): void {
 
     // Auto-expandir el primer producto encontrado
     if (idx === 0) {
-      const body = card.querySelector(`.sepa-sucursales-${idx}`) as HTMLElement | null;
-      const chevron = card.querySelector(`.sepa-chevron-${idx}`) as HTMLElement | null;
+      const body = card.querySelector(`.sepa-sucursales-${idx}`);
+      const chevron = card.querySelector(`.sepa-chevron-${idx}`);
       if (body) {
         body.style.display = 'block';
         if (chevron) chevron.style.transform = 'rotate(180deg)';
@@ -793,7 +791,7 @@ function renderMultiProductResults(data: MultiProductResponse): void {
 }
 
 // Cargar cadenas registradas y detectar ubicación inicial
-export async function initSepaModule(): Promise<void> {
+export async function initSepaModule() {
   detectLocation();
   renderSepaShoppingListChips();
   ShoppingListService.subscribe(() => {
@@ -802,7 +800,7 @@ export async function initSepaModule(): Promise<void> {
 
   try {
     const chains = await SepaService.fetchStoreChains();
-    const chainSelect = document.getElementById('sepaChainSelect') as HTMLSelectElement | null;
+    const chainSelect = document.getElementById('sepaChainSelect');
     if (chainSelect && chains.length > 0) {
       const currentVal = chainSelect.value;
       chainSelect.innerHTML = '<option value="todas">Todas las cadenas</option>';

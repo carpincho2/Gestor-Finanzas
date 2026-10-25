@@ -2,14 +2,14 @@
 import { showToast } from './utils/utils.ts';
 import { state, IS_SERVER } from './store/store.ts';
 import { TransactionService } from './services/transactionService.ts';
-import { ShoppingService, ShoppingAnalysisResponse } from './services/shoppingService.ts';
+import { ShoppingService } from './services/shoppingService.ts';
 
 let currentShoppingTab = 'link'; // 'link' | 'search' | 'barcode'
-let lastAnalyzedData: ShoppingAnalysisResponse | null = null;
-let cameraStream: MediaStream | null = null;
-let barcodeInterval: any = null;
+let lastAnalyzedData = null;
+let cameraStream = null;
+let barcodeInterval = null;
 
-export function initShopping(): void {
+export function initShopping() {
   const container = document.getElementById('shoppingView');
   if (!container) return;
 
@@ -18,12 +18,12 @@ export function initShopping(): void {
   renderPinnedComparison();
 }
 
-export function switchShoppingTab(tab: string): void {
+export function switchShoppingTab(tab) {
   currentShoppingTab = tab;
   const tabLink = document.getElementById('shoppingTabLink');
   const tabSearch = document.getElementById('shoppingTabSearch');
   const tabBarcode = document.getElementById('shoppingTabBarcode');
-  
+
   const panelLink = document.getElementById('shoppingPanelLink');
   const panelSearch = document.getElementById('shoppingPanelSearch');
   const panelBarcode = document.getElementById('shoppingPanelBarcode');
@@ -65,7 +65,7 @@ export function switchShoppingTab(tab: string): void {
   }
 }
 
-export function toggleAdvancedShoppingOptions(): void {
+export function toggleAdvancedShoppingOptions() {
   const panel = document.getElementById('shoppingAdvancedOptions');
   const icon = document.getElementById('shoppingAdvToggleIcon');
   if (!panel) return;
@@ -74,13 +74,13 @@ export function toggleAdvancedShoppingOptions(): void {
   if (icon) icon.textContent = isHidden ? '▲' : '▼';
 }
 
-function setupShoppingInputs(): void {
-  const inputEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
+function setupShoppingInputs() {
+  const inputEl = document.getElementById('shoppingUrl');
   const previewBadge = document.getElementById('shoppingTitlePreview');
   let lastFetchedUrl = '';
-  let debounceTimer: any = null;
+  let debounceTimer = null;
 
-  const triggerPriceFetch = (val: string) => {
+  const triggerPriceFetch = (val) => {
     if (!val || val === lastFetchedUrl) return;
     if (/^(https?:\/\/|[a-z0-9-]+\.[a-z]{2,})/i.test(val)) {
       lastFetchedUrl = val;
@@ -100,7 +100,7 @@ function setupShoppingInputs(): void {
         const u = new URL(fullUrl);
         const domain = u.hostname.replace(/^www\./, '');
         const pathParts = u.pathname.split('/').filter(p => p && p !== 'p' && !p.endsWith('.html') && !p.endsWith('.htm'));
-        
+
         let clean = '';
         if (pathParts.length > 0) {
           let rawPart = pathParts[pathParts.length - 1];
@@ -139,8 +139,8 @@ function setupShoppingInputs(): void {
 /**
  * Consulta precio y metadatos de producto de cualquier tienda web.
  */
-async function fetchProductPrice(urlText: string): Promise<void> {
-  const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
+async function fetchProductPrice(urlText) {
+  const priceEl = document.getElementById('shoppingPrice');
   const previewBadge = document.getElementById('shoppingTitlePreview');
   if (!priceEl) return;
 
@@ -148,7 +148,7 @@ async function fetchProductPrice(urlText: string): Promise<void> {
 
   try {
     let price = 0;
-    let title: string | null = null;
+    let title = null;
     let domain = 'Tienda';
     let hasMpToken = false;
 
@@ -182,7 +182,7 @@ async function fetchProductPrice(urlText: string): Promise<void> {
     } catch (_) {}
 
     // 2. Extraer item_id de Mercado Libre
-    let itemId: string | null = null;
+    let itemId = null;
     const queryMatch = urlText.match(/(?:item_id|wid)(?:%3A|=)(MLA-?\d+)/i);
     const catalogMatch = urlText.match(/\/p\/(ML[A-Z]-?\d+)/i);
     const generalMatch = urlText.match(/(ML[A-Z]-?\d{6,})/i);
@@ -254,7 +254,7 @@ async function fetchProductPrice(urlText: string): Promise<void> {
   }
 }
 
-document.addEventListener('input', (e: any) => {
+document.addEventListener('input', (e) => {
   if (e.target && e.target.id === 'shoppingPrice') {
     delete e.target.dataset.autoFilled;
   }
@@ -263,9 +263,9 @@ document.addEventListener('input', (e: any) => {
 /**
  * Búsqueda directa por palabra clave en catálogo.
  */
-export async function executeShoppingSearch(): Promise<void> {
-  const input = document.getElementById('shoppingSearchInput') as HTMLInputElement | null;
-  const btn = document.getElementById('shoppingSearchBtn') as HTMLButtonElement | null;
+export async function executeShoppingSearch() {
+  const input = document.getElementById('shoppingSearchInput');
+  const btn = document.getElementById('shoppingSearchBtn');
   const resultsBox = document.getElementById('shoppingSearchResults');
   if (!input || !resultsBox || !btn) return;
 
@@ -305,7 +305,7 @@ export async function executeShoppingSearch(): Promise<void> {
       </div>
     `;
     resultsBox.style.display = 'block';
-  } catch (err: any) {
+  } catch (err) {
     showToast('Error al buscar productos: ' + (err.message || ''), true);
   } finally {
     btn.innerHTML = origBtnText;
@@ -313,13 +313,13 @@ export async function executeShoppingSearch(): Promise<void> {
   }
 }
 
-export function selectSearchProduct(encodedUrl: string, price: number, encodedTitle: string): void {
+export function selectSearchProduct(encodedUrl, price, encodedTitle) {
   const url = decodeURIComponent(encodedUrl);
   const title = decodeURIComponent(encodedTitle);
 
   switchShoppingTab('link');
-  const urlEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
-  const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
+  const urlEl = document.getElementById('shoppingUrl');
+  const priceEl = document.getElementById('shoppingPrice');
   const previewEl = document.getElementById('shoppingTitlePreview');
 
   if (urlEl) urlEl.value = url;
@@ -338,9 +338,9 @@ export function selectSearchProduct(encodedUrl: string, price: number, encodedTi
 /**
  * Consulta de producto por código de barras.
  */
-export async function analyzeShoppingBarcode(): Promise<void> {
-  const input = document.getElementById('shoppingBarcodeInput') as HTMLInputElement | null;
-  const btn = document.getElementById('shoppingBarcodeBtn') as HTMLButtonElement | null;
+export async function analyzeShoppingBarcode() {
+  const input = document.getElementById('shoppingBarcodeInput');
+  const btn = document.getElementById('shoppingBarcodeBtn');
   if (!input) return;
 
   const barcode = input.value.trim();
@@ -349,11 +349,11 @@ export async function analyzeShoppingBarcode(): Promise<void> {
     return;
   }
 
-  const installments = parseInt((document.getElementById('shoppingInstallments') as HTMLSelectElement)?.value) || 0;
-  const discount = parseFloat((document.getElementById('shoppingDiscount') as HTMLInputElement)?.value) || 0;
-  const maxDiscount = parseFloat((document.getElementById('shoppingMaxDiscount') as HTMLInputElement)?.value) || null;
-  const tna = parseFloat((document.getElementById('shoppingTna') as HTMLInputElement)?.value) || 40;
-  const surcharge = parseFloat((document.getElementById('shoppingSurcharge') as HTMLInputElement)?.value) || 0;
+  const installments = parseInt(document.getElementById('shoppingInstallments')?.value) || 0;
+  const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;
+  const maxDiscount = parseFloat(document.getElementById('shoppingMaxDiscount')?.value) || null;
+  const tna = parseFloat(document.getElementById('shoppingTna')?.value) || 40;
+  const surcharge = parseFloat(document.getElementById('shoppingSurcharge')?.value) || 0;
 
   const origBtnText = btn ? btn.innerHTML : '';
   if (btn) {
@@ -382,7 +382,7 @@ export async function analyzeShoppingBarcode(): Promise<void> {
       renderShoppingResults(res);
       showToast('✅ Producto analizado por código de barras');
     }
-  } catch (err: any) {
+  } catch (err) {
     showToast(err.message || 'No se encontró el código de barras', true);
   } finally {
     if (btn) {
@@ -395,9 +395,9 @@ export async function analyzeShoppingBarcode(): Promise<void> {
 /**
  * Escáner de código de barras con la cámara en vivo del dispositivo.
  */
-export async function openShoppingCameraModal(): Promise<void> {
+export async function openShoppingCameraModal() {
   const modal = document.getElementById('shoppingBarcodeModal');
-  const video = document.getElementById('shoppingBarcodeVideo') as HTMLVideoElement | null;
+  const video = document.getElementById('shoppingBarcodeVideo');
   const statusEl = document.getElementById('shoppingCamStatus');
   if (!modal) return;
 
@@ -422,7 +422,7 @@ export async function openShoppingCameraModal(): Promise<void> {
     if (statusEl) statusEl.textContent = 'Apuntá el código de barras al recuadro.';
 
     if ('BarcodeDetector' in window) {
-      const barcodeDetector = new (window as any).BarcodeDetector({
+      const barcodeDetector = new window.BarcodeDetector({
         formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'qr_code']
       });
 
@@ -435,7 +435,7 @@ export async function openShoppingCameraModal(): Promise<void> {
             if (code) {
               if (navigator.vibrate) navigator.vibrate(100);
               closeShoppingCameraModal();
-              const input = document.getElementById('shoppingBarcodeInput') as HTMLInputElement | null;
+              const input = document.getElementById('shoppingBarcodeInput');
               if (input) input.value = code;
               showToast(`🔍 Código detectado: ${code}`);
               analyzeShoppingBarcode();
@@ -446,12 +446,12 @@ export async function openShoppingCameraModal(): Promise<void> {
     } else {
       if (statusEl) statusEl.textContent = 'Cámara activa. Si tu navegador no tiene BarcodeDetector, podés ingresar los números.';
     }
-  } catch (err: any) {
+  } catch (err) {
     if (statusEl) statusEl.textContent = 'Permiso denegado o cámara no disponible.';
   }
 }
 
-export function closeShoppingCameraModal(): void {
+export function closeShoppingCameraModal() {
   const modal = document.getElementById('shoppingBarcodeModal');
   if (modal) modal.style.display = 'none';
 
@@ -469,12 +469,12 @@ export function closeShoppingCameraModal(): void {
 /**
  * Analiza la URL del producto o el precio manual y calcula la recomendación financiera.
  */
-export async function analyzeShoppingUrl(): Promise<void> {
-  const urlEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
+export async function analyzeShoppingUrl() {
+  const urlEl = document.getElementById('shoppingUrl');
   const url = urlEl ? urlEl.value.trim() : '';
-  
-  let priceStr = ((document.getElementById('shoppingPrice') as HTMLInputElement)?.value || '').trim();
-  let priceVal: number | null = null;
+
+  let priceStr = (document.getElementById('shoppingPrice')?.value || '').trim();
+  let priceVal = null;
   if (priceStr) {
     if (priceStr.includes('.') && !priceStr.includes(',')) {
       const parts = priceStr.split('.');
@@ -485,15 +485,15 @@ export async function analyzeShoppingUrl(): Promise<void> {
     priceVal = parseFloat(priceStr) || null;
   }
 
-  const installments = parseInt((document.getElementById('shoppingInstallments') as HTMLSelectElement)?.value);
+  const installments = parseInt(document.getElementById('shoppingInstallments')?.value);
   const selectedInstallments = isNaN(installments) ? 0 : installments;
-  const discount = parseFloat((document.getElementById('shoppingDiscount') as HTMLInputElement)?.value) || 0;
-  const maxDiscount = parseFloat((document.getElementById('shoppingMaxDiscount') as HTMLInputElement)?.value) || null;
-  const tna = parseFloat((document.getElementById('shoppingTna') as HTMLInputElement)?.value) || 40;
-  const surcharge = parseFloat((document.getElementById('shoppingSurcharge') as HTMLInputElement)?.value) || 0;
-  
-  let installmentTotalStr = ((document.getElementById('shoppingInstallmentTotal') as HTMLInputElement)?.value || '').trim();
-  let installmentTotalVal: number | null = null;
+  const discount = parseFloat(document.getElementById('shoppingDiscount')?.value) || 0;
+  const maxDiscount = parseFloat(document.getElementById('shoppingMaxDiscount')?.value) || null;
+  const tna = parseFloat(document.getElementById('shoppingTna')?.value) || 40;
+  const surcharge = parseFloat(document.getElementById('shoppingSurcharge')?.value) || 0;
+
+  let installmentTotalStr = (document.getElementById('shoppingInstallmentTotal')?.value || '').trim();
+  let installmentTotalVal = null;
   if (installmentTotalStr) {
     installmentTotalVal = parseFloat(installmentTotalStr.replace(/\./g, '').replace(',', '.')) || null;
   }
@@ -503,13 +503,13 @@ export async function analyzeShoppingUrl(): Promise<void> {
     return;
   }
 
-  const btn = document.getElementById('shoppingAnalyzeBtn') as HTMLButtonElement | null;
+  const btn = document.getElementById('shoppingAnalyzeBtn');
   const origContent = btn ? btn.innerHTML : '';
   if (btn) {
     btn.innerHTML = `<span class="sc-loading-spinner" style="width:18px;height:18px;border-width:2px;border-top-color:transparent;display:inline-block;"></span> Analizando...`;
     btn.disabled = true;
   }
-  
+
   const resultsEl = document.getElementById('shoppingResultsContainer');
   if (resultsEl) resultsEl.style.display = 'none';
 
@@ -522,7 +522,7 @@ export async function analyzeShoppingUrl(): Promise<void> {
   } catch (_) {}
 
   try {
-    let data: ShoppingAnalysisResponse | null = null;
+    let data = null;
     if (IS_SERVER) {
       try {
         data = await ShoppingService.analyzeUrl({
@@ -535,7 +535,7 @@ export async function analyzeShoppingUrl(): Promise<void> {
           installmentTotal: installmentTotalVal,
           maxDiscount
         });
-      } catch (apiErr: any) {
+      } catch (apiErr) {
         if (!priceVal) {
           showToast(apiErr.message || '⚠️ Ingresá el precio del producto para calcular las opciones de pago', true);
           const priceEl = document.getElementById('shoppingPrice');
@@ -564,10 +564,10 @@ export async function analyzeShoppingUrl(): Promise<void> {
         accounts: state.accounts || []
       });
     }
-    
+
     if (data) {
       if (data.item?.price) {
-        const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
+        const priceEl = document.getElementById('shoppingPrice');
         if (priceEl && !priceEl.value) {
           priceEl.value = Math.round(data.item.price).toString();
           priceEl.dataset.autoFilled = 'true';
@@ -583,8 +583,8 @@ export async function analyzeShoppingUrl(): Promise<void> {
       renderShoppingHistory();
       renderShoppingResults(data);
     }
-    
-  } catch (err: any) {
+
+  } catch (err) {
     console.error(err);
     showToast(err.message || 'Error al analizar el producto', true);
   } finally {
@@ -598,13 +598,13 @@ export async function analyzeShoppingUrl(): Promise<void> {
 /**
  * Renderizado reactivo de resultados de la simulación.
  */
-function renderShoppingResults(data: ShoppingAnalysisResponse): void {
+function renderShoppingResults(data) {
   const container = document.getElementById('shoppingResultsContainer');
   if (!container) return;
   lastAnalyzedData = data;
   const { item, recommendation } = data;
-  
-  const formatMoney = (val: number) => '$ ' + Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+
+  const formatMoney = (val) => '$ ' + Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2 });
   const winner = recommendation.find(r => r.is_winner);
   const others = recommendation.filter(r => !r.is_winner);
 
@@ -616,7 +616,7 @@ function renderShoppingResults(data: ShoppingAnalysisResponse): void {
     const curMonth = now.getMonth();
     const curYear = now.getFullYear();
 
-    const selectedBudgetId = (window as any)._selectedShoppingBudgetId || budgets[0].id;
+    const selectedBudgetId = window._selectedShoppingBudgetId || budgets[0].id;
     let targetBudget = budgets.find(b => b.id === selectedBudgetId) || budgets[0];
 
     const spent = (state.transactions || [])
@@ -662,7 +662,7 @@ function renderShoppingResults(data: ShoppingAnalysisResponse): void {
       </div>
     `;
   }
-  
+
   let html = `
     <!-- Producto Card -->
     <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 20px;">
@@ -682,16 +682,16 @@ function renderShoppingResults(data: ShoppingAnalysisResponse): void {
     <!-- Impacto en Presupuesto -->
     ${budgetImpactHtml}
   `;
-  
+
   if (winner) {
     const savings = winner.nominal_cost - winner.real_cost;
-    const graceAdvantageTag = winner.has_grace_advantage 
+    const graceAdvantageTag = winner.has_grace_advantage
       ? `<div class="shopping-grace-badge">⭐ ¡Días de gracia! Cerró recientemente: ${winner.days_to_first_payment} días hasta el 1° pago</div>`
       : '';
     const breakEvenTag = winner.break_even_tna
       ? `<div class="shopping-break-even-badge">⚖️ TNA de equilibrio: ${winner.break_even_tna}%</div>`
       : '';
-    
+
     html += `
       <!-- Winner Card -->
       <h3 style="font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
@@ -703,9 +703,9 @@ function renderShoppingResults(data: ShoppingAnalysisResponse): void {
           📌 Fijar para Comparar
         </button>
       </h3>
-      
+
       <div style="background: linear-gradient(145deg, rgba(0, 229, 160, 0.12), rgba(0, 229, 160, 0.02)); border: 1px solid rgba(0, 229, 160, 0.35); border-radius: 16px; padding: 24px; margin-bottom: 24px; position: relative; overflow: hidden;">
-        
+
         <div style="position: relative; z-index: 1;">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 16px;">
             <div>
@@ -715,14 +715,14 @@ function renderShoppingResults(data: ShoppingAnalysisResponse): void {
               ${graceAdvantageTag}
               ${breakEvenTag}
             </div>
-            
+
             <div style="text-align: right;">
               <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Costo Real Estimado (VPN)</div>
               <div style="font-size: 28px; font-weight: 800; color: var(--accent);">${formatMoney(winner.real_cost)}</div>
               ${savings > 0 ? `<div style="font-size: 13px; color: var(--accent); font-weight: 600; margin-top: 4px;">Ahorrás ${formatMoney(savings)} vs contado</div>` : ''}
             </div>
           </div>
-          
+
           <div style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 18px;">
             <svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <div style="font-size: 13px; color: var(--text); line-height: 1.5;">
@@ -773,19 +773,19 @@ function renderShoppingResults(data: ShoppingAnalysisResponse): void {
       </div>
     `;
   }
-  
+
   if (others.length > 0) {
     html += `
       <h3 style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 14px;">Otras opciones evaluadas en tu billetera</h3>
       <div style="display: flex; flex-direction: column; gap: 12px;">
     `;
-    
+
     others.forEach((opt, idx) => {
       const isViable = opt.is_viable;
       const opacity = isViable ? '1' : '0.6';
       const actualIdx = recommendation.indexOf(opt);
       const scheduleId = `otherSchedule_${idx}`;
-      
+
       html += `
         <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; opacity: ${opacity};">
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
@@ -845,23 +845,23 @@ function renderShoppingResults(data: ShoppingAnalysisResponse): void {
         </div>
       `;
     });
-    
+
     html += `</div>`;
   }
-  
+
   container.innerHTML = html;
   container.style.display = 'block';
   container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-export function onShoppingBudgetChange(budgetId: string): void {
-  (window as any)._selectedShoppingBudgetId = parseInt(budgetId) || null;
+export function onShoppingBudgetChange(budgetId) {
+  window._selectedShoppingBudgetId = parseInt(budgetId) || null;
   if (lastAnalyzedData) {
     renderShoppingResults(lastAnalyzedData);
   }
 }
 
-export function toggleInstallmentsSchedule(containerId: string): void {
+export function toggleInstallmentsSchedule(containerId) {
   const el = document.getElementById(containerId);
   const icon = document.getElementById(containerId + 'Icon');
   if (!el) return;
@@ -873,7 +873,7 @@ export function toggleInstallmentsSchedule(containerId: string): void {
 /**
  * Registra directamente la opción elegida como transacción en el gestor.
  */
-export async function quickRegisterShoppingExpense(optionIndex: number): Promise<void> {
+export async function quickRegisterShoppingExpense(optionIndex) {
   if (!lastAnalyzedData || !lastAnalyzedData.recommendation) {
     showToast('No hay datos de simulación disponibles', true);
     return;
@@ -884,12 +884,12 @@ export async function quickRegisterShoppingExpense(optionIndex: number): Promise
   if (!opt || !item) return;
 
   const amountToRegister = (opt.installments > 1 && opt.monthly_installment) ? opt.monthly_installment : opt.nominal_cost;
-  const descText = opt.installments > 1 
-    ? `Compra: ${item.title.slice(0, 35)} (Cuota 1/${opt.installments})` 
+  const descText = opt.installments > 1
+    ? `Compra: ${item.title.slice(0, 35)} (Cuota 1/${opt.installments})`
     : `Compra: ${item.title.slice(0, 45)}`;
 
   // Categoría según el presupuesto evaluado o 'Compras'
-  const selectedBudgetId = (window as any)._selectedShoppingBudgetId;
+  const selectedBudgetId = window._selectedShoppingBudgetId;
   const matchingBudget = (state.budgets || []).find(b => b.id === selectedBudgetId);
   const finalCat = matchingBudget ? matchingBudget.cat : 'Compras';
 
@@ -904,11 +904,11 @@ export async function quickRegisterShoppingExpense(optionIndex: number): Promise
     };
 
     await TransactionService.addTransaction(tx);
-    if (typeof (window as any).renderAll === 'function') {
-      (window as any).renderAll();
+    if (typeof window.renderAll === 'function') {
+      window.renderAll();
     }
     showToast(`✅ Gasto de $${Math.round(amountToRegister).toLocaleString('es-AR')} registrado en ${opt.account_name}`);
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error al registrar compra:', err);
     showToast('Error al registrar el gasto: ' + (err.message || ''), true);
   }
@@ -916,7 +916,7 @@ export async function quickRegisterShoppingExpense(optionIndex: number): Promise
 
 // --- MODO COMPARADOR FIJADO ---
 
-export function pinCurrentOffer(): void {
+export function pinCurrentOffer() {
   if (!lastAnalyzedData || !lastAnalyzedData.recommendation) return;
   const winner = lastAnalyzedData.recommendation.find(r => r.is_winner);
   if (!winner) return;
@@ -933,13 +933,13 @@ export function pinCurrentOffer(): void {
   showToast('📌 Oferta fijada para comparar contra otra tienda o producto');
 }
 
-export function clearPinnedOffer(): void {
+export function clearPinnedOffer() {
   ShoppingService.clearPinnedOffer();
   renderPinnedComparison();
   showToast('Comparación fijada eliminada');
 }
 
-function renderPinnedComparison(): void {
+function renderPinnedComparison() {
   const container = document.getElementById('shoppingPinnedComparisonContainer');
   if (!container) return;
 
@@ -950,7 +950,7 @@ function renderPinnedComparison(): void {
     return;
   }
 
-  const currentWinner = (lastAnalyzedData && lastAnalyzedData.recommendation) 
+  const currentWinner = (lastAnalyzedData && lastAnalyzedData.recommendation)
     ? lastAnalyzedData.recommendation.find(r => r.is_winner)
     : null;
 
@@ -1011,7 +1011,7 @@ function renderPinnedComparison(): void {
 
 // --- HISTORIAL ---
 
-function renderShoppingHistory(): void {
+function renderShoppingHistory() {
   const container = document.getElementById('shoppingRecentHistoryContainer');
   const chips = document.getElementById('shoppingRecentHistoryChips');
   if (!container || !chips) return;
@@ -1037,13 +1037,13 @@ function renderShoppingHistory(): void {
   }
 }
 
-export function loadShoppingHistoryItem(encodedUrl: string, price: number, encodedTitle: string): void {
+export function loadShoppingHistoryItem(encodedUrl, price, encodedTitle) {
   const url = decodeURIComponent(encodedUrl);
   const title = decodeURIComponent(encodedTitle);
 
   switchShoppingTab('link');
-  const urlEl = document.getElementById('shoppingUrl') as HTMLInputElement | null;
-  const priceEl = document.getElementById('shoppingPrice') as HTMLInputElement | null;
+  const urlEl = document.getElementById('shoppingUrl');
+  const priceEl = document.getElementById('shoppingPrice');
   const previewEl = document.getElementById('shoppingTitlePreview');
 
   if (urlEl) urlEl.value = url;
@@ -1059,7 +1059,7 @@ export function loadShoppingHistoryItem(encodedUrl: string, price: number, encod
   analyzeShoppingUrl();
 }
 
-export function clearShoppingHistory(): void {
+export function clearShoppingHistory() {
   ShoppingService.clearHistory();
   renderShoppingHistory();
   showToast('Historial de compras limpiado');

@@ -81,8 +81,12 @@ export async function loadUserData() {
       
       state.scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
     } catch (err) {
-      console.error("Error cargando datos del backend:", err);
-      showToast("⚠️ Error al sincronizar con el servidor", true);
+      console.warn("Backend no disponible, cargando almacenamiento local:", err);
+      state.transactions = JSON.parse(localStorage.getItem(userKey('flujo_tx')) || '[]');
+      state.budgets = JSON.parse(localStorage.getItem(userKey('flujo_budgets')) || '[]');
+      state.accounts = JSON.parse(localStorage.getItem(userKey('flujo_accounts')) || '[]');
+      state.goals = JSON.parse(localStorage.getItem(userKey('flujo_goals')) || '[]');
+      state.scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
     }
   } else {
     state.transactions = JSON.parse(localStorage.getItem(userKey('flujo_tx')) || '[]');

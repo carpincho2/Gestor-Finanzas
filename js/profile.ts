@@ -11,12 +11,32 @@ export async function authCheckSession() {
   if (IS_SERVER) {
     try {
       const data = await fetchMe();
-      if (data.user) {
+      if (data && data.user) {
         authFinishLogin(data.user);
         return;
       }
     } catch (e) {
-      localStorage.removeItem(AUTH_KEY);
+      const msg = String((e && e.message) || e || '');
+      const isOffline =
+        (e && e.name === 'TypeError') ||
+        msg.includes('Failed to fetch') ||
+        msg.includes('NetworkError') ||
+        msg.includes('ERR_CONNECTION_REFUSED');
+
+      if (isOffline) {
+        const stored = localStorage.getItem(AUTH_KEY);
+        if (stored) {
+          try {
+            const user = JSON.parse(stored);
+            authFinishLogin(user);
+            return;
+          } catch (_) {
+            localStorage.removeItem(AUTH_KEY);
+          }
+        }
+      } else {
+        localStorage.removeItem(AUTH_KEY);
+      }
     }
   } else {
     const stored = localStorage.getItem(AUTH_KEY);
@@ -96,7 +116,7 @@ export function enterPerfilView() {
   document.getElementById('profileNameHeader').textContent = user.name || 'Usuario';
   document.getElementById('profileEmailHeader').textContent = user.email || '';
   document.getElementById('profileNameInput').value = user.name || '';
-  
+
   const initials = user.avatar || (user.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'JP');
   const avatarEl = document.getElementById('profileAvatar');
   if (avatarEl) {
@@ -197,4 +217,3 @@ export async function doResetData() {
   if (window.renderAll) window.renderAll();
   showToast("✅ Transacciones eliminadas y saldos en 0");
 }
-

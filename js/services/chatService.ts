@@ -1,18 +1,29 @@
-export interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+// @ts-nocheck
+import { API_BASE } from '../store/store.ts';
+
+/**
+ * @typedef {Object} ChatMessage
+ * @property {'user' | 'assistant'} role
+ * @property {string} content
+ */
 
 export class ChatService {
-  private endpoint = '/api/ai/chat';
+  constructor() {
+    this.endpoint = (API_BASE || '/api') + '/ai/chat';
+  }
 
-  async sendMessage(message: string, history: ChatMessage[] = []): Promise<string> {
+  /**
+   * @param {string} message
+   * @param {ChatMessage[]} [history=[]]
+   * @returns {Promise<string>}
+   */
+  async sendMessage(message, history = []) {
     try {
       const response = await fetch(this.endpoint, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          // Add authentication headers here if needed
         },
         body: JSON.stringify({
           message,

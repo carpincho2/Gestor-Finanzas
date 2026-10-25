@@ -1,6 +1,6 @@
+// @ts-nocheck
 import { state, IS_SERVER, userKey } from '../store/store.ts';
 import { apiFetch } from '../api/apiClient.ts';
-import { Goal, GoalContribution } from '../types.ts';
 
 function saveGoalsToLocal() {
   localStorage.setItem(userKey('flujo_goals'), JSON.stringify(state.goals));
@@ -16,7 +16,7 @@ export function initGoals() {
   }
 }
 
-export async function createGoal(goalData: Partial<Goal>) {
+export async function createGoal(goalData) {
   const payload = {
     ...goalData,
     currency: (goalData.currency || 'ARS').toUpperCase(),
@@ -35,12 +35,12 @@ export async function createGoal(goalData: Partial<Goal>) {
       id: Date.now(),
       ...payload,
       contributions: []
-    } as Goal);
+    });
     saveGoalsToLocal();
   }
 }
 
-export async function updateGoal(id: number, goalData: Partial<Goal>) {
+export async function updateGoal(id, goalData) {
   const payload = {
     ...goalData,
     currency: (goalData.currency || 'ARS').toUpperCase(),
@@ -62,7 +62,7 @@ export async function updateGoal(id: number, goalData: Partial<Goal>) {
   }
 }
 
-export async function toggleGoalStatus(id: number, newStatus?: string) {
+export async function toggleGoalStatus(id, newStatus) {
   if (IS_SERVER) {
     await apiFetch(`/goals/${id}/status`, {
       method: 'PATCH',
@@ -82,7 +82,7 @@ export async function toggleGoalStatus(id: number, newStatus?: string) {
   }
 }
 
-export async function deleteGoal(id: number) {
+export async function deleteGoal(id) {
   if (IS_SERVER) {
     await apiFetch(`/goals/${id}`, { method: 'DELETE' });
     if (window.loadUserData) await window.loadUserData();
@@ -93,12 +93,12 @@ export async function deleteGoal(id: number) {
 }
 
 export async function addContribution(
-  goalId: number, 
-  amount: number, 
-  date: string, 
-  note?: string, 
-  accountId: number | null = null, 
-  type: 'deposit' | 'withdraw' = 'deposit'
+  goalId,
+  amount,
+  date,
+  note,
+  accountId = null,
+  type = 'deposit'
 ) {
   const contribPayload = {
     amount,
@@ -118,7 +118,7 @@ export async function addContribution(
     const idx = state.goals.findIndex(x => x.id === goalId);
     if (idx > -1) {
       if (!state.goals[idx].contributions) state.goals[idx].contributions = [];
-      const newContrib: GoalContribution = {
+      const newContrib = {
         id: Date.now(),
         goal_id: goalId,
         amount,
@@ -127,8 +127,8 @@ export async function addContribution(
         account_id: accountId ? Number(accountId) : null,
         type
       };
-      state.goals[idx].contributions!.push(newContrib);
-      
+      state.goals[idx].contributions.push(newContrib);
+
       if (type === 'withdraw') {
         state.goals[idx].current = Math.max(0, state.goals[idx].current - amount);
       } else {
@@ -152,14 +152,14 @@ export async function addContribution(
   }
 }
 
-export async function removeContribution(goalId: number, contribId: number) {
+export async function removeContribution(goalId, contribId) {
   if (IS_SERVER) {
     await apiFetch(`/goals/${goalId}/contributions/${contribId}`, { method: 'DELETE' });
     if (window.loadUserData) await window.loadUserData();
   } else {
     const idx = state.goals.findIndex(x => x.id === goalId);
     if (idx > -1 && state.goals[idx].contributions) {
-      const c = state.goals[idx].contributions!.find(x => x.id === contribId);
+      const c = state.goals[idx].contributions.find(x => x.id === contribId);
       if (c) {
         const cType = c.type || 'deposit';
         if (cType === 'withdraw') {
@@ -181,7 +181,7 @@ export async function removeContribution(goalId: number, contribId: number) {
           }
         }
 
-        state.goals[idx].contributions = state.goals[idx].contributions!.filter(x => x.id !== contribId);
+        state.goals[idx].contributions = state.goals[idx].contributions.filter(x => x.id !== contribId);
         saveGoalsToLocal();
       }
     }

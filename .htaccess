@@ -1,7 +1,10 @@
-# Flujo Finance Manager — Apache config (LEGACY)
-# NOTA: Este archivo es legacy de una arquitectura anterior basada en PHP/Apache.
-# El proyecto actual usa FastAPI + Uvicorn. Este archivo no tiene efecto.
+# Flujo Finance Manager — Apache config
 Options -Indexes
+
+# Servir módulos .ts como JavaScript ejecutable en navegadores (evita MIME video/mp2t)
+<IfModule mod_mime.c>
+    AddType application/javascript .ts
+</IfModule>
 
 # PHP: mostrar errores solo en dev (comentar en producción)
 <IfModule mod_php.c>

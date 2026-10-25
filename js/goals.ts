@@ -2,15 +2,14 @@
 import { state } from './store/store.ts';
 import { showToast, formatMoney, escHtml, formatDate, formatDateLong } from './utils/utils.ts';
 import * as goalService from './services/goalService.ts';
-import { Goal, GoalContribution } from './types.ts';
 
 /* =====================================================
    OBJETIVOS DE AHORRO CON INTELIGENCIA FINANCIERA
    ===================================================== */
 
-let editingGoalId: number | null = null;
-let contribGoalId: number | null = null;
-let ovDonutChart: any = null;
+let editingGoalId = null;
+let contribGoalId = null;
+let ovDonutChart = null;
 let gmSelectedColor = '#00e5a0';
 let gmSelectedEmoji = '🎯';
 
@@ -24,9 +23,9 @@ const goalFilterState = {
 
 const GOAL_COLORS = ['#00e5a0', '#00c8ff', '#a855f7', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16'];
 const GOAL_EMOJIS = ['🎯', '✈️', '🏠', '🚗', '💰', '📚', '💻', '🏖️', '💍', '🎓', '🏋️', '🎸', '📈', '💊', '🛍️', '🐾'];
-const GOAL_CAT_EMOJIS: Record<string, string> = { 
-  'Viaje': '✈️', 'Ahorro': '💰', 'Hogar': '🏠', 'Vehículo': '🚗', 
-  'Educación': '📚', 'Tecnología': '💻', 'Inversión': '📈', 'Salud': '💊', 'Otro': '🎯' 
+const GOAL_CAT_EMOJIS = {
+  'Viaje': '✈️', 'Ahorro': '💰', 'Hogar': '🏠', 'Vehículo': '🚗',
+  'Educación': '📚', 'Tecnología': '💻', 'Inversión': '📈', 'Salud': '💊', 'Otro': '🎯'
 };
 
 function initGoals() {
@@ -34,8 +33,8 @@ function initGoals() {
 }
 
 /* ---- Entry ---- */
-function enterObjetivosView() { 
-  renderObjetivosView(); 
+function enterObjetivosView() {
+  renderObjetivosView();
 }
 
 /* ---- Main render ---- */
@@ -49,24 +48,24 @@ function renderObjetivosView() {
 }
 
 /* ---- Helpers de Cálculo Financiero ---- */
-function goalPct(g: Goal): number { 
-  return g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0; 
+function goalPct(g) {
+  return g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
 }
 
-function goalLeft(g: Goal): number { 
-  return Math.max(g.target - g.current, 0); 
+function goalLeft(g) {
+  return Math.max(g.target - g.current, 0);
 }
 
-function daysLeft(g: Goal): number | null { 
-  if (!g.deadline) return null; 
-  return Math.ceil((new Date(g.deadline + ' 00:00:00').getTime() - new Date().getTime()) / 86400000); 
+function daysLeft(g) {
+  if (!g.deadline) return null;
+  return Math.ceil((new Date(g.deadline + ' 00:00:00').getTime() - new Date().getTime()) / 86400000);
 }
 
-function isCompleted(g: Goal): boolean { 
-  return g.current >= g.target; 
+function isCompleted(g) {
+  return g.current >= g.target;
 }
 
-function timeProgressPct(g: Goal): number {
+function timeProgressPct(g) {
   if (!g.deadline) return 0;
   const startDateStr = g.start_date || (g.created_at ? g.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10));
   const start = new Date(startDateStr + ' 00:00:00').getTime();
@@ -79,13 +78,13 @@ function timeProgressPct(g: Goal): number {
   return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
 }
 
-function goalStatus(g: Goal): { key: string; label: string; cls: string } {
+function goalStatus(g) {
   if (isCompleted(g)) return { key: 'completed', label: '✅ Completado', cls: 'completed' };
   if (g.status === 'paused') return { key: 'paused', label: '⏸ Pausado', cls: 'paused' };
-  
+
   const dl = daysLeft(g);
   if (dl !== null && dl < 0) return { key: 'overdue', label: '⚠️ Vencido', cls: 'overdue' };
-  
+
   // Ritmo de ahorro vs tiempo transcurrido
   const tPct = timeProgressPct(g);
   const sPct = goalPct(g);
@@ -103,14 +102,14 @@ function goalStatus(g: Goal): { key: string; label: string; cls: string } {
   return { key: 'ontrack', label: '🔵 En camino', cls: 'ontrack' };
 }
 
-function monthlyNeeded(g: Goal): number {
+function monthlyNeeded(g) {
   const dl = daysLeft(g);
   if (!dl || dl <= 0 || isCompleted(g)) return 0;
   const months = Math.max(dl / 30, 0.5);
   return Math.ceil(goalLeft(g) / months);
 }
 
-function calcMonthlyAverageSavings(g: Goal): number {
+function calcMonthlyAverageSavings(g) {
   const contribs = g.contributions || [];
   if (contribs.length === 0) return 0;
 
@@ -134,7 +133,7 @@ function calcMonthlyAverageSavings(g: Goal): number {
 }
 
 /* ---- Filtros y Ordenamiento ---- */
-function setGoalFilter(status: string) {
+function setGoalFilter(status) {
   goalFilterState.status = status;
   document.querySelectorAll('.ov-filters-group .ov-filter-chip').forEach(btn => {
     btn.classList.toggle('active', btn.id === `ovFilter${status.charAt(0).toUpperCase() + status.slice(1)}`);
@@ -142,19 +141,19 @@ function setGoalFilter(status: string) {
   renderOvCards();
 }
 
-function setGoalCurrencyFilter(curr: string) {
+function setGoalCurrencyFilter(curr) {
   goalFilterState.currency = curr;
   renderOvCards();
   renderOvDonut();
   renderOvProjections();
 }
 
-function changeGoalSort(sortValue: string) {
+function changeGoalSort(sortValue) {
   goalFilterState.sort = sortValue;
   renderOvCards();
 }
 
-function handleGoalSearch(val: string) {
+function handleGoalSearch(val) {
   goalFilterState.search = val.trim().toLowerCase();
   renderOvCards();
 }
@@ -167,7 +166,7 @@ function renderOvSummary() {
   const activeCount = total - completed - paused;
 
   // Agrupación por divisas
-  const totalsByCurrency: Record<string, { saved: number; target: number }> = {};
+  const totalsByCurrency = {};
   state.goals.forEach(g => {
     const curr = (g.currency || 'ARS').toUpperCase();
     if (!totalsByCurrency[curr]) totalsByCurrency[curr] = { saved: 0, target: 0 };
@@ -302,7 +301,6 @@ function renderOvCards() {
     const completed = isCompleted(g);
     const curr = (g.currency || 'ARS').toUpperCase();
     const tPct = timeProgressPct(g);
-    const avgMonthly = calcMonthlyAverageSavings(g);
 
     // SVG ring
     const R = 38, CX = 44, CY = 44, STROKE = 6;
@@ -467,8 +465,8 @@ function renderOvDonut() {
         tooltip: {
           backgroundColor: '#131720', borderColor: '#232b3a', borderWidth: 1,
           titleColor: '#e8edf5', bodyColor: '#5a6478', padding: 10,
-          callbacks: { 
-            label: c => ` ${formatMoney(c.parsed, goalFilterState.currency !== 'all' ? goalFilterState.currency : 'ARS')}` 
+          callbacks: {
+            label: c => ` ${formatMoney(c.parsed, goalFilterState.currency !== 'all' ? goalFilterState.currency : 'ARS')}`
           }
         }
       }
@@ -476,9 +474,9 @@ function renderOvDonut() {
   });
 
   const leg = document.getElementById('ovDonutLegend');
-  if (visibleGoals.length === 0) { 
-    leg.innerHTML = '<div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:8px 0;">Sin objetivos.</div>'; 
-    return; 
+  if (visibleGoals.length === 0) {
+    leg.innerHTML = '<div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:8px 0;">Sin objetivos.</div>';
+    return;
   }
 
   leg.innerHTML = visibleGoals.map(g => {
@@ -510,7 +508,7 @@ function renderOvProjections() {
   }
 
   // Aporte total sugerido este mes por moneda
-  const neededByCurr: Record<string, number> = {};
+  const neededByCurr = {};
   activeGoals.forEach(g => {
     const c = (g.currency || 'ARS').toUpperCase();
     neededByCurr[c] = (neededByCurr[c] || 0) + monthlyNeeded(g);
@@ -574,7 +572,7 @@ function renderOvTimeline() {
 
 /* ---- Tips ---- */
 function renderOvTip() {
-  const tips: string[] = [];
+  const tips = [];
   state.goals.forEach(g => {
     const dl = daysLeft(g);
     const m = monthlyNeeded(g);
@@ -592,7 +590,7 @@ function renderOvTip() {
 
   if (!tips.length) {
     const totalGoals = state.goals.length;
-    tips.push(totalGoals > 0 
+    tips.push(totalGoals > 0
       ? `💪 ¡Tus metas van a buen ritmo! Mantené la constancia en tus aportes mensuales para cumplir tus objetivos.`
       : `✨ Sin objetivos activos. ¡Creá una nueva meta para empezar a ahorrar con propósito!`
     );
@@ -601,7 +599,7 @@ function renderOvTip() {
 }
 
 /* ---- Goal modal ---- */
-function openGoalModal(id?: number) {
+function openGoalModal(id) {
   editingGoalId = id || null;
   gmSelectedColor = '#00e5a0';
   gmSelectedEmoji = '🎯';
@@ -635,7 +633,7 @@ function openGoalModal(id?: number) {
     document.getElementById('gmNotes').value = g.notes || '';
     gmSelectedColor = g.color || '#00e5a0';
     gmSelectedEmoji = g.emoji || '🎯';
-    
+
     // Refresh grids with correct selection
     document.getElementById('gmEmojiGrid').innerHTML = GOAL_EMOJIS.map(e => `
       <button class="ov-emoji-btn ${e === gmSelectedEmoji ? 'active' : ''}" onclick="selectGmEmoji('${e}')">${e}</button>
@@ -662,20 +660,20 @@ function openGoalModal(id?: number) {
   document.getElementById('goalModalOverlay').classList.add('open');
 }
 
-function selectGmEmoji(e: string) {
+function selectGmEmoji(e) {
   gmSelectedEmoji = e;
   document.querySelectorAll('.ov-emoji-btn').forEach(b => b.classList.toggle('active', b.textContent === e));
 }
 
-function selectGmColor(c: string) {
+function selectGmColor(c) {
   gmSelectedColor = c;
   document.querySelectorAll('#gmColorGrid .bv-color-swatch').forEach(s => {
     s.classList.toggle('selected', s.style.background === c || s.style.backgroundColor === c);
   });
 }
 
-function closeGoalModal(e?: Event) {
-  if (!e || (e.target as HTMLElement).id === 'goalModalOverlay') {
+function closeGoalModal(e) {
+  if (!e || e.target.id === 'goalModalOverlay') {
     document.getElementById('goalModalOverlay').classList.remove('open');
     editingGoalId = null;
   }
@@ -694,7 +692,7 @@ async function saveGoal() {
   if (!name) { showToast('⚠️ Ingresá un nombre para la meta', true); return; }
   if (!target || target <= 0) { showToast('⚠️ Ingresá un monto meta válido', true); return; }
 
-  const goalData: Partial<Goal> = {
+  const goalData = {
     name, target, current, currency,
     start_date: startDate || new Date().toISOString().split('T')[0],
     deadline: deadline || null,
@@ -718,7 +716,7 @@ async function saveGoal() {
   }
 }
 
-async function toggleGoalStatus(id: number) {
+async function toggleGoalStatus(id) {
   try {
     await goalService.toggleGoalStatus(id);
     renderObjetivosView();
@@ -730,7 +728,7 @@ async function toggleGoalStatus(id: number) {
 }
 
 /* ---- Contribute modal ---- */
-function openContribModal(id: number, mode: 'deposit' | 'withdraw' = 'deposit') {
+function openContribModal(id, mode = 'deposit') {
   contribGoalId = id;
   const g = state.goals.find(x => x.id === id);
   if (!g) return;
@@ -745,7 +743,7 @@ function openContribModal(id: number, mode: 'deposit' | 'withdraw' = 'deposit') 
 
   // Poblar select de cuentas
   const accSelect = document.getElementById('cmAccount');
-  accSelect.innerHTML = `<option value="">Ninguna (solo registrar en meta)</option>` + 
+  accSelect.innerHTML = `<option value="">Ninguna (solo registrar en meta)</option>` +
     state.accounts.map(a => `
       <option value="${a.id}">${escHtml(a.name)} (${formatMoney(a.balance, a.currency || 'ARS')})</option>
     `).join('');
@@ -797,8 +795,8 @@ function updateContribModalType() {
   }
 }
 
-function closeContribModal(e?: Event) {
-  if (!e || (e.target as HTMLElement).id === 'contribModalOverlay') {
+function closeContribModal(e) {
+  if (!e || e.target.id === 'contribModalOverlay') {
     document.getElementById('contribModalOverlay').classList.remove('open');
     contribGoalId = null;
   }
@@ -809,7 +807,7 @@ async function saveContrib() {
   const date = document.getElementById('cmDate').value;
   const note = document.getElementById('cmNote').value.trim();
   const accountId = document.getElementById('cmAccount').value ? parseInt(document.getElementById('cmAccount').value) : null;
-  const type = document.getElementById('cmType').value as 'deposit' | 'withdraw';
+  const type = document.getElementById('cmType').value;
 
   if (!amount || amount <= 0) { showToast('⚠️ Ingresá un monto válido', true); return; }
   if (!date) { showToast('⚠️ Seleccioná una fecha', true); return; }
@@ -825,7 +823,7 @@ async function saveContrib() {
   }
 }
 
-async function deleteContrib(goalId: number, contribId: number) {
+async function deleteContrib(goalId, contribId) {
   try {
     await goalService.removeContribution(goalId, contribId);
     renderObjetivosView();
@@ -838,15 +836,15 @@ async function deleteContrib(goalId: number, contribId: number) {
 }
 
 /* ---- Delete goal ---- */
-function openGoalDeleteModal(id: number) {
+function openGoalDeleteModal(id) {
   editingGoalId = id;
   const g = state.goals.find(x => x.id === id);
   document.getElementById('gdName').textContent = g ? g.name : '';
   document.getElementById('goalDeleteOverlay').classList.add('open');
 }
 
-function closeGoalDeleteModal(e?: Event) {
-  if (!e || (e.target as HTMLElement).id === 'goalDeleteOverlay') {
+function closeGoalDeleteModal(e) {
+  if (!e || e.target.id === 'goalDeleteOverlay') {
     document.getElementById('goalDeleteOverlay').classList.remove('open');
     editingGoalId = null;
   }
@@ -854,7 +852,7 @@ function closeGoalDeleteModal(e?: Event) {
 
 async function doDeleteGoal() {
   try {
-    await goalService.deleteGoal(editingGoalId!);
+    await goalService.deleteGoal(editingGoalId);
     renderObjetivosView();
     showToast('Objetivo eliminado');
   } catch (err) {

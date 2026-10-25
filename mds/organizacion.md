@@ -96,8 +96,11 @@ El proyecto cuenta con tres puntos de entrada principales (Composition Roots), c
    - Las migraciones automáticas de columnas (`migrate_schema_columns`) y el cifrado de tokens (`migrate_plaintext_tokens`) se encuentran desacoplados en `api/infrastructure/migrations.py`.
    - Por seguridad, solo se exponen públicamente las carpetas estáticas necesarias (`/js`, `/css`, `/html`, `/data`), manteniendo ocultos los directorios internos `/mds` y `/tests`.
 
-2. **Frontend Web (`main.html` y `js/transactions.ts`)**:
+2. **Frontend Web (`index.html`, `main.html`, `js/*.ts` y `css/chatbot.css`)**:
    - Todas las vistas principales (`dashboardView`, `txView`, `perfilView`, etc.) se inyectan dinámicamente desde `html/views/*.html`.
+   - **Compatibilidad Universal de Módulos ES (`js/*.ts`)**: Los módulos en `js/` utilizan sintaxis ES6+ estándar con tipado mediante JSDoc, permitiendo su ejecución directa en navegadores sin transpilación intermedia (tanto desde FastAPI y Apache como mediante Vite). Tanto `api/main.py` (`mimetypes.add_type("application/javascript", ".ts")`) como `.htaccess` (`AddType application/javascript .ts`) registran el MIME type correcto para evitar bloqueos por `X-Content-Type-Options: nosniff`.
+   - **Fallback Inteligente de Autenticación (`js/services/authService.ts` y `js/profile.ts`)**: Si el cliente se abre en un servidor web estático mientras el backend FastAPI (`:8000`) está apagado, el servicio detecta el error de red (`Failed to fetch`) y conmuta automáticamente al modo local (`localStorage`), garantizando que el inicio de sesión y el registro funcionen siempre sin interrupciones.
+   - **No-bloqueo de Eventos de Puntero (`css/chatbot.css`)**: El contenedor flotante `.chatbot-widget` emplea `pointer-events: none` (habilitando `pointer-events: auto` solo en `.chatbot-bubble` y `.chatbot-window.is-open`) para no interceptar clics sobre botones subyacentes como el de "Iniciar sesión".
    - Los estilos se encuentran desacoplados en hojas modulares dentro de `css/` (`components.css`, `layout.css`, `views/*.css`) sin estilos en línea.
    - Los modales de creación y edición de transacciones comparten las mismas categorías normalizadas y permiten vincular cada movimiento a una **Cuenta** específica (`mAccount` y `eAccount`).
 

@@ -1,24 +1,23 @@
+// @ts-nocheck
 import {
   ShoppingListService,
-  FullBasketComparisonResult,
 } from './services/shoppingListService.ts';
-import { ShoppingListItem } from './types.ts';
 import { showToast } from './utils/utils.ts';
 
 /**
  * Inicializa y renderiza la vista completa de la Lista de Compras.
  */
-export function initShoppingListView(): void {
+export function initShoppingListView() {
   renderShoppingList();
 }
 
 /**
  * Agrega un nuevo ítem a la lista desde el formulario.
  */
-export function addShoppingListItem(): void {
-  const input = document.getElementById('shoppingItemInput') as HTMLInputElement | null;
-  const qtyInput = document.getElementById('shoppingItemQty') as HTMLInputElement | null;
-  const catSelect = document.getElementById('shoppingItemCat') as HTMLSelectElement | null;
+export function addShoppingListItem() {
+  const input = document.getElementById('shoppingItemInput');
+  const qtyInput = document.getElementById('shoppingItemQty');
+  const catSelect = document.getElementById('shoppingItemCat');
 
   if (!input) return;
 
@@ -39,7 +38,7 @@ export function addShoppingListItem(): void {
     input.focus();
     renderShoppingList();
     showToast(`🛒 "${name}" agregado a tu lista de compras`);
-  } catch (err: any) {
+  } catch (err) {
     showToast(err.message || 'Error al agregar el ítem', true);
   }
 }
@@ -47,7 +46,7 @@ export function addShoppingListItem(): void {
 /**
  * Alterna el estado de comprado/pendiente de un producto.
  */
-export function toggleShoppingListItem(id: string): void {
+export function toggleShoppingListItem(id) {
   ShoppingListService.toggleItem(id);
   renderShoppingList();
 }
@@ -55,7 +54,7 @@ export function toggleShoppingListItem(id: string): void {
 /**
  * Elimina un producto de la lista.
  */
-export function removeShoppingListItem(id: string): void {
+export function removeShoppingListItem(id) {
   ShoppingListService.removeItem(id);
   renderShoppingList();
   showToast('Ítem eliminado de la lista');
@@ -64,7 +63,7 @@ export function removeShoppingListItem(id: string): void {
 /**
  * Elimina todos los ítems marcados como completados.
  */
-export function clearCompletedShoppingList(): void {
+export function clearCompletedShoppingList() {
   ShoppingListService.clearCompleted();
   renderShoppingList();
   showToast('Ítems completados eliminados');
@@ -73,7 +72,7 @@ export function clearCompletedShoppingList(): void {
 /**
  * Carga una canasta básica temática en la lista.
  */
-export function addShoppingPreset(preset: 'basica' | 'limpieza' | 'desayuno'): void {
+export function addShoppingPreset(preset) {
   ShoppingListService.addPreset(preset);
   renderShoppingList();
   showToast(`✅ Canasta "${preset}" agregada a tu lista`);
@@ -83,15 +82,15 @@ export function addShoppingPreset(preset: 'basica' | 'limpieza' | 'desayuno'): v
  * Conexión directa con el Buscador SEPA:
  * Abre la sección SEPA y ejecuta la búsqueda inmediata de este ítem en los supermercados cercanos.
  */
-export function searchItemInSepa(itemName: string): void {
-  const win = window as any;
+export function searchItemInSepa(itemName) {
+  const win = window;
   if (win.setPage) {
     const navItem = document.getElementById('navSupermercadosItem');
     win.setPage(navItem, 'supermercados');
   }
 
   setTimeout(() => {
-    const searchInput = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+    const searchInput = document.getElementById('sepaSearchInput');
     if (searchInput) {
       searchInput.value = itemName;
     }
@@ -105,14 +104,14 @@ export function searchItemInSepa(itemName: string): void {
 /**
  * Compara toda la lista de compras activa en el Buscador SEPA.
  */
-export function compareEntireListInSepa(): void {
+export function compareEntireListInSepa() {
   const activeItems = ShoppingListService.getActiveItems();
   if (activeItems.length === 0) {
     showToast('Tu lista de compras no tiene productos pendientes para comparar', true);
     return;
   }
 
-  const win = window as any;
+  const win = window;
   if (win.setPage) {
     const navItem = document.getElementById('navSupermercadosItem');
     win.setPage(navItem, 'supermercados');
@@ -121,7 +120,7 @@ export function compareEntireListInSepa(): void {
   setTimeout(() => {
     // Si hay un primer ítem, iniciar la búsqueda con él
     const firstItem = activeItems[0];
-    const searchInput = document.getElementById('sepaSearchInput') as HTMLInputElement | null;
+    const searchInput = document.getElementById('sepaSearchInput');
     if (searchInput) {
       searchInput.value = firstItem.name;
     }
@@ -135,9 +134,9 @@ export function compareEntireListInSepa(): void {
 /**
  * Calcula la optimización de changuito completo y split shopping para toda la lista.
  */
-export async function calculateBasketOptimization(): Promise<void> {
+export async function calculateBasketOptimization() {
   const panel = document.getElementById('shoppingBasketPanel');
-  const btn = document.getElementById('shoppingBasketCalcBtn') as HTMLButtonElement | null;
+  const btn = document.getElementById('shoppingBasketCalcBtn');
   const content = document.getElementById('shoppingBasketContent');
 
   if (!panel || !content) return;
@@ -169,7 +168,7 @@ export async function calculateBasketOptimization(): Promise<void> {
     }
 
     renderBasketComparisonResult(res);
-  } catch (err: any) {
+  } catch (err) {
     content.innerHTML = `
       <div style="padding: 14px; color: var(--danger); font-size: 13px;">
         Error al cotizar la canasta: ${err.message || 'Error de conexión'}
@@ -180,7 +179,7 @@ export async function calculateBasketOptimization(): Promise<void> {
   }
 }
 
-function renderBasketComparisonResult(res: FullBasketComparisonResult): void {
+function renderBasketComparisonResult(res) {
   const content = document.getElementById('shoppingBasketContent');
   if (!content) return;
 
@@ -262,7 +261,7 @@ function renderBasketComparisonResult(res: FullBasketComparisonResult): void {
 /**
  * Renderiza el DOM de la lista de compras.
  */
-function renderShoppingList(): void {
+function renderShoppingList() {
   const items = ShoppingListService.getItems();
   const activeContainer = document.getElementById('shoppingActiveList');
   const completedContainer = document.getElementById('shoppingCompletedList');
@@ -310,11 +309,11 @@ function renderShoppingList(): void {
   }
 }
 
-function createItemCardHtml(item: ShoppingListItem): string {
+function createItemCardHtml(item) {
   const isDone = item.completed;
   const safeName = item.name.replace(/'/g, "\\'");
 
-  const categoryEmojis: Record<string, string> = {
+  const categoryEmojis = {
     Lácteos: '🥛',
     Almacén: '🌾',
     Bebidas: '🥤',

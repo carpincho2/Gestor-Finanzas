@@ -1,67 +1,12 @@
 // @ts-nocheck
 import { apiFetch } from '../api/apiClient.ts';
-import { userKey, state, IS_SERVER } from '../store/store.ts';
-
-export interface ShoppingProductItem {
-  id?: string;
-  title: string;
-  price: number;
-  currency?: string;
-  domain?: string;
-  source?: string;
-  permalink?: string;
-}
-
-export interface InstallmentScheduleItem {
-  installment_number: number;
-  nominal_amount: number;
-  present_value: number;
-  depreciation_pct: number;
-  days_until_payment: number;
-  estimated_date: string;
-}
-
-export interface ShoppingPaymentOption {
-  account_id?: number | null;
-  account_name: string;
-  type: string;
-  is_viable: boolean;
-  real_cost: number;
-  nominal_cost: number;
-  installments: number;
-  monthly_installment: number;
-  savings: number;
-  savings_pct: number;
-  payment_method: string;
-  days_to_first_payment?: number;
-  closing_day?: number | null;
-  due_day?: number | null;
-  has_grace_advantage?: boolean;
-  break_even_tna?: number | null;
-  installments_breakdown?: InstallmentScheduleItem[];
-  reason: string;
-  is_winner?: boolean;
-}
-
-export interface ShoppingAnalysisResponse {
-  ok: boolean;
-  item: ShoppingProductItem;
-  recommendation: ShoppingPaymentOption[];
-}
-
-export interface ShoppingHistoryEntry {
-  title: string;
-  price: number;
-  domain: string;
-  url: string;
-  date: string;
-}
+import { userKey } from '../store/store.ts';
 
 export class ShoppingService {
   /**
    * Consulta detalles de precio y metadatos de cualquier URL.
    */
-  static async fetchPrice(url: string): Promise<any> {
+  static async fetchPrice(url) {
     const encoded = encodeURIComponent(url.trim());
     return await apiFetch(`/shopping/fetch-price?url=${encoded}`);
   }
@@ -69,7 +14,7 @@ export class ShoppingService {
   /**
    * Búsqueda por palabra clave en catálogo con soporte multi-fuente.
    */
-  static async searchCatalog(query: string): Promise<any[]> {
+  static async searchCatalog(query) {
     const res = await apiFetch(`/shopping/search?q=${encodeURIComponent(query.trim())}`);
     return res.results || [];
   }
@@ -77,15 +22,7 @@ export class ShoppingService {
   /**
    * Análisis financiero para código de barras EAN/GTIN.
    */
-  static async analyzeBarcode(params: {
-    barcode: string;
-    installments?: number;
-    discount?: number;
-    tna?: number;
-    surcharge?: number;
-    installmentTotal?: number | null;
-    maxDiscount?: number | null;
-  }): Promise<ShoppingAnalysisResponse> {
+  static async analyzeBarcode(params) {
     return await apiFetch('/shopping/analyze-barcode', {
       method: 'POST',
       body: JSON.stringify({
@@ -103,16 +40,7 @@ export class ShoppingService {
   /**
    * Análisis financiero para URL o precio manual.
    */
-  static async analyzeUrl(params: {
-    url: string;
-    price?: number | null;
-    installments?: number;
-    discount?: number;
-    tna?: number;
-    surcharge?: number;
-    installmentTotal?: number | null;
-    maxDiscount?: number | null;
-  }): Promise<ShoppingAnalysisResponse> {
+  static async analyzeUrl(params) {
     return await apiFetch('/shopping/analyze-url', {
       method: 'POST',
       body: JSON.stringify({
@@ -131,7 +59,7 @@ export class ShoppingService {
   /**
    * Calcula los días exactos hasta el primer pago considerando cierre y vencimiento de tarjeta.
    */
-  static calculateDaysToFirstPayment(today: Date, closingDay?: number | null, dueDay?: number | null): number {
+  static calculateDaysToFirstPayment(today, closingDay, dueDay) {
     if (!closingDay || !dueDay || closingDay < 1 || closingDay > 31 || dueDay < 1 || dueDay > 31) {
       return 30;
     }
@@ -142,7 +70,6 @@ export class ShoppingService {
 
     const maxDaysCurrentMonth = new Date(year, month + 1, 0).getDate();
     const adjClosing = Math.min(closingDay, maxDaysCurrentMonth);
-    const closingDate = new Date(year, month, adjClosing);
 
     let dueYear = year;
     let dueMonth = month;
@@ -180,15 +107,15 @@ export class ShoppingService {
    * Calcula la TNA de corte (Break-Even TNA) cuando hay recargo en cuotas.
    */
   static calculateBreakEvenTna(
-    cashPrice: number,
-    totalCredit: number,
-    installments: number,
-    daysToFirst: number = 30
-  ): number | null {
+    cashPrice,
+    totalCredit,
+    installments,
+    daysToFirst = 30
+  ) {
     if (installments <= 1 || totalCredit <= cashPrice || cashPrice <= 0) return null;
     const installmentAmount = totalCredit / installments;
 
-    const vpnForTna = (tnaVal: number) => {
+    const vpnForTna = (tnaVal) => {
       const ted = (tnaVal / 100) / 365;
       let tot = 0;
       for (let k = 0; k < installments; k++) {
@@ -216,17 +143,17 @@ export class ShoppingService {
    * Cronograma detallado de cuotas y desvalorización por inflación.
    */
   static calculatePaymentSchedule(
-    installmentAmount: number,
-    installments: number,
-    tna: number,
-    daysToFirst: number = 30,
-    startDate?: Date,
-    hasGraceAdvantage: boolean = false
-  ): { vpn: number; schedule: InstallmentScheduleItem[] } {
+    installmentAmount,
+    installments,
+    tna,
+    daysToFirst = 30,
+    startDate,
+    hasGraceAdvantage = false
+  ) {
     const baseDate = startDate || new Date();
     const ted = tna > 0 ? (tna / 100) / 365 : 0;
     let vpnTotal = 0;
-    const schedule: InstallmentScheduleItem[] = [];
+    const schedule = [];
     const shouldDiscount = installments > 1 || hasGraceAdvantage;
 
     for (let k = 0; k < installments; k++) {
@@ -256,18 +183,7 @@ export class ShoppingService {
   /**
    * Motor financiero de evaluación local (fallback offline y simulación instantánea).
    */
-  static localEvaluateShopping(params: {
-    url: string;
-    title: string;
-    price: number;
-    installments: number;
-    discount?: number;
-    tna?: number;
-    surcharge?: number;
-    installmentTotal?: number | null;
-    maxDiscount?: number | null;
-    accounts?: any[];
-  }): ShoppingAnalysisResponse {
+  static localEvaluateShopping(params) {
     const { url, title, price, installments, discount = 0, tna = 40, surcharge = 0, installmentTotal = null, maxDiscount = null, accounts = [] } = params;
 
     const today = new Date();
@@ -289,7 +205,7 @@ export class ShoppingService {
     }
 
     const cuotas = installments > 0 ? [installments] : [1, 3, 6, 9, 12, 18, 24];
-    const options: ShoppingPaymentOption[] = [];
+    const options = [];
 
     if (accounts.length === 0) {
       for (const n of cuotas) {
@@ -454,7 +370,7 @@ export class ShoppingService {
 
   // --- PERSISTENCIA DE HISTORIAL CON userKey() ---
 
-  static getHistory(): ShoppingHistoryEntry[] {
+  static getHistory() {
     try {
       const raw = localStorage.getItem(userKey('flujo_shopping_history'));
       if (raw) return JSON.parse(raw);
@@ -467,7 +383,7 @@ export class ShoppingService {
     }
   }
 
-  static saveHistory(entry: ShoppingHistoryEntry): void {
+  static saveHistory(entry) {
     try {
       let hist = this.getHistory();
       hist = hist.filter(h => h.title !== entry.title);
@@ -482,14 +398,14 @@ export class ShoppingService {
     } catch (_) {}
   }
 
-  static clearHistory(): void {
+  static clearHistory() {
     localStorage.removeItem(userKey('flujo_shopping_history'));
     localStorage.removeItem('gestor_shopping_history');
   }
 
   // --- MODO COMPARADOR (OFERTA A vs OFERTA B) ---
 
-  static getPinnedOffer(): any {
+  static getPinnedOffer() {
     try {
       const raw = sessionStorage.getItem(userKey('flujo_shopping_pinned'));
       return raw ? JSON.parse(raw) : null;
@@ -498,13 +414,13 @@ export class ShoppingService {
     }
   }
 
-  static setPinnedOffer(data: any): void {
+  static setPinnedOffer(data) {
     try {
       sessionStorage.setItem(userKey('flujo_shopping_pinned'), JSON.stringify(data));
     } catch (_) {}
   }
 
-  static clearPinnedOffer(): void {
+  static clearPinnedOffer() {
     sessionStorage.removeItem(userKey('flujo_shopping_pinned'));
   }
 }

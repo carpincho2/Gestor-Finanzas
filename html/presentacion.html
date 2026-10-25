@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presentación - Flujo: Gestor de Finanzas</title>
+    <link rel="stylesheet" href="../css/presentacion.css">
+</head>
+<body>
+    <div class="deck-container">
+        <!-- Barra superior -->
+        <header class="deck-topbar">
+            <div class="brand">
+                <span class="brand-dot"></span>
+                <span>Flujo — Defensa de Proyecto</span>
+            </div>
+            <div class="slide-counter">
+                Diapositiva <span id="currentSlideNum">1</span> de <span id="totalSlidesNum">7</span>
+            </div>
+            <div class="top-actions">
+                <button id="fullscreenBtn" class="btn-Action" title="Pantalla Completa (Tecla F)">⛶ Pantalla Completa</button>
+            </div>
+        </header>
+
+        <!-- Contenedor de Diapositivas -->
+        <main class="slides-viewport">
+
+            <!-- SLIDE 1: PORTADA -->
+            <section class="slide active" data-slide="1">
+                <div class="slide-content hero-slide">
+                    <span class="pill-tag">Defensa de Proyecto Integrador</span>
+                    <h1 class="main-title">Flujo Finance Manager</h1>
+                    <p class="hero-lead">
+                        Gestor de finanzas personales, comparador de precios de supermercados y asistente inteligente de compras pensado para Argentina.
+                    </p>
+                    <div class="tech-pills">
+                        <span>🌐 Web App (HTML / CSS / TS)</span>
+                        <span>📱 App Móvil (Flutter)</span>
+                        <span>🐍 Backend API (Python / FastAPI)</span>
+                        <span>🤖 Inteligencia Artificial &amp; OCR</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 2: EL PROBLEMA Y LA IDEA -->
+            <section class="slide" data-slide="2">
+                <div class="slide-content">
+                    <span class="slide-kicker">01. El Problema Real</span>
+                    <h2>¿Por qué hicimos este proyecto?</h2>
+                    <p class="slide-subtitle">Las apps comunes solo sirven para anotar gastos a mano, pero en el día a día tenemos 3 problemas reales:</p>
+
+                    <div class="grid-3">
+                        <div class="feature-card card-rose">
+                            <div class="card-icon">💸</div>
+                            <h3>Plata repartida por todos lados</h3>
+                            <p>Tenés plata en efectivo, en el banco y en billeteras como Mercado Pago. A mitad de mes es muy difícil saber cuánto tenés disponible realmente.</p>
+                        </div>
+
+                        <div class="feature-card card-amber">
+                            <div class="card-icon">🛒</div>
+                            <h3>Precios muy distintos en el súper</h3>
+                            <p>Por la inflación, el mismo producto puede salir un 30% o 40% más caro en un supermercado que en otro que está a tres cuadras.</p>
+                        </div>
+
+                        <div class="feature-card card-blue">
+                            <div class="card-icon">💳</div>
+                            <h3>Dudas al momento de pagar</h3>
+                            <p>Cuando querés comprar algo grande (como en Mercado Libre), cuesta calcular rápido con qué tarjeta o billetera te conviene pagar para ahorrar.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 3: QUÉ ES CADA SECCIÓN (PARTE 1: FINANZAS) -->
+            <section class="slide" data-slide="3">
+                <div class="slide-content">
+                    <span class="slide-kicker">02. Recorrido por la App — Parte 1</span>
+                    <h2>El Control de tu Plata</h2>
+                    <p class="slide-subtitle">Cómo organizamos las herramientas principales para el día a día:</p>
+
+                    <div class="grid-2x2">
+                        <div class="info-box">
+                            <div class="info-header">
+                                <span class="info-emoji">📊</span>
+                                <h3>1. Dashboard (Resumen)</h3>
+                            </div>
+                            <p>Es la pantalla principal. Te muestra de un vistazo tu plata total, cuánto te entró y cuánto gastaste en el mes, con gráficos simples para ver en qué se te va el dinero.</p>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-header">
+                                <span class="info-emoji">🏦</span>
+                                <h3>2. Cuentas</h3>
+                            </div>
+                            <p>Donde registrás todos los lugares donde guardás plata (Efectivo, Bancos, Mercado Pago, Tarjetas, en Pesos o Dólares). Cada movimiento o transferencia actualiza el saldo solo.</p>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-header">
+                                <span class="info-emoji">🧾</span>
+                                <h3>3. Transacciones + Lector OCR</h3>
+                            </div>
+                            <p>El historial de ingresos y gastos. Podés anotarlos a mano o <strong>sacarle una foto al ticket del súper (OCR)</strong> para que la IA lea los productos y cargue el gasto sola.</p>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-header">
+                                <span class="info-emoji">🎯</span>
+                                <h3>4. Presupuestos y Objetivos</h3>
+                            </div>
+                            <p><strong>Presupuestos:</strong> Límites de gasto por mes (ej. Salidas) con alertas si te estás por pasar.<br><strong>Objetivos:</strong> Alcancías virtuales para ahorrar hacia una meta (ej. Notebook o Vacaciones).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 4: QUÉ ES CADA SECCIÓN (PARTE 2: AHORRO INTELIGENTE) -->
+            <section class="slide" data-slide="4">
+                <div class="slide-content">
+                    <span class="slide-kicker">03. Recorrido por la App — Parte 2</span>
+                    <h2>Herramientas para Ahorrar de Verdad</h2>
+                    <p class="slide-subtitle">Lo que diferencia a Flujo de cualquier anotador de gastos tradicional:</p>
+
+                    <div class="grid-2x2">
+                        <div class="info-box highlight-emerald">
+                            <div class="info-header">
+                                <span class="info-emoji">📍</span>
+                                <h3>5. Buscador de Supermercados (SEPA)</h3>
+                            </div>
+                            <p>Un comparador de precios conectado a la lista oficial de Precios Claros del gobierno. Usa tu ubicación para decirte en qué supermercado cercano te sale más barato tu carrito.</p>
+                        </div>
+
+                        <div class="info-box highlight-blue">
+                            <div class="info-header">
+                                <span class="info-emoji">🛍️</span>
+                                <h3>6. Asistente de Compras</h3>
+                            </div>
+                            <p>Pegás el link de un producto (por ejemplo de Mercado Libre), la app extrae el precio sola y te recomienda con qué billetera o tarjeta tuya te conviene pagarlo.</p>
+                        </div>
+
+                        <div class="info-box highlight-purple">
+                            <div class="info-header">
+                                <span class="info-emoji">🤖</span>
+                                <h3>7. Chatbot con IA</h3>
+                            </div>
+                            <p>Un asistente dentro de la app al que le podés preguntar cosas normales sobre tu plata (<em>"¿En qué gasté más este mes?"</em>) y te responde analizando tus propios números.</p>
+                        </div>
+
+                        <div class="info-box highlight-amber">
+                            <div class="info-header">
+                                <span class="info-emoji">📱</span>
+                                <h3>8. App Móvil (Flutter) + Sincronización</h3>
+                            </div>
+                            <p>Versión para Android conectada al mismo servidor que la Web, más conexión directa con tu cuenta de <strong>Mercado Pago</strong> para traer tus gastos sin duplicarlos.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 5: DIAGRAMA DE ARQUITECTURA SIMPLE -->
+            <section class="slide" data-slide="5">
+                <div class="slide-content">
+                    <span class="slide-kicker">04. Arquitectura del Sistema</span>
+                    <h2>¿Cómo está armado por dentro?</h2>
+                    <p class="slide-subtitle">Dividimos el sistema en 4 capas bien separadas para trabajar ordenados y no mezclar todo:</p>
+
+                    <div class="arch-flow">
+                        <div class="arch-step step-1">
+                            <div class="step-badge">Capa 1</div>
+                            <h3>Pantallas (Frontend)</h3>
+                            <div class="step-item">
+                                <strong>Página Web</strong>
+                                <span>HTML, CSS y TypeScript</span>
+                            </div>
+                            <div class="step-item">
+                                <strong>App Celular</strong>
+                                <span>Flutter (Android)</span>
+                            </div>
+                        </div>
+
+                        <div class="flow-arrow">➔</div>
+
+                        <div class="arch-step step-2">
+                            <div class="step-badge">Capa 2</div>
+                            <h3>Entrada al Servidor</h3>
+                            <div class="step-item">
+                                <strong>Rutas (FastAPI)</strong>
+                                <span>Reciben pedidos y validan datos</span>
+                            </div>
+                            <div class="step-item">
+                                <strong>Seguridad (JWT)</strong>
+                                <span>Login y claves encriptadas</span>
+                            </div>
+                        </div>
+
+                        <div class="flow-arrow">➔</div>
+
+                        <div class="arch-step step-3">
+                            <div class="step-badge">Capa 3</div>
+                            <h3>Lógica (Servicios)</h3>
+                            <div class="step-item">
+                                <strong>Cuentas y Gastos</strong>
+                                <span>Suma/resta saldos y alertas</span>
+                            </div>
+                            <div class="step-item">
+                                <strong>Motor SEPA, OCR e IA</strong>
+                                <span>Limpia precios y lee tickets</span>
+                            </div>
+                        </div>
+
+                        <div class="flow-arrow">➔</div>
+
+                        <div class="arch-step step-4">
+                            <div class="step-badge">Capa 4</div>
+                            <h3>Datos y Conexiones</h3>
+                            <div class="step-item">
+                                <strong>Repositorios (BD)</strong>
+                                <span>Guarda todo con SQLAlchemy</span>
+                            </div>
+                            <div class="step-item">
+                                <strong>Adaptadores</strong>
+                                <span>Conecta con Mercado Pago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 6: DECISIONES DE ARQUITECTURA -->
+            <section class="slide" data-slide="6">
+                <div class="slide-content">
+                    <span class="slide-kicker">05. Defensa Técnica</span>
+                    <h2>4 Decisiones Importantes que Tomamos</h2>
+                    <p class="slide-subtitle">Problemas reales que nos encontramos al programar y cómo los resolvimos:</p>
+
+                    <div class="decisions-list">
+                        <div class="decision-row">
+                            <div class="dec-number">1</div>
+                            <div class="dec-text">
+                                <h3>Un solo Backend para la Web y el Celular</h3>
+                                <p>En vez de programar las cuentas dos veces, pusimos toda la lógica en el servidor con <strong>FastAPI</strong>. Así, cualquier arreglo impacta en la Web y en la App de Android al mismo tiempo.</p>
+                            </div>
+                        </div>
+
+                        <div class="decision-row">
+                            <div class="dec-number">2</div>
+                            <div class="dec-text">
+                                <h3>Separar en Capas (Rutas ➔ Servicios ➔ Repositorios)</h3>
+                                <p>Al principio teníamos todo mezclado en el mismo archivo. Lo separamos para que cada parte haga una sola cosa: las rutas reciben el pedido, los servicios calculan y los repositorios guardan en la base de datos.</p>
+                            </div>
+                        </div>
+
+                        <div class="decision-row">
+                            <div class="dec-number">3</div>
+                            <div class="dec-text">
+                                <h3>Descargar y limpiar antes los precios del Súper (SEPA)</h3>
+                                <p>Los archivos del gobierno tienen cientos de miles de precios y buscarlos en vivo colgaba todo. Armamos un proceso que primero los descarga, los limpia y los guarda listos para que el buscador responda al instante.</p>
+                            </div>
+                        </div>
+
+                        <div class="decision-row">
+                            <div class="dec-number">4</div>
+                            <div class="dec-text">
+                                <h3>Cuidar el Historial y la Privacidad</h3>
+                                <p>No existen usuarios "Admin" porque la plata de cada persona es privada (protegida por su token JWT). Y cuando cerrás una cuenta, se <strong>archiva</strong> en vez de borrarse para no romper los gastos de meses anteriores.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 7: CIERRE -->
+            <section class="slide" data-slide="7">
+                <div class="slide-content hero-slide">
+                    <span class="pill-tag">Conclusión</span>
+                    <h1 class="main-title">¡Muchas Gracias!</h1>
+                    <p class="hero-lead">
+                        Un proyecto pensado para resolver un problema real del bolsillo, construido de forma ordenada, escalable y multiplataforma.
+                    </p>
+                    <div class="summary-boxes">
+                        <div class="sum-box">
+                            <strong>+8 Módulos</strong>
+                            <span>Integrados en un solo lugar</span>
+                        </div>
+                        <div class="sum-box">
+                            <strong>Web + Móvil</strong>
+                            <span>Conectados a la misma API</span>
+                        </div>
+                        <div class="sum-box">
+                            <strong>Arquitectura en Capas</strong>
+                            <span>Fácil de mantener y escalar</span>
+                        </div>
+                    </div>
+                    <p class="qa-prompt">¿Preguntas?</p>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Barra inferior de navegación -->
+        <footer class="deck-footer">
+            <button id="prevBtn" class="nav-btn" disabled>⬅ Anterior</button>
+            <div class="dots-nav" id="dotsContainer"></div>
+            <button id="nextBtn" class="nav-btn nav-btn-primary">Siguiente ➔</button>
+        </footer>
+    </div>
+
+    <script src="../js/presentacion.js"></script>
+</body>
+</html>

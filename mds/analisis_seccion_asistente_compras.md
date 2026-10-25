@@ -108,14 +108,12 @@ Sin embargo, al auditar en profundidad el código fuente de [`js/shopping.ts`](.
 
 ---
 
-## 5. Brecha de Paridad Multiplataforma: Web vs. App Móvil (Flutter)
+## 5. Enfoque Unificado en Plataforma Web Responsive
 
-Al comparar [`js/shopping.ts`](../js/shopping.ts) (Web) con [`mobile/lib/screens/shopping_screen.dart`](../mobile/lib/screens/shopping_screen.dart) (Flutter), existe un desfase importante:
+Para maximizar la velocidad de evolución, eliminar duplicación de código y reducir la deuda técnica global, se definió concentrar el 100% del desarrollo en la **aplicación Web Responsive (`js/`, `html/`, `css/`) + Backend FastAPI (`api/`)**, dejando fuera del alcance el cliente móvil en Flutter (`mobile/`):
 
-1. **Campo de Descuento Huérfano en Flutter:** En `shopping_screen.dart` (línea 16) se instancia `_discountController`, pero **no existe ningún `TextField` en el `build()` que lo muestre**, impidiendo ingresar descuentos al contado desde el celular.
-2. **Falta de Pestañas Multimodales en Móvil:** La pantalla móvil solo permite pegar un link; carece de las pestañas *Buscar Producto* y *Código de Barras* (con cámara nativa).
-3. **Falta de Simulador de Cuotas con Recargo en Móvil:** No envía `surcharge_percentage` ni `installment_total_price` en [`shopping_provider.dart`](../mobile/lib/providers/shopping_provider.dart).
-4. **Falta de Acción "Registrar como Gasto" e Impacto en Presupuesto en Móvil:** El usuario móvil ve la recomendación pero no puede transformarla en gasto con 1 clic.
+1. **Experiencia Móvil Completa vía Web Responsive:** Cualquier usuario desde Android o iOS accede mediante el navegador con soporte completo de menú hamburguesa, tablas adaptables y cámara en vivo (`BarcodeDetector`).
+2. **Cero Desfase entre Plataformas:** Todas las mejoras financieras (descuento al contado, tope de reintegro, recargo en cuotas, comparador dual y registro directo como gasto) están disponibles instantáneamente en todos los dispositivos sin necesidad de recompilar binarios `.apk`.
 
 ---
 
@@ -127,4 +125,3 @@ Al comparar [`js/shopping.ts`](../js/shopping.ts) (Web) con [`mobile/lib/screens
 | **Fase 2** | **Escáner de Cámara & Buscador Resiliente** | Cámara en vivo (`BarcodeDetector`) en la pestaña Código de Barras + inyección de token OAuth y fallback local en `/api/shopping/search` y `/api/shopping/analyze-barcode`. | 🔥 Alta |
 | **Fase 3** | **Refactor SOLID/PHAME & Multiusuario** | Desacoplar `js/services/shoppingService.ts`, migrar template a `html/views/shopping.html`, aislar historial con `userKey()` y selector de presupuesto/categoría al registrar gasto. | ⚡ Media |
 | **Fase 4** | **Modo Comparador Dual & Compras USD** | Anclar Oferta A vs. Oferta B (Tienda 1 vs. Tienda 2) + calculadora Dólar Tarjeta vs. Dólar MEP para compras en moneda extranjera. | ⚡ Media |
-| **Fase 5** | **Paridad Total en App Móvil (Flutter)** | Incorporar las 3 pestañas, campo de descuento y tope, recargo en cuotas y botón de registro de gasto en `shopping_screen.dart`. | 📱 Media |

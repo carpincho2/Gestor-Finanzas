@@ -1,40 +1,29 @@
 # 🗺️ Roadmap del Proyecto: Gestor de Finanzas
 
-Este documento detalla el estado actual del proyecto y **todo lo que falta construir** para tener un producto 100% terminado, profesional y listo para salir al mercado (o ser usado en producción).
+Este documento detalla el estado actual del proyecto (enfocado 100% en la **Plataforma Web Responsive + Backend FastAPI**) y las funcionalidades evolucionadas para producción.
 
 ---
 
-## 📱 1. Aplicación Móvil (Flutter)
-Acabamos de generar la arquitectura base (`mobile/`), pero hay que darle vida a la app.
+## ⚙️ 1. Backend (FastAPI) y Base de Datos
+Tenemos la lógica financiera, las migraciones automáticas y el failover de base de datos listos:
 
-- [x] **Conexión Backend-App:** Configurar el `HttpClient` (Dio o `http`) para que Riverpod se comunique fluidamente con tu servidor local (y futuro servidor en Render).
-- [x] **Lógica de la Calculadora de Compras:** Conectar la vista que armamos (`ShoppingScreen`) con el endpoint `POST /api/shopping/analyze-url` para que devuelva los cálculos de TNA y cuotas reales.
-- [x] **Escaneo de Tickets (OCR):** Implementar la cámara nativa usando el paquete `mobile_scanner`/`image_picker` para leer los tickets de supermercado/restaurantes.
-- [x] **Maquetación del Dashboard:** Armar la pantalla de inicio con los gráficos de saldos, cuentas y tarjetas.
-- [x] **Autenticación (Login):** Armar la pantalla de inicio de sesión segura (JWT).
-
----
-
-## ⚙️ 2. Backend (FastAPI) y Base de Datos
-Tenemos la lógica financiera y las migraciones de Alembic listas. Faltan funcionalidades core.
-
-- [x] **Seguridad Real (JWT / Auth):** Actualmente la web delega parte de la validación. Hay que implementar endpoints robustos de login (JWT) para que la app móvil se conecte de forma 100% segura.
-- [x] **Motor OCR de Tickets:** Crear un servicio en Python (`services/ocr.py`) que reciba la foto desde Flutter, lea los ítems del ticket (con IA o tesseract) y los devuelva como transacciones separadas.
-- [ ] **Historial de Decisiones Inteligentes:** Guardar en la base de datos cada vez que la calculadora recomienda un pago (para que puedas llevar un reporte de "Plata ahorrada este mes gracias al asistente").
-- [ ] **Webhooks de Mercado Pago (Opcional):** Si en el futuro querés que el saldo se actualice solo, preparar la recepción automática de pagos.
+- [x] **Seguridad Real (JWT / Session Auth):** Endpoints robustos de login, registro y autenticación con Google OAuth2.
+- [x] **Resiliencia de Base de Datos (PostgreSQL / SQLite):** Failover automático a SQLite local si la instancia cloud de PostgreSQL no está disponible, y migraciones aisladas por columna.
+- [x] **Motor OCR de Tickets:** Servicio en Python (`services/ocr.py`) y cliente Tesseract.js que leen los ítems del ticket y los devuelven como transacciones categorizadas.
+- [ ] **Historial de Decisiones Inteligentes:** Guardar en la base de datos cada vez que la calculadora recomienda un pago para reportes de ahorro mensual.
+- [ ] **Webhooks de Mercado Pago (Opcional):** Recepción automática de notificaciones de pago en tiempo real.
 
 ---
 
-## 💻 3. Frontend Web (JS/HTML)
-La plataforma web actualmente es un excelente prototipo rápido.
+## 💻 2. Frontend Web Responsive (ES6 / TypeScript / HTML / CSS)
+La plataforma web es 100% adaptable a computadoras de escritorio, tablets y teléfonos móviles desde el navegador:
 
-- [x] **Consolidar el Dashboard:** Asegurar que los gráficos principales consuman datos reales de la nueva API en Python (en vez del localStorage).
-- [ ] **Flujo de Importación:** Mejorar la UI para cuando el usuario sube un CSV de su banco.
-- [ ] **Despliegue a Producción:** Subir la web estática a un hosting profesional gratuito como Vercel o Netlify, apuntando al backend de Render.
+- [x] **Consolidar el Dashboard:** Gráficos principales y módulos conectados a la API en Python con soporte offline/local.
+- [x] **Diseño 100% Responsive:** Menú hamburguesa, tablas adaptables y vistas móviles completas desde el navegador web (reemplazando la necesidad de mantener una app nativa separada en Flutter).
+- [x] **Flujo de Importación y Escáner en Vivo:** Importación de resúmenes bancarios y lector de códigos de barras por cámara (`BarcodeDetector`).
 
 ---
 
-## 🚀 4. Lanzamiento y DevOps
-- [x] **Pruebas Automatizadas (Testing):** Crear una batería de tests unitarios básicos en Python (pytest) para asegurar que la fórmula de cuotas y TNA nunca falle.
-- [ ] **Compilar App:** Generar el archivo `.apk` o `.aab` de Flutter para instalarlo de forma permanente en tu Android o subirlo a la Play Store.
-- [ ] **CI/CD:** Configurar GitHub Actions para que al hacer `git push`, se pasen los tests solos antes de actualizar el servidor.
+## 🚀 3. Lanzamiento y DevOps
+- [x] **Pruebas Automatizadas (Testing):** Batería de tests unitarios en Python (`pytest`) para cuentas, presupuestos, metas, SEPA y motor de recomendación financiera.
+- [x] **Despliegue Continuo en Render:** Servicio unificado (Frontend + Backend FastAPI) desplegado automáticamente desde `origin/main`.

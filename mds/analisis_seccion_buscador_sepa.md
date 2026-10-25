@@ -12,7 +12,7 @@ El módulo de Precios SEPA cuenta actualmente con una arquitectura hexagonal bie
   - Capa de aplicación: Casos de uso centralizados en `SepaUseCases` que orquestan validaciones de coordenadas y políticas de búsqueda.
   - Capa de infraestructura: `SQLAlchemyPriceRepository` implementando el puerto `PriceRepositoryPort`, filtrado geográfico por Haversine y cálculo de promociones bancarias (`promociones.py`).
   - Endpoints REST en FastAPI: `/api/precios` (búsqueda unitaria profunda con costo de transporte) y `/api/precios/buscar` (búsqueda multi-producto con agregaciones de precio promedio y mejor oferta).
-- **Frontend Web & Mobile:**
+- **Frontend Web Responsive:**
   - Barra de búsqueda por texto o código EAN.
   - Filtros interactivos de radio (2 a 35 km), cadena de supermercado (Coto, Carrefour, Día, Jumbo, etc.) y ordenamiento (precio, distancia, ahorro).
   - Selector de ciudades argentinas (CABA, GBA Norte/Sur/Oeste, Rosario, Córdoba, Mendoza, Mar del Plata) con fallback y GPS automático.

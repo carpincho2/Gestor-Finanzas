@@ -47,7 +47,7 @@ class CodeComplexityAnalyzer:
 
     EXCLUDED_DIRS = {
         "venv", ".venv", "fluxo_venv", "test_env", "node_modules", "__pycache__",
-        ".git", ".pytest_cache", "dist", "build", ".vscode", ".idea", "site-packages"
+        ".git", ".pytest_cache", "dist", "build", ".vscode", ".idea", "site-packages", "mobile"
     }
 
     @staticmethod
@@ -192,7 +192,6 @@ def scan_project_files(base_dir: str, calculator: FormulaCalculator) -> List[Fil
     targets = [
         ("api", "Backend (Python)", {".py"}),
         ("js", "Frontend (TypeScript / JS)", {".ts", ".js"}),
-        (os.path.join("mobile", "lib"), "Mobile (Flutter / Dart)", {".dart"}),
     ]
 
     results: List[FileMetrics] = []
@@ -248,7 +247,7 @@ def generate_markdown_report(metrics: List[FileMetrics], config: MetricsConfig) 
     md += f"- **Deuda Técnica Total:** `{total_debt:.2f} horas` (`{total_months:.2f} meses`)\n"
     md += f"- **Costo Total de Reparación:** `${total_cost:,.2f} USD`\n\n"
 
-    categories = ["Backend (Python)", "Frontend (TypeScript / JS)", "Mobile (Flutter / Dart)"]
+    categories = ["Backend (Python)", "Frontend (TypeScript / JS)"]
     for cat in categories:
         cat_items = [m for m in metrics if m.category == cat]
         if not cat_items:
@@ -387,7 +386,7 @@ def generate_html_report(metrics: List[FileMetrics], config: MetricsConfig) -> s
                 {top_rows_html}
             </tbody>
         </table>
-        <p class="footnote">* Nota: Este reporte audita exclusivamente los archivos fuente propios del repositorio (directorios api/, js/ y mobile/lib/), excluyendo librerías de terceros (venv, node_modules) para reflejar el costo operativo real.</p>
+        <p class="footnote">* Nota: Este reporte audita exclusivamente los archivos fuente propios del repositorio (directorios api/ y js/), excluyendo librerías de terceros (venv, node_modules) para reflejar el costo operativo real.</p>
 
         <div class="page-footer">
             <span>Reporte Oficial de Mantenibilidad y Deuda Técnica — Gestor de Finanzas</span>

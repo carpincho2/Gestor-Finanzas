@@ -31,7 +31,7 @@ class MetricsConfig {
 class CodeComplexityAnalyzer {
     static EXCLUDED_DIRS = new Set([
         'venv', '.venv', 'fluxo_venv', 'test_env', 'node_modules', '__pycache__',
-        '.git', '.pytest_cache', 'dist', 'build', '.vscode', '.idea', 'site-packages'
+        '.git', '.pytest_cache', 'dist', 'build', '.vscode', '.idea', 'site-packages', 'mobile'
     ]);
 
     static analyzePython(filepath) {
@@ -192,8 +192,7 @@ function walkDirectory(dirPath, validExts, results = []) {
 function scanProjectFiles(baseDir, calculator) {
     const targets = [
         { folder: 'api', category: 'Backend (Python)', exts: new Set(['.py']) },
-        { folder: 'js', category: 'Frontend (TypeScript / JS)', exts: new Set(['.ts', '.js']) },
-        { folder: path.join('mobile', 'lib'), category: 'Mobile (Flutter / Dart)', exts: new Set(['.dart']) }
+        { folder: 'js', category: 'Frontend (TypeScript / JS)', exts: new Set(['.ts', '.js']) }
     ];
 
     const metrics = [];
@@ -244,7 +243,7 @@ function generateMarkdownReport(metrics, config) {
     md += `- **Deuda Técnica Total:** \`${totalDebt.toFixed(2)} horas\` (\`${totalMonths.toFixed(2)} meses\`)\n`;
     md += `- **Costo Total de Reparación:** \`$${formatNumber(totalCost, 2)} USD\`\n\n`;
 
-    const categories = ['Backend (Python)', 'Frontend (TypeScript / JS)', 'Mobile (Flutter / Dart)'];
+    const categories = ['Backend (Python)', 'Frontend (TypeScript / JS)'];
     for (const cat of categories) {
         const catItems = metrics.filter(m => m.category === cat).sort((a, b) => b.debtHours - a.debtHours);
         if (!catItems.length) continue;
@@ -386,7 +385,7 @@ function generateHtmlReport(metrics, config) {
                 ${topRowsHtml}
             </tbody>
         </table>
-        <p class="footnote">* Nota: Este reporte audita exclusivamente los archivos fuente propios del repositorio (directorios api/, js/ y mobile/lib/), excluyendo librerías de terceros (venv, fluxo_venv, node_modules) para reflejar el costo operativo real.</p>
+        <p class="footnote">* Nota: Este reporte audita exclusivamente los archivos fuente propios del repositorio (directorios api/ y js/), excluyendo librerías de terceros (venv, fluxo_venv, node_modules) para reflejar el costo operativo real.</p>
 
         <div class="page-footer">
             <span>Reporte Oficial de Mantenibilidad y Deuda Técnica — Gestor de Finanzas</span>

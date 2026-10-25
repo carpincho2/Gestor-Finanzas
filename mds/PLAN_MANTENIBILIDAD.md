@@ -16,8 +16,7 @@ Este plan detalla los pasos estratégicos para llevar el proyecto "Gestor de Fin
 Google exige que el código se evalúe objetivamente. Nuestro primer paso será medir dónde estamos.
 1. **Implementar Análisis Estático de Código:**
    - **Backend (Python):** Integrar `Ruff` (linting rápido), `MyPy` (tipado estático) y `Radon` (para medir la complejidad ciclomática y calcular el *Maintainability Index* matemático). Apuntaremos a un MI > 65.
-   - **Frontend (JavaScript/HTML):** Configurar `ESLint` estricto y `SonarQube` (local o en CI) para medir "code smells" y deuda técnica.
-   - **Mobile (Flutter):** Activar reglas de linter estrictas (`flutter_lints`) y `Dart Code Metrics` para asegurar complejidad menor a 20 por método.
+   - **Frontend Web (JavaScript/TypeScript/HTML):** Configurar `ESLint` estricto y `SonarQube` (local o en CI) para medir "code smells" y deuda técnica.
 2. **Definir la línea base:** Documentar el estado actual y no aceptar nuevo código que empeore estas métricas (mediante pre-commit hooks).
 
 ## FASE 2: Aplicación de los Principios PHAME (Estructura Base)
@@ -43,16 +42,16 @@ Una vez estructurado el macro, atacamos el código línea por línea.
 3. **L - Sustitución de Liskov (LSP):**
    - Si creamos clases base en Python (ej. `class ReportGenerator`) y subclases (`class PDFReportGenerator`, `class ExcelReportGenerator`), estas últimas deben ser intercambiables sin romper el código que las invoca.
 4. **I - Segregación de Interfaces (ISP):**
-   - (Principalmente en el Backend y Mobile): No forzar a un módulo a depender de métodos que no usa. Si un endpoint solo necesita leer cuentas, le inyectamos un `IReadOnlyAccountRepository`, no el repositorio completo con métodos de borrado.
+   - (Principalmente en el Backend y Servicios Frontend): No forzar a un módulo a depender de métodos que no usa. Si un endpoint solo necesita leer cuentas, le inyectamos un `IReadOnlyAccountRepository`, no el repositorio completo con métodos de borrado.
 5. **D - Inversión de Dependencias (DIP):**
-   - Los módulos de alto nivel (como tu UI) no deben depender directamente de módulos de bajo nivel (como `fetch` a la base de datos). Ambos deben depender de abstracciones. Usaremos **Inyección de Dependencias** fuertemente (en FastAPI usando `Depends()`, en Flutter con `Provider/GetIt`).
+   - Los módulos de alto nivel (como tu UI) no deben depender directamente de módulos de bajo nivel (como `fetch` a la base de datos). Ambos deben depender de abstracciones. Usaremos **Inyección de Dependencias** fuertemente (en FastAPI usando `Depends()`).
 
 ## FASE 4: Automatización y Cultura (Estilo Google)
 - **Unit Testing (Pruebas Unitarias):** Un índice de mantenibilidad no se sostiene sin pruebas. Obligaremos a tener una cobertura de test (Coverage) > 80% usando `pytest` para backend y `Jest` para JS.
 - **CI/CD Pipeline:** Implementar GitHub Actions. Si un commit no pasa el linter de SOLID/PHAME o reduce el índice de mantenibilidad, no se permite hacer "Merge" a la rama principal (rama `main`).
 
 ## FASE 5: Auditoría Automatizada de las 7 Métricas y Exportación a PDF
-El proyecto cuenta con un motor automatizado (`generar.js` y `generar_reporte.py`) que audita los archivos fuente propios (`api/`, `js/` en TypeScript y `mobile/lib/` en Dart), excluyendo entornos virtuales (`venv`, `fluxo_venv`, `node_modules`), y aplica las 7 ecuaciones oficiales:
+El proyecto cuenta con un motor automatizado (`generar.js` y `generar_reporte.py`) que audita los archivos fuente propios (`api/` en Python y `js/` en TypeScript/JS), excluyendo entornos virtuales y módulos fuera de alcance (`venv`, `fluxo_venv`, `node_modules`, `mobile`), y aplica las 7 ecuaciones oficiales:
 1. **Índice de Mantenibilidad ($\text{MI}$):** $\max(0, ((171 - 25 \times \ln(\text{LOC}) - 0.23 \times G) / 171) \times 100)$
 2. **Deuda Técnica (Horas):** $\max(0, (75 - \text{MI}) \times \text{LOC} \times K)$
 3. **Costo de Reparación:** $\text{Deuda Técnica (Horas)} \times \text{Salario por Hora}$

@@ -9,10 +9,10 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 - **Interés Anual por Módulo:** `$1400.00 USD` ($10 \times (14 - 7) \times \text{Salario}$)
 
 ## Resumen Ejecutivo del Proyecto
-- **Archivos Analizados:** `137` (`20,489` LOC efectivos)
-- **Índice de Mantenibilidad Promedio (MI):** `33.46`
-- **Deuda Técnica Total:** `12281.00 horas` (`76.76 meses`)
-- **Costo Total de Reparación:** `$245,619.71 USD`
+- **Archivos Analizados:** `105` (`16,392` LOC efectivos)
+- **Índice de Mantenibilidad Promedio (MI):** `33.53`
+- **Deuda Técnica Total:** `10052.30 horas` (`62.83 meses`)
+- **Costo Total de Reparación:** `$201,045.60 USD`
 
 ## Backend (Python) (73 archivos)
 
@@ -132,43 +132,4 @@ Generado automáticamente aplicando las **7 fórmulas oficiales** sobre el códi
 | `js/types.ts` | 1 | 1 | 99.87 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
 
 **Subtotal Frontend (TypeScript / JS):** `6636.39 horas` | **Costo:** `$132,727.93 USD`
-
-## Mobile (Flutter / Dart) (32 archivos)
-
-| Archivo | LOC | G | 1. MI | 2. Deuda (Hs) | 3. Costo ($) | 4. Meses | 5. Interés Anual | 6. Payback (Años) | 7. ROI (%) |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `mobile/lib/screens/shopping_screen.dart` | 573 | 82 | 0.00 🔴 | 429.75 hs | $8,595.00 | 2.69 m | $1,400 | 6.14 a | -67.4% |
-| `mobile/lib/screens/supermercados_screen.dart` | 345 | 24 | 11.34 🔴 | 219.63 hs | $4,392.54 | 1.37 m | $1,400 | 3.14 a | -36.3% |
-| `mobile/lib/screens/transactions_screen.dart` | 248 | 26 | 15.90 🔴 | 146.57 hs | $2,931.50 | 0.92 m | $1,400 | 2.09 a | -4.5% |
-| `mobile/lib/screens/profile_screen.dart` | 245 | 23 | 16.48 🔴 | 143.38 hs | $2,867.54 | 0.90 m | $1,400 | 2.05 a | -2.4% |
-| `mobile/lib/screens/insights_screen.dart` | 240 | 20 | 17.18 🔴 | 138.76 hs | $2,775.19 | 0.87 m | $1,400 | 1.98 a | 0.9% |
-| `mobile/lib/screens/accounts_screen.dart` | 204 | 22 | 19.29 🔴 | 113.65 hs | $2,272.94 | 0.71 m | $1,400 | 1.62 a | 23.2% |
-| `mobile/lib/screens/goals_screen.dart` | 184 | 14 | 21.88 🔴 | 97.75 hs | $1,954.99 | 0.61 m | $1,400 | 1.40 a | 43.2% |
-| `mobile/lib/screens/budgets_screen.dart` | 170 | 16 | 22.76 🔴 | 88.80 hs | $1,776.05 | 0.56 m | $1,400 | 1.27 a | 57.7% |
-| `mobile/lib/screens/scanner_screen.dart` | 166 | 12 | 23.65 🔴 | 85.24 hs | $1,704.84 | 0.53 m | $1,400 | 1.22 a | 64.2% |
-| `mobile/lib/screens/login_screen.dart` | 162 | 16 | 23.47 🔴 | 83.48 hs | $1,669.64 | 0.52 m | $1,400 | 1.19 a | 67.7% |
-| `mobile/lib/screens/dashboard_screen.dart` | 156 | 13 | 24.42 🔴 | 78.90 hs | $1,578.00 | 0.49 m | $1,400 | 1.13 a | 77.4% |
-| `mobile/lib/providers/insights_provider.dart` | 145 | 36 | 22.40 🔴 | 76.27 hs | $1,525.44 | 0.48 m | $1,400 | 1.09 a | 83.6% |
-| `mobile/lib/screens/main_layout.dart` | 152 | 9 | 25.34 🔴 | 75.48 hs | $1,509.64 | 0.47 m | $1,400 | 1.08 a | 85.5% |
-| `mobile/lib/providers/auth_provider.dart` | 140 | 27 | 24.12 🔴 | 71.23 hs | $1,424.58 | 0.45 m | $1,400 | 1.02 a | 96.5% |
-| `mobile/lib/services/api_service.dart` | 134 | 28 | 24.63 🔴 | 67.50 hs | $1,349.97 | 0.42 m | $1,400 | 0.96 a | 107.4% |
-| `mobile/lib/screens/reports_screen.dart` | 125 | 11 | 27.93 🔴 | 58.84 hs | $1,176.72 | 0.37 m | $1,400 | 0.84 a | 137.9% |
-| `mobile/lib/providers/supermercado_provider.dart` | 116 | 41 | 24.99 🔴 | 58.01 hs | $1,160.27 | 0.36 m | $1,400 | 0.83 a | 141.3% |
-| `mobile/lib/models/supermercado_model.dart` | 96 | 25 | 29.91 🔴 | 43.29 hs | $865.78 | 0.27 m | $1,400 | 0.62 a | 223.4% |
-| `mobile/lib/providers/shopping_provider.dart` | 61 | 20 | 37.21 🔴 | 23.05 hs | $461.04 | 0.14 m | $1,400 | 0.33 a | 507.3% |
-| `mobile/lib/main.dart` | 62 | 3 | 39.26 🔴 | 22.16 hs | $443.20 | 0.14 m | $1,400 | 0.32 a | 531.8% |
-| `mobile/lib/providers/accounts_provider.dart` | 48 | 16 | 41.25 🟡 | 16.20 hs | $323.99 | 0.10 m | $1,400 | 0.23 a | 764.2% |
-| `mobile/lib/providers/transactions_provider.dart` | 48 | 16 | 41.25 🟡 | 16.20 hs | $323.99 | 0.10 m | $1,400 | 0.23 a | 764.2% |
-| `mobile/lib/providers/goals_provider.dart` | 46 | 15 | 42.01 🟡 | 15.18 hs | $303.52 | 0.09 m | $1,400 | 0.22 a | 822.5% |
-| `mobile/lib/providers/scanner_provider.dart` | 41 | 11 | 44.23 🟡 | 12.62 hs | $252.33 | 0.08 m | $1,400 | 0.18 a | 1009.7% |
-| `mobile/lib/providers/budgets_provider.dart` | 39 | 13 | 44.69 🟡 | 11.82 hs | $236.41 | 0.07 m | $1,400 | 0.17 a | 1084.4% |
-| `mobile/lib/providers/dashboard_provider.dart` | 38 | 12 | 45.20 🟡 | 11.32 hs | $226.44 | 0.07 m | $1,400 | 0.16 a | 1136.5% |
-| `mobile/lib/models/goal.dart` | 27 | 18 | 49.39 🟡 | 6.91 hs | $138.27 | 0.04 m | $1,400 | 0.10 a | 1925.0% |
-| `mobile/lib/services/supermercado_service.dart` | 23 | 6 | 53.35 🟡 | 4.98 hs | $99.58 | 0.03 m | $1,400 | 0.07 a | 2711.8% |
-| `mobile/lib/models/account.dart` | 20 | 8 | 55.13 🟡 | 3.97 hs | $79.49 | 0.02 m | $1,400 | 0.06 a | 3422.3% |
-| `mobile/lib/models/budget.dart` | 20 | 6 | 55.40 🟡 | 3.92 hs | $78.42 | 0.02 m | $1,400 | 0.06 a | 3470.7% |
-| `mobile/lib/models/transaction.dart` | 20 | 3 | 55.80 🟡 | 3.84 hs | $76.80 | 0.02 m | $1,400 | 0.05 a | 3545.7% |
-| `mobile/lib/services/api_config.dart` | 3 | 1 | 83.80 🟢 | 0.00 hs | $0.00 | 0.00 m | $1,400 | 0.00 a | 100.0% |
-
-**Subtotal Mobile (Flutter / Dart):** `2228.70 horas` | **Costo:** `$44,574.11 USD`
 

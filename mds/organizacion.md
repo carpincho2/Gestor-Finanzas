@@ -89,7 +89,7 @@ La función `apiFetch` en el cliente lee las cabeceras de respuesta y, en caso d
 
 ## 4. Arquitectura de los Puntos de Entrada (`main`) — SOLID & PHAME
 
-El proyecto cuenta con tres puntos de entrada principales (Composition Roots), cada uno diseñado bajo el **Principio de Responsabilidad Única (SRP)**:
+El proyecto se enfoca 100% en su arquitectura **Web Responsive + API Backend** (habiendo dejado fuera del alcance activo el directorio `mobile/`), contando con dos puntos de entrada principales (*Composition Roots*), cada uno diseñado bajo el **Principio de Responsabilidad Única (SRP)**:
 
 1. **Backend (`api/main.py` y `api/infrastructure/migrations.py`)**:
    - `api/main.py` actúa exclusivamente como *Composition Root*: configura el ciclo de vida (`lifespan`), middlewares de seguridad (`SessionMiddleware`, `CORSMiddleware`, cabeceras HTTP), registra los routers modulares, provee el endpoint `/health` y ejecuta la tarea asíncrona `render_keep_alive()`.
@@ -103,8 +103,4 @@ El proyecto cuenta con tres puntos de entrada principales (Composition Roots), c
    - **No-bloqueo de Eventos de Puntero (`css/chatbot.css`)**: El contenedor flotante `.chatbot-widget` emplea `pointer-events: none` (habilitando `pointer-events: auto` solo en `.chatbot-bubble` y `.chatbot-window.is-open`) para no interceptar clics sobre botones subyacentes como el de "Iniciar sesión".
    - Los estilos se encuentran desacoplados en hojas modulares dentro de `css/` (`components.css`, `layout.css`, `views/*.css`) sin estilos en línea.
    - Los modales de creación y edición de transacciones comparten las mismas categorías normalizadas y permiten vincular cada movimiento a una **Cuenta** específica (`mAccount` y `eAccount`).
-
-3. **Aplicación Móvil (`mobile/lib/main.dart` y `mobile/lib/providers/auth_provider.dart`)**:
-   - Configura manejadores globales de errores (`FlutterError.onError` y `PlatformDispatcher.instance.onError`).
-   - Gestiona el estado inicial `isInitializing` en `AuthState` mostrando una pantalla de carga antes de decidir entre `MainLayout` y `LoginScreen`, evitando parpadeos visuales al verificar el token JWT local.
 

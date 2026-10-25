@@ -15,8 +15,9 @@ api/__pycache__/
 api/database.db
 database.db
 
-# Compilaciones
-*.apkLEGO Island Spanish.7z
+# Compilaciones y Módulos Excluidos
+*.apk
 *.7z
 releases/
+mobile/
 node_modules

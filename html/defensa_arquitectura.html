@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flujo Finance Manager - Arquitectura & Defensa</title>
+    <link rel="stylesheet" href="../css/defensa_arquitectura.css">
+</head>
+<body>
+    <header class="hero">
+        <div class="badge">Defensa de Capacidades Profesionales</div>
+        <h1>Flujo Finance Manager &amp; SEPA Comparator</h1>
+        <p class="subtitle">Ecosistema FinTech Multiplataforma con Arquitectura Hexagonal, Patrones SOLID/PHAME y Motor ETL de Precios Claros</p>
+    </header>
+
+    <main class="container">
+        <!-- SECCIÓN 1: EL PROBLEMA Y LA IDEA (AMPLITUD E INTERÉS) -->
+        <section class="problem-solution">
+            <div class="card problem-card">
+                <span class="card-tag tag-danger">El Problema Real</span>
+                <h2>Fragmentación Financiera e Inflación</h2>
+                <ul>
+                    <li><strong>Múltiples billeteras y bancos:</strong> El usuario pierde el control de su liquidez real entre Mercado Pago, bancos y efectivo.</li>
+                    <li><strong>Dispersión de precios:</strong> En contextos inflacionarios, el mismo producto varía hasta un 40% entre supermercados cercanos.</li>
+                    <li><strong>Falta de asesoramiento en vivo:</strong> Decidir si conviene pagar al contado, con reintegro o en cuotas requiere cálculos financieros complejos.</li>
+                </ul>
+            </div>
+
+            <div class="card solution-card">
+                <span class="card-tag tag-success">Nuestra Solución (Amplitud Funcional)</span>
+                <h2>Un Asistente Financiero 360°</h2>
+                <ul>
+                    <li><strong>Core Financiero &amp; Open Banking:</strong> Consolidación de cuentas, presupuestos, metas y sincronización automática con billeteras virtuales.</li>
+                    <li><strong>Motor SEPA Geolocalizado:</strong> Comparador de precios en tiempo real con datos oficiales de comercios cercanos por código EAN.</li>
+                    <li><strong>Smart Shopping + OCR + IA:</strong> Analizador de enlaces (Mercado Libre), lector de tickets por cámara y recomendador inteligente de medios de pago.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: EL DIAGRAMA DE ARQUITECTURA (ORGANIZACIÓN Y CONSISTENCIA) -->
+        <section class="diagram-section">
+            <div class="section-header">
+                <h2>Diagrama de Arquitectura (Clean Architecture / Hexagonal)</h2>
+                <p>Separación estricta de responsabilidades aplicando principios <strong>SOLID</strong> y <strong>PHAME</strong></p>
+            </div>
+
+            <div class="arch-grid">
+                <!-- CAPA 1: CLIENTES -->
+                <div class="arch-column col-clients">
+                    <div class="col-header">1. Capa de Presentación (Clientes)</div>
+                    <div class="arch-box">
+                        <div class="box-title">Web App / PWA</div>
+                        <div class="box-tech">TypeScript + Vite + CSS Modular</div>
+                        <div class="box-desc">Estado encapsulado (Store Pattern) y vistas desacopladas del DOM.</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="box-title">App Móvil Nativa</div>
+                        <div class="box-tech">Flutter / Dart</div>
+                        <div class="box-desc">Experiencia móvil multiplataforma consumiendo la misma API REST.</div>
+                    </div>
+                </div>
+
+                <div class="arch-arrow">➔</div>
+
+                <!-- CAPA 2: ENTRADA & SEGURIDAD -->
+                <div class="arch-column col-api">
+                    <div class="col-header">2. Capa de Entrada (API Gateway)</div>
+                    <div class="arch-box">
+                        <div class="box-title">Controladores REST (Routers)</div>
+                        <div class="box-tech">FastAPI + Pydantic Schemas</div>
+                        <div class="box-desc">Validación estricta de contratos de entrada/salida. Cero lógica de negocio.</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="box-title">Seguridad &amp; Auth</div>
+                        <div class="box-tech">JWT Stateless + Hashing Bcrypt</div>
+                        <div class="box-desc">Protección de rutas e inyección del usuario autenticado.</div>
+                    </div>
+                    <div class="arch-box highlight-box">
+                        <div class="box-title">Inyector de Dependencias</div>
+                        <div class="box-tech">Inversión de Control (DIP)</div>
+                        <div class="box-desc">Conecta Servicios con Puertos sin acoplarlos a la base de datos.</div>
+                    </div>
+                </div>
+
+                <div class="arch-arrow">➔</div>
+
+                <!-- CAPA 3: DOMINIO Y LÓGICA -->
+                <div class="arch-column col-domain">
+                    <div class="col-header">3. Núcleo de Negocio (Domain &amp; Services)</div>
+                    <div class="arch-box">
+                        <div class="box-title">Servicios FinTech Core</div>
+                        <div class="box-tech">Accounts, Budgets, Goals, Transactions</div>
+                        <div class="box-desc">Reglas de negocio puras, cálculo de saldos multi-moneda y alertas.</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="box-title">Pipeline ETL SEPA</div>
+                        <div class="box-tech">Downloader ➔ Cleaner ➔ Loader</div>
+                        <div class="box-desc">Ingesta masiva de precios oficiales y cruce geoespacial (Haversine).</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="box-title">Smart Shopping &amp; IA</div>
+                        <div class="box-tech">Strategy Pattern + OCR + Gemini AI</div>
+                        <div class="box-desc">Extracción de productos y motor matemático de recomendación de pago.</div>
+                    </div>
+                </div>
+
+                <div class="arch-arrow">➔</div>
+
+                <!-- CAPA 4: INFRAESTRUCTURA Y ADAPTADORES -->
+                <div class="arch-column col-infra">
+                    <div class="col-header">4. Infraestructura (Puertos y Adaptadores)</div>
+                    <div class="arch-box">
+                        <div class="box-title">Patrón Repositorio</div>
+                        <div class="box-tech">Puertos (Interfaces) + SQLAlchemy</div>
+                        <div class="box-desc">Permite cambiar SQLite por PostgreSQL sin tocar una sola línea de negocio.</div>
+                    </div>
+                    <div class="arch-box">
+                        <div class="box-title">Wallet Adapters (OCP)</div>
+                        <div class="box-tech">Mercado Pago / Belvo / Plaid</div>
+                        <div class="box-desc">Polimorfismo puro: agregar un banco nuevo no modifica el código existente.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: LAS 4 DECISIONES CLAVE DE ARQUITECTURA (PRECISIÓN Y VOCABULARIO) -->
+        <section class="decisions-section">
+            <div class="section-header">
+                <h2>4 Decisiones Clave de Ingeniería (Defensa Técnica)</h2>
+                <p>Por qué diseñamos el sistema de esta manera y qué problemas evitamos</p>
+            </div>
+
+            <div class="decisions-grid">
+                <article class="decision-card">
+                    <div class="decision-num">01</div>
+                    <h3>Inversión de Dependencias (DIP) y Patrón Repositorio</h3>
+                    <p><strong>Decisión:</strong> Los servicios de negocio no conocen SQL ni SQLAlchemy; dependen de interfaces abstractas (<em>Puertos</em>).</p>
+                    <p><strong>Justificación:</strong> Garantiza <strong>Consistencia</strong>, facilita los tests unitarios con mocks y permite escalar el motor de base de datos sin reescribir reglas financieras.</p>
+                </article>
+
+                <article class="decision-card">
+                    <div class="decision-num">02</div>
+                    <h3>Patrón Adapter &amp; Strategy en Integraciones Externas</h3>
+                    <p><strong>Decisión:</strong> Unificamos las billeteras (Mercado Pago, Belvo, Plaid) y los scrapers de tiendas bajo contratos polimórficos (Principio Abierto/Cerrado - <strong>OCP</strong>).</p>
+                    <p><strong>Justificación:</strong> El sistema es abierto a la extensión pero cerrado a la modificación. Agregar una nueva billetera o tienda no rompe el flujo principal.</p>
+                </article>
+
+                <article class="decision-card">
+                    <div class="decision-num">03</div>
+                    <h3>Pipeline ETL Desacoplado para Datos Masivos SEPA</h3>
+                    <p><strong>Decisión:</strong> Separamos el motor de Precios Claros en 4 etapas independientes: <em>Descarga, Limpieza, Carga y Comparación Geoespacial</em> (<strong>SRP</strong>).</p>
+                    <p><strong>Justificación:</strong> Procesar cientos de miles de precios gubernamentales en tiempo real bloquearía la API; con un pipeline ETL modular logramos respuestas en milisegundos.</p>
+                </article>
+
+                <article class="decision-card">
+                    <div class="decision-num">04</div>
+                    <h3>Auditoría Matemática de Mantenibilidad y Deuda Técnica</h3>
+                    <p><strong>Decisión:</strong> Medimos objetivamente el código con Complejidad Ciclomática de McCabe (<em>G</em>) e Índice de Mantenibilidad (<em>MI</em>).</p>
+                    <p><strong>Justificación:</strong> En lugar de evaluar la calidad subjetivamente, calculamos horas de deuda técnica, costo de reparación, Payback y ROI sobre los <strong>136 archivos (20,450 LOC)</strong> del proyecto.</p>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p><strong>Resumen de Síntesis:</strong> Arquitectura Limpia + Principios SOLID/PHAME + Ecosistema Web/Mobile + Impacto Real en la Economía Personal</p>
+    </footer>
+</body>
+</html>

@@ -472,7 +472,7 @@ async function saveMpToken(accountId) {
     if (res && res.ok) {
       showToast('Token de Mercado Pago actualizado');
       renderCuentasView();
-      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') renderTxView();
+      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') window.renderTxView();
     } else {
       showToast(res.error || 'Error al guardar el token', true);
     }
@@ -503,10 +503,10 @@ async function syncWallet(accountId) {
                   (res.skipped_count ? ` (${res.skipped_count} ya existían)` : '') +
                   `\nSaldo actual: ${res.balance?.toLocaleString('es-AR') || '—'}`;
       showToast(msg);
-      await loadUserData();
-      if (typeof renderAll === 'function') renderAll();
+      await window.loadUserData();
+      if (typeof renderAll === 'function') window.renderAll();
       renderCuentasView();
-      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') renderTxView();
+      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') window.renderTxView();
     } else {
       showToast(res.error || 'Error en la sincronización', true);
     }
@@ -619,8 +619,8 @@ function saveMpBalance() {
   btn.textContent = 'Guardando...';
   
   accountService.updateAccountBalance(accIdStr, newBalance).then(() => {
-    if (typeof IS_SERVER !== 'undefined' && !IS_SERVER && typeof save === 'function') save();
-    if (typeof renderAll === 'function') renderAll();
+    if (typeof IS_SERVER !== 'undefined' && !IS_SERVER && typeof save === 'function') window.save();
+    if (typeof renderAll === 'function') window.renderAll();
     renderCuentasView();
     closeMpBalanceModal();
     showToast('Saldo inicial guardado correctamente');
@@ -713,7 +713,7 @@ async function disconnectWallet(accountId) {
     if (res && res.ok) {
       showToast('Billetera desconectada');
       renderCuentasView();
-      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') renderTxView();
+      if (window.currentPage === 'transacciones' && typeof renderTxView === 'function') window.renderTxView();
     } else {
       showToast(res.error || 'Error al desconectar', true);
     }
@@ -733,8 +733,8 @@ async function cleanupDuplicates() {
   try {
     const res = await accountService.cleanupDuplicates();
     showToast(res.message || "Duplicados eliminados.", "success");
-    await loadUserData();
-    if (typeof applyTxFilter === "function") applyTxFilter();
+    await window.loadUserData();
+    if (typeof applyTxFilter === "function") window.applyTxFilter();
   } catch (err) {
     showToast("Error al limpiar duplicados: " + err.message, "error");
   }
@@ -796,7 +796,7 @@ function renderCvTxList() {
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:600;">${escHtml(t.desc)}</div>
-        <div style="font-size:10px;font-family:var(--font-mono);color:var(--muted);">${t.cat} · ${formatDate(t.date)}</div>
+        <div style="font-size:10px;font-family:var(--font-mono);color:var(--muted);">${t.cat} · ${window.formatDate(t.date)}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-family:var(--font-mono);font-weight:700;font-size:13px;" class="${t.type}">
@@ -837,8 +837,8 @@ function renderCvTransferSelects() {
   toEl.innerHTML = opts;
   if (state.accounts.length > 1) toEl.selectedIndex = 1;
 
-  initCustomSelects(fromEl.parentNode);
-  initCustomSelects(toEl.parentNode);
+  window.initCustomSelects(fromEl.parentNode);
+  window.initCustomSelects(toEl.parentNode);
 
   onTransferAccountsChanged();
 }
@@ -1022,8 +1022,8 @@ function swapTransfer() {
   const t = document.getElementById('cvTransferTo');
   if (!f || !t) return;
   [f.value, t.value] = [t.value, f.value];
-  updateCustomSelectDisplay(f);
-  updateCustomSelectDisplay(t);
+  window.updateCustomSelectDisplay(f);
+  window.updateCustomSelectDisplay(t);
   onTransferAccountsChanged();
 }
 
@@ -1072,7 +1072,7 @@ async function doTransfer() {
   try {
     const res = await accountService.doTransfer(fromId, toId, amountFrom, amountTo, descExpense, descIncome);
     if (res && res.local && typeof save === 'function') {
-      save();
+      window.save();
     } else if (res && res.ok && window.loadUserData) {
       await window.loadUserData();
     }
@@ -1108,7 +1108,7 @@ function openAccModal(id) {
     document.getElementById('amSaveBtn').textContent = 'Guardar cambios';
     document.getElementById('amName').value = a.name;
     document.getElementById('amType').value = a.type;
-    updateCustomSelectDisplay(document.getElementById('amType'));
+    window.updateCustomSelectDisplay(document.getElementById('amType'));
     document.getElementById('amBank').value = a.bank || '';
     document.getElementById('amBalance').value = a.balance;
     document.getElementById('amCurrency').value = a.currency || 'ARS';
@@ -1133,7 +1133,7 @@ function openAccModal(id) {
     document.getElementById('amSaveBtn').textContent = 'Crear Cuenta';
     document.getElementById('amName').value = '';
     document.getElementById('amType').value = 'banco';
-    updateCustomSelectDisplay(document.getElementById('amType'));
+    window.updateCustomSelectDisplay(document.getElementById('amType'));
     document.getElementById('amBank').value = '';
     document.getElementById('amBalance').value = '';
     document.getElementById('amCurrency').value = 'ARS';
@@ -1233,11 +1233,11 @@ async function doDeleteAccount() {
     const res = await accountService.deleteAccount(editingAccountId);
     if (res && res.ok) {
       if (typeof IS_SERVER !== 'undefined' && IS_SERVER && typeof loadUserData === 'function') {
-        await loadUserData();
+        await window.loadUserData();
       }
       if (selectedAccountId === editingAccountId) selectedAccountId = state.accounts[0]?.id || null;
       renderCuentasView();
-      if (typeof IS_SERVER !== 'undefined' && IS_SERVER && typeof renderAll === 'function') renderAll();
+      if (typeof IS_SERVER !== 'undefined' && IS_SERVER && typeof renderAll === 'function') window.renderAll();
       showToast('🗑️ Cuenta eliminada');
     }
   } catch (err) {
@@ -1312,7 +1312,7 @@ async function doReconcileAccount() {
     const res = await accountService.reconcileAccount(reconcilingAccountId, realVal, note);
     if (res && res.ok) {
       showToast('✅ Saldo conciliado correctamente');
-      if (typeof loadUserData === 'function') await loadUserData();
+      if (typeof loadUserData === 'function') await window.loadUserData();
       renderCuentasView();
       closeAccReconcileModal();
     } else {
@@ -1358,8 +1358,8 @@ function quickPayCreditCard(accountId) {
   if (descEl) descEl.value = `Pago de resumen ${card.name}`;
 
   if (typeof updateCustomSelectDisplay === 'function') {
-    if (fromEl) updateCustomSelectDisplay(fromEl);
-    if (toEl) updateCustomSelectDisplay(toEl);
+    if (fromEl) window.updateCustomSelectDisplay(fromEl);
+    if (toEl) window.updateCustomSelectDisplay(toEl);
   }
   onTransferAccountsChanged();
 

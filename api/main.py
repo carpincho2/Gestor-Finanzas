@@ -162,6 +162,8 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if request.url.path.startswith(("/js/", "/css/", "/html/")):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
     if IS_PRODUCTION:
         response.headers["Strict-Transport-Security"] = (
             "max-age=31536000; includeSubDomains"

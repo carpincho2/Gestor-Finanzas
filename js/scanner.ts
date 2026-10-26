@@ -174,12 +174,12 @@ function scShowResultModal(data) {
     'Ingresos (Sueldo/Freelance)', 'Ahorro / Inversiones', 'Otros'
   ];
   fCat.value = cats.includes(data.categoria) ? data.categoria : 'Otros';
-  if (typeof updateCustomSelectDisplay !== "undefined") updateCustomSelectDisplay(fCat);
+  if (typeof updateCustomSelectDisplay !== "undefined") window.updateCustomSelectDisplay(fCat);
 
   const pays = ['Efectivo', 'Tarjeta de débito', 'Tarjeta de crédito', 'Tarjeta Visa', 'Tarjeta Mastercard',
     'Tarjeta Amex', 'Transferencia', 'Mercado Pago', 'Cuenta DNI', 'MODO', 'Naranja X', 'QR', 'No especificado'];
   fPayment.value = pays.includes(data.forma_pago) ? data.forma_pago : 'No especificado';
-  if (typeof updateCustomSelectDisplay !== "undefined") updateCustomSelectDisplay(fPayment);
+  if (typeof updateCustomSelectDisplay !== "undefined") window.updateCustomSelectDisplay(fPayment);
 
   const confRow = document.getElementById('scConfidenceRow');
   const confBar = document.getElementById('scConfidenceBar');
@@ -220,7 +220,7 @@ function scShowResultModal(data) {
     if (confVal < 35) {
       if (inputEl.tagName === 'SELECT') {
         inputEl.selectedIndex = 0;
-        if (typeof updateCustomSelectDisplay !== "undefined") updateCustomSelectDisplay(inputEl);
+        if (typeof updateCustomSelectDisplay !== "undefined") window.updateCustomSelectDisplay(inputEl);
       } else {
         inputEl.value = '';
       }
@@ -279,7 +279,7 @@ function scSaveTicket() {
   scannerService.scLearnFromTicket(name, cat, payment);
 
   const txDesc = desc || (name ? 'Compra en ' + name : 'Ticket escaneado');
-  addTransaction({
+  window.addTransaction({
     type: 'expense', desc: txDesc, amount, cat, date,
     ticket: { nombre_local: name, hora: time, forma_pago: payment, direccion: address, escaneado: new Date().toISOString() }
   });

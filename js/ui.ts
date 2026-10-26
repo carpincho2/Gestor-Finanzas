@@ -12,7 +12,7 @@ window.currentPage = 'dashboard';
 /* =====================================================
    SIDEBAR TOGGLE (Mobile hamburger)
    ===================================================== */
-function toggleSidebar() {
+export function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('sidebarBackdrop');
   const isOpen = sidebar.classList.contains('open');
@@ -54,8 +54,8 @@ function setPage(el, page) {
 
   // Detener cámara y limpiar worker si salimos del scanner
   if (window.currentPage === 'scanner' && page !== 'scanner') {
-    if (scCameraStream) scStopCamera();
-    scCleanupWorker();
+    if (typeof window.scStopCamera === 'function') window.scStopCamera();
+    if (typeof window.scCleanupWorker === 'function') window.scCleanupWorker();
   }
 
   window.currentPage = page;
@@ -90,45 +90,43 @@ function setPage(el, page) {
     hideAll();
     document.getElementById('dashboardView').style.display = '';
     document.getElementById('pageDate').style.display = '';
-    renderAll();
+    window.renderAll();
     if (window.initQuickAdd) window.initQuickAdd();
   } else if (page === 'transacciones') {
     hideAll();
     document.getElementById('txView').style.display = '';
-    if (typeof enterTxView === 'function') {
-      enterTxView();
-    } else if (typeof window.enterTxView === 'function') {
+    if (typeof window.enterTxView === 'function') {
       window.enterTxView();
-    } else if (typeof renderTxView === 'function') {
-      renderTxView();
+    } else if (typeof window.renderTxView === 'function') {
+      window.renderTxView();
     }
   } else if (page === 'presupuestos') {
     hideAll();
-    enterBudgetView();
+    window.enterBudgetView();
   } else if (page === 'cuentas') {
     hideAll();
     document.getElementById('cuentasView').style.display = '';
-    enterCuentasView();
+    window.enterCuentasView();
   } else if (page === 'reportes') {
     hideAll();
     document.getElementById('reportesView').style.display = '';
-    enterReportesView();
+    window.enterReportesView();
   } else if (page === 'objetivos') {
     hideAll();
     document.getElementById('objetivosView').style.display = '';
-    enterObjetivosView();
+    window.enterObjetivosView();
   } else if (page === 'scanner') {
     hideAll();
     document.getElementById('scannerView').style.display = '';
-    enterScannerView();
+    window.enterScannerView();
   } else if (page === 'insights') {
     hideAll();
     document.getElementById('insightsView').style.display = '';
-    enterInsightsView();
+    window.enterInsightsView();
   } else if (page === 'perfil') {
     hideAll();
     document.getElementById('perfilView').style.display = '';
-    enterPerfilView();
+    window.enterPerfilView();
   } else if (page === 'supermercados') {
     hideAll();
     const el = document.getElementById('supermercadosView');

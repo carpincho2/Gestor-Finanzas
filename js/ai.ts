@@ -178,7 +178,7 @@ function aiAppendMessage(who, text) {
       <div class="ai-msg-avatar">✦</div>
       <div class="ai-msg-bubble">${aiFormatText(text)}</div>`;
   } else {
-    div.innerHTML = `<div class="ai-msg-bubble ai-msg-bubble-user">${escHtml(text)}</div>`;
+    div.innerHTML = `<div class="ai-msg-bubble ai-msg-bubble-user">${window.escHtml(text)}</div>`;
   }
 
   el.appendChild(div);
@@ -187,7 +187,7 @@ function aiAppendMessage(who, text) {
 
 /* ---- Simple markdown formatter for bold and newlines ---- */
 function aiFormatText(text) {
-  let html = escHtml(text);
+  let html = window.escHtml(text);
   // Reemplazar saltos de línea por <br>
   html = html.replace(/\n/g, '<br>');
   // Reemplazar **texto** por <strong>texto</strong>
@@ -236,14 +236,14 @@ async function aiGenerateCards() {
           <span class="ai-insight-badge ai-insight-badge--${c.tipo}">${c.tipo === 'positivo' ? 'Positivo' : c.tipo === 'negativo' ? 'Atención' : c.tipo === 'alerta' ? '⚠ Alerta' : 'Info'
       }</span>
         </div>
-        <div class="ai-insight-title">${escHtml(c.titulo)}</div>
-        <div class="ai-insight-desc">${escHtml(c.descripcion)}</div>
+        <div class="ai-insight-title">${window.escHtml(c.titulo)}</div>
+        <div class="ai-insight-desc">${window.escHtml(c.descripcion)}</div>
       </div>
     `).join('');
 
   } catch (err) {
     list.innerHTML = `<div style="text-align:center;color:var(--danger);font-family:var(--font-mono);font-size:12px;padding:24px;">
-      Error al generar insights.<br>${escHtml(err.message || 'Intentá de nuevo.')}
+      Error al generar insights.<br>${window.escHtml(err.message || 'Intentá de nuevo.')}
     </div>`;
     console.error('AI cards error:', err);
   } finally {

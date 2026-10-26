@@ -7,7 +7,7 @@ import { apiFetch } from './api/apiClient.ts';
 /* =====================================================
    CHART
    ===================================================== */
-function renderChart() {
+export function renderChart() {
   const canvasEl = document.getElementById('mainChart');
   if (!canvasEl || typeof Chart === 'undefined') return;
   const ctx = canvasEl.getContext('2d');
@@ -66,7 +66,7 @@ function renderChart() {
   });
 }
 
-function getChartData() {
+export function getChartData() {
   const now = new Date();
 
   if (state.chartPeriod === 'semana') {
@@ -110,7 +110,7 @@ function getChartData() {
   return { labels, incomeData, expenseData };
 }
 
-function setChartPeriod(btn, period) {
+export function setChartPeriod(btn, period) {
   document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   state.chartPeriod = period;
@@ -125,7 +125,7 @@ let rvChartLine = null;
 let rvChartDonut = null;
 
 /* ---- Nav entry ---- */
-function enterReportesView() {
+export function enterReportesView() {
   const now = new Date();
   document.getElementById('rvFrom').value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   document.getElementById('rvTo').value = now.toISOString().split('T')[0];
@@ -133,7 +133,7 @@ function enterReportesView() {
 }
 
 /* ---- Period ---- */
-function setRvPeriod(btn, period) {
+export function setRvPeriod(btn, period) {
   rvPeriod = period;
   document.querySelectorAll('.rv-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -141,7 +141,7 @@ function setRvPeriod(btn, period) {
   renderReportesView();
 }
 
-function getRvDateRange() {
+export function getRvDateRange() {
   const now = new Date();
   if (rvPeriod === 'mes') {
     return {
@@ -169,13 +169,13 @@ function getRvDateRange() {
   };
 }
 
-function getRvTx() {
+export function getRvTx() {
   const { from, to } = getRvDateRange();
   return state.transactions.filter(t => t.date >= from && t.date <= to);
 }
 
 /* ---- Main render ---- */
-function renderReportesView() {
+export function renderReportesView() {
   const { from, to } = getRvDateRange();
   const tx = getRvTx();
 
@@ -191,7 +191,7 @@ function renderReportesView() {
 }
 
 /* ---- KPIs ---- */
-function renderRvKpis(tx, from, to) {
+export function renderRvKpis(tx, from, to) {
   const income = tx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const expenses = tx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const net = income - expenses;
@@ -239,7 +239,7 @@ function renderRvKpis(tx, from, to) {
 }
 
 /* ---- Line Chart ---- */
-function renderRvLineChart(tx, from, to) {
+export function renderRvLineChart(tx, from, to) {
   const ctx = document.getElementById('rvLineChart').getContext('2d');
 
   // Build daily buckets between from→to
@@ -327,13 +327,13 @@ function renderRvLineChart(tx, from, to) {
   });
 }
 
-function getWeekNum(d) {
+export function getWeekNum(d) {
   const jan1 = new Date(d.getFullYear(), 0, 1);
   return Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
 }
 
 /* ---- Donut ---- */
-function renderRvDonut(tx) {
+export function renderRvDonut(tx) {
   const ctx = document.getElementById('rvDonutChart').getContext('2d');
   const expenses = tx.filter(t => t.type === 'expense');
 
@@ -384,7 +384,7 @@ function renderRvDonut(tx) {
 }
 
 /* ---- Category table ---- */
-function renderRvCatTable(tx) {
+export function renderRvCatTable(tx) {
   const expenses = tx.filter(t => t.type === 'expense');
   const total = expenses.reduce((s, t) => s + t.amount, 0);
 
@@ -430,7 +430,7 @@ function renderRvCatTable(tx) {
 }
 
 /* ---- Monthly comparison ---- */
-function renderRvMonthTable() {
+export function renderRvMonthTable() {
   const now = new Date();
   const rows = [];
 
@@ -481,7 +481,7 @@ function renderRvMonthTable() {
 }
 
 /* ---- CSV export ---- */
-async function exportReportExcel() {
+export async function exportReportExcel() {
   if (typeof ExcelJS === 'undefined') {
     showToast('⚠️ Librería de Excel no cargada aún', true);
     return;

@@ -11,8 +11,8 @@ import { TransactionService } from './services/transactionService.ts';
 function renderAll() {
   renderStats();
   renderTransactions();
-  renderChart();
-  renderBudgets();
+  window.renderChart();
+  window.renderBudgets();
 }
 
 function renderStats() {
@@ -123,7 +123,7 @@ function setType(type) {
       <option value="Otros">📦 Otros</option>
     `;
   }
-  initCustomSelects(catSelect.parentNode);
+  window.initCustomSelects(catSelect.parentNode);
 }
 
 /** Inicializa el Quick Add con las categorías correctas para el tipo actual */
@@ -141,7 +141,7 @@ function quickAdd() {
 
   addTransaction({ type: state.currentType, desc, amount, cat, date: new Date().toISOString().split('T')[0] });
   document.getElementById('qAmount').value = '';
-  updateCustomSelectDisplay(document.getElementById('qCat'));
+  window.updateCustomSelectDisplay(document.getElementById('qCat'));
   showToast('✅ Transacción registrada');
 }
 
@@ -285,7 +285,7 @@ function setModalType(type) {
       <option value="Otros">📦 Otros</option>
     `;
   }
-  initCustomSelects(catSelect.parentNode);
+  window.initCustomSelects(catSelect.parentNode);
   updateModalBudgetImpact();
 }
 
@@ -508,13 +508,13 @@ function syncTxFilterUI() {
   const typeEl = document.getElementById('txFilterType');
   if (typeEl) {
     typeEl.value = txFilter.type;
-    if (typeof updateCustomSelectDisplay === 'function') updateCustomSelectDisplay(typeEl);
+    if (typeof updateCustomSelectDisplay === 'function') window.updateCustomSelectDisplay(typeEl);
   }
   
   const catEl = document.getElementById('txFilterCat');
   if (catEl) {
     catEl.value = txFilter.cat;
-    if (typeof updateCustomSelectDisplay === 'function') updateCustomSelectDisplay(catEl);
+    if (typeof updateCustomSelectDisplay === 'function') window.updateCustomSelectDisplay(catEl);
   }
   
   const fromEl = document.getElementById('txFilterFrom');

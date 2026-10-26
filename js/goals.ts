@@ -28,17 +28,17 @@ const GOAL_CAT_EMOJIS = {
   'Educación': '📚', 'Tecnología': '💻', 'Inversión': '📈', 'Salud': '💊', 'Otro': '🎯'
 };
 
-function initGoals() {
+export function initGoals() {
   goalService.initGoals();
 }
 
 /* ---- Entry ---- */
-function enterObjetivosView() {
+export function enterObjetivosView() {
   renderObjetivosView();
 }
 
 /* ---- Main render ---- */
-function renderObjetivosView() {
+export function renderObjetivosView() {
   renderOvSummary();
   renderOvCards();
   renderOvDonut();
@@ -48,24 +48,24 @@ function renderObjetivosView() {
 }
 
 /* ---- Helpers de Cálculo Financiero ---- */
-function goalPct(g) {
+export function goalPct(g) {
   return g.target > 0 ? Math.min((g.current / g.target) * 100, 100) : 0;
 }
 
-function goalLeft(g) {
+export function goalLeft(g) {
   return Math.max(g.target - g.current, 0);
 }
 
-function daysLeft(g) {
+export function daysLeft(g) {
   if (!g.deadline) return null;
   return Math.ceil((new Date(g.deadline + ' 00:00:00').getTime() - new Date().getTime()) / 86400000);
 }
 
-function isCompleted(g) {
+export function isCompleted(g) {
   return g.current >= g.target;
 }
 
-function timeProgressPct(g) {
+export function timeProgressPct(g) {
   if (!g.deadline) return 0;
   const startDateStr = g.start_date || (g.created_at ? g.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10));
   const start = new Date(startDateStr + ' 00:00:00').getTime();
@@ -78,7 +78,7 @@ function timeProgressPct(g) {
   return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
 }
 
-function goalStatus(g) {
+export function goalStatus(g) {
   if (isCompleted(g)) return { key: 'completed', label: '✅ Completado', cls: 'completed' };
   if (g.status === 'paused') return { key: 'paused', label: '⏸ Pausado', cls: 'paused' };
 
@@ -102,14 +102,14 @@ function goalStatus(g) {
   return { key: 'ontrack', label: '🔵 En camino', cls: 'ontrack' };
 }
 
-function monthlyNeeded(g) {
+export function monthlyNeeded(g) {
   const dl = daysLeft(g);
   if (!dl || dl <= 0 || isCompleted(g)) return 0;
   const months = Math.max(dl / 30, 0.5);
   return Math.ceil(goalLeft(g) / months);
 }
 
-function calcMonthlyAverageSavings(g) {
+export function calcMonthlyAverageSavings(g) {
   const contribs = g.contributions || [];
   if (contribs.length === 0) return 0;
 
@@ -133,7 +133,7 @@ function calcMonthlyAverageSavings(g) {
 }
 
 /* ---- Filtros y Ordenamiento ---- */
-function setGoalFilter(status) {
+export function setGoalFilter(status) {
   goalFilterState.status = status;
   document.querySelectorAll('.ov-filters-group .ov-filter-chip').forEach(btn => {
     btn.classList.toggle('active', btn.id === `ovFilter${status.charAt(0).toUpperCase() + status.slice(1)}`);
@@ -141,25 +141,25 @@ function setGoalFilter(status) {
   renderOvCards();
 }
 
-function setGoalCurrencyFilter(curr) {
+export function setGoalCurrencyFilter(curr) {
   goalFilterState.currency = curr;
   renderOvCards();
   renderOvDonut();
   renderOvProjections();
 }
 
-function changeGoalSort(sortValue) {
+export function changeGoalSort(sortValue) {
   goalFilterState.sort = sortValue;
   renderOvCards();
 }
 
-function handleGoalSearch(val) {
+export function handleGoalSearch(val) {
   goalFilterState.search = val.trim().toLowerCase();
   renderOvCards();
 }
 
 /* ---- Summary stats ---- */
-function renderOvSummary() {
+export function renderOvSummary() {
   const total = state.goals.length;
   const completed = state.goals.filter(isCompleted).length;
   const paused = state.goals.filter(g => g.status === 'paused' && !isCompleted(g)).length;
@@ -226,7 +226,7 @@ function renderOvSummary() {
 }
 
 /* ---- Goal cards ---- */
-function renderOvCards() {
+export function renderOvCards() {
   const el = document.getElementById('ovCards');
   if (state.goals.length === 0) {
     el.innerHTML = `
@@ -423,7 +423,7 @@ function renderOvCards() {
 }
 
 /* ---- Donut ---- */
-function renderOvDonut() {
+export function renderOvDonut() {
   const canvas = document.getElementById('ovDonutChart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -497,7 +497,7 @@ function renderOvDonut() {
 }
 
 /* ---- Panel de Ritmo y Proyecciones ---- */
-function renderOvProjections() {
+export function renderOvProjections() {
   const el = document.getElementById('ovProjections');
   if (!el) return;
 
@@ -538,7 +538,7 @@ function renderOvProjections() {
 }
 
 /* ---- Timeline ---- */
-function renderOvTimeline() {
+export function renderOvTimeline() {
   const el = document.getElementById('ovTimeline');
   if (!el) return;
 
@@ -571,7 +571,7 @@ function renderOvTimeline() {
 }
 
 /* ---- Tips ---- */
-function renderOvTip() {
+export function renderOvTip() {
   const tips = [];
   state.goals.forEach(g => {
     const dl = daysLeft(g);
@@ -599,7 +599,7 @@ function renderOvTip() {
 }
 
 /* ---- Goal modal ---- */
-function openGoalModal(id) {
+export function openGoalModal(id) {
   editingGoalId = id || null;
   gmSelectedColor = '#00e5a0';
   gmSelectedEmoji = '🎯';
@@ -660,26 +660,26 @@ function openGoalModal(id) {
   document.getElementById('goalModalOverlay').classList.add('open');
 }
 
-function selectGmEmoji(e) {
+export function selectGmEmoji(e) {
   gmSelectedEmoji = e;
   document.querySelectorAll('.ov-emoji-btn').forEach(b => b.classList.toggle('active', b.textContent === e));
 }
 
-function selectGmColor(c) {
+export function selectGmColor(c) {
   gmSelectedColor = c;
   document.querySelectorAll('#gmColorGrid .bv-color-swatch').forEach(s => {
     s.classList.toggle('selected', s.style.background === c || s.style.backgroundColor === c);
   });
 }
 
-function closeGoalModal(e) {
+export function closeGoalModal(e) {
   if (!e || e.target.id === 'goalModalOverlay') {
     document.getElementById('goalModalOverlay').classList.remove('open');
     editingGoalId = null;
   }
 }
 
-async function saveGoal() {
+export async function saveGoal() {
   const name = document.getElementById('gmName').value.trim();
   const target = parseFloat(document.getElementById('gmTarget').value);
   const current = parseFloat(document.getElementById('gmCurrent').value) || 0;
@@ -716,7 +716,7 @@ async function saveGoal() {
   }
 }
 
-async function toggleGoalStatus(id) {
+export async function toggleGoalStatus(id) {
   try {
     await goalService.toggleGoalStatus(id);
     renderObjetivosView();
@@ -728,7 +728,7 @@ async function toggleGoalStatus(id) {
 }
 
 /* ---- Contribute modal ---- */
-function openContribModal(id, mode = 'deposit') {
+export function openContribModal(id, mode = 'deposit') {
   contribGoalId = id;
   const g = state.goals.find(x => x.id === id);
   if (!g) return;
@@ -785,7 +785,7 @@ function openContribModal(id, mode = 'deposit') {
   document.getElementById('contribModalOverlay').classList.add('open');
 }
 
-function updateContribModalType() {
+export function updateContribModalType() {
   const type = document.getElementById('cmType').value;
   const submitBtn = document.getElementById('cmSubmitBtn');
   if (type === 'withdraw') {
@@ -795,14 +795,14 @@ function updateContribModalType() {
   }
 }
 
-function closeContribModal(e) {
+export function closeContribModal(e) {
   if (!e || e.target.id === 'contribModalOverlay') {
     document.getElementById('contribModalOverlay').classList.remove('open');
     contribGoalId = null;
   }
 }
 
-async function saveContrib() {
+export async function saveContrib() {
   const amount = parseFloat(document.getElementById('cmAmount').value);
   const date = document.getElementById('cmDate').value;
   const note = document.getElementById('cmNote').value.trim();
@@ -823,7 +823,7 @@ async function saveContrib() {
   }
 }
 
-async function deleteContrib(goalId, contribId) {
+export async function deleteContrib(goalId, contribId) {
   try {
     await goalService.removeContribution(goalId, contribId);
     renderObjetivosView();
@@ -836,21 +836,21 @@ async function deleteContrib(goalId, contribId) {
 }
 
 /* ---- Delete goal ---- */
-function openGoalDeleteModal(id) {
+export function openGoalDeleteModal(id) {
   editingGoalId = id;
   const g = state.goals.find(x => x.id === id);
   document.getElementById('gdName').textContent = g ? g.name : '';
   document.getElementById('goalDeleteOverlay').classList.add('open');
 }
 
-function closeGoalDeleteModal(e) {
+export function closeGoalDeleteModal(e) {
   if (!e || e.target.id === 'goalDeleteOverlay') {
     document.getElementById('goalDeleteOverlay').classList.remove('open');
     editingGoalId = null;
   }
 }
 
-async function doDeleteGoal() {
+export async function doDeleteGoal() {
   try {
     await goalService.deleteGoal(editingGoalId);
     renderObjetivosView();

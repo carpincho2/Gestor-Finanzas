@@ -319,9 +319,9 @@ async function executeImport() {
       if (res && res.ok) {
         showToast(`Se importaron ${txsToCreate.length} transacciones`);
         closeImportModal();
-        await loadUserData();
-        renderAll();
-        renderCuentasView();
+        await window.loadUserData();
+        window.renderAll();
+        window.renderCuentasView();
       }
     } catch (e) {
       showToast("Error en importación: " + e.message, true);
@@ -340,11 +340,11 @@ async function executeImport() {
         else acc.balance -= newTx.amount;
       }
     });
-    save();
+    window.save();
     showToast(`Se importaron ${txsToCreate.length} transacciones (Local)`);
     closeImportModal();
-    renderAll();
-    renderCuentasView();
+    window.renderAll();
+    window.renderCuentasView();
     btn.disabled = false;
     btn.textContent = 'Importar Transacciones';
   }

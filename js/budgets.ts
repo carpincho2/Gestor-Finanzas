@@ -6,7 +6,7 @@ import * as budgetService from './services/budgetService.ts';
 /* =====================================================
    DASHBOARD MINI BUDGETS WIDGET
    ===================================================== */
-function renderBudgets() {
+export function renderBudgets() {
   const now = new Date();
   const month = now.getMonth();
   const year = now.getFullYear();
@@ -64,16 +64,16 @@ let bmEditingId = null;
 
 const BUDGET_EMOJIS = ['🛒', '🍕', '🚗', '🏠', '🎬', '💊', '🛍️', '📚', '📦', '🍔', '☕', '🏋️', '💡', '🎮', '🐾', '✈️'];
 
-function saveBudgets() {
+export function saveBudgets() {
   budgetService.saveBudgetsLocal();
 }
 
-function initBudgets() {
+export function initBudgets() {
   budgetService.initBudgets();
 }
 
 /* --- Navegación de vista --- */
-function enterBudgetView() {
+export function enterBudgetView() {
   const bView = document.getElementById('budgetView');
   const dView = document.getElementById('dashboardView');
   const tView = document.getElementById('txView');
@@ -88,14 +88,14 @@ function enterBudgetView() {
   renderBudgetView();
 }
 
-function changeBudgetMonth(delta) {
+export function changeBudgetMonth(delta) {
   budgetViewMonth += delta;
   if (budgetViewMonth > 11) { budgetViewMonth = 0; budgetViewYear++; }
   if (budgetViewMonth < 0) { budgetViewMonth = 11; budgetViewYear--; }
   renderBudgetView();
 }
 
-function setBudgetFilter(filter) {
+export function setBudgetFilter(filter) {
   currentBudgetFilter = filter;
   document.querySelectorAll('.bv-filter-chip').forEach(btn => {
     btn.classList.toggle('active', btn.id === 'bvFilter' + (filter === 'all' ? 'All' : filter === 'warning' ? 'Warning' : 'Ok'));
@@ -103,13 +103,13 @@ function setBudgetFilter(filter) {
   renderBudgetView();
 }
 
-function changeBudgetSort(sort) {
+export function changeBudgetSort(sort) {
   currentBudgetSort = sort;
   renderBudgetView();
 }
 
 /* --- Render Principal --- */
-function renderBudgetView() {
+export function renderBudgetView() {
   const monthName = new Date(budgetViewYear, budgetViewMonth, 1)
     .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
     .replace(/^\w/, c => c.toUpperCase());
@@ -194,7 +194,7 @@ function renderBudgetView() {
 }
 
 /* --- Render Sección de Gastos No Presupuestados --- */
-function renderUnbudgetedSection(unbudgetedByCat, totalUnbudgeted) {
+export function renderUnbudgetedSection(unbudgetedByCat, totalUnbudgeted) {
   const container = document.getElementById('bvUnbudgetedSection');
   if (!container) return;
 
@@ -242,7 +242,7 @@ function renderUnbudgetedSection(unbudgetedByCat, totalUnbudgeted) {
 }
 
 /* --- Render Cards --- */
-function renderBvCards(spentByCat, monthTx, timeContext) {
+export function renderBvCards(spentByCat, monthTx, timeContext) {
   const el = document.getElementById('bvCards');
   if (!el) return;
 
@@ -421,9 +421,9 @@ function renderBvCards(spentByCat, monthTx, timeContext) {
   }).join('');
 }
 
-function fmt2(n) { return '$' + Math.abs(n).toLocaleString('es-AR'); }
+export function fmt2(n) { return '$' + Math.abs(n).toLocaleString('es-AR'); }
 
-function toggleBvCard(id) {
+export function toggleBvCard(id) {
   const card = document.getElementById('bvc-' + id);
   const btn = document.getElementById('bvexp-' + id);
   if (!card) return;
@@ -436,7 +436,7 @@ function toggleBvCard(id) {
 }
 
 /* --- Donut chart --- */
-function renderBudgetDonut(spentByCat, unbudgetedByCat = {}, totalUnbudgeted = 0) {
+export function renderBudgetDonut(spentByCat, unbudgetedByCat = {}, totalUnbudgeted = 0) {
   const canvas = document.getElementById('budgetDonut');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -527,7 +527,7 @@ function renderBudgetDonut(spentByCat, unbudgetedByCat = {}, totalUnbudgeted = 0
 }
 
 /* --- Tips & Insights Financieros --- */
-function renderBvTip(spentByCat, unbudgetedByCat, totalUnbudgeted, allLimit, allSpent, timeContext) {
+export function renderBvTip(spentByCat, unbudgetedByCat, totalUnbudgeted, allLimit, allSpent, timeContext) {
   const tipEl = document.getElementById('bvTip');
   if (!tipEl) return;
   const tips = [];
@@ -567,7 +567,7 @@ function renderBvTip(spentByCat, unbudgetedByCat, totalUnbudgeted, allLimit, all
 }
 
 /* --- Quick Create Budget from Unbudgeted Spending --- */
-function quickBudgetCat(catName, spentAmount) {
+export function quickBudgetCat(catName, spentAmount) {
   openBudgetModal();
   const nameEl = document.getElementById('bmName');
   const catEl = document.getElementById('bmCat');
@@ -595,7 +595,7 @@ function quickBudgetCat(catName, spentAmount) {
 }
 
 /* --- Budget Modal --- */
-function openBudgetModal(id) {
+export function openBudgetModal(id) {
   if (typeof id === 'object') id = null;
   bmEditingId = id || null;
   bmSelectedColor = BM_COLORS[0];
@@ -676,19 +676,19 @@ function openBudgetModal(id) {
   }
 }
 
-function selectBmColor(color) {
+export function selectBmColor(color) {
   bmSelectedColor = color;
   document.querySelectorAll('.bv-color-swatch').forEach(sw => {
     sw.classList.toggle('selected', sw.style.background === color || sw.style.backgroundColor === color);
   });
 }
 
-function selectBmEmoji(e) {
+export function selectBmEmoji(e) {
   bmSelectedIcon = e;
   document.querySelectorAll('#bmEmojiGrid .ov-emoji-btn').forEach(b => b.classList.toggle('active', b.textContent === e));
 }
 
-function onBmCatChange() {
+export function onBmCatChange() {
   const val = document.getElementById('bmCat').value;
   document.getElementById('bmCustomWrap').style.display = val === 'custom' ? '' : 'none';
   const icons = {
@@ -712,14 +712,14 @@ function onBmCatChange() {
   }
 }
 
-function closeBudgetModal(e) {
+export function closeBudgetModal(e) {
   if (!e || e.target.id === 'budgetModalOverlay') {
     document.getElementById('budgetModalOverlay').classList.remove('open');
     bmEditingId = null;
   }
 }
 
-async function saveBudget() {
+export async function saveBudget() {
   const nameInput = document.getElementById('bmName').value.trim();
   const catSel = document.getElementById('bmCat').value;
   const cat = catSel === 'custom' ? document.getElementById('bmCustomName').value.trim() : catSel;
@@ -763,21 +763,21 @@ async function saveBudget() {
 }
 
 /* --- Delete --- */
-function confirmDeleteBudget(id) {
+export function confirmDeleteBudget(id) {
   bmEditingId = id;
   const b = state.budgets.find(x => x.id === id);
   document.getElementById('bdName').textContent = b ? b.name : '';
   document.getElementById('budgetDeleteOverlay').classList.add('open');
 }
 
-function closeBudgetDeleteModal(e) {
+export function closeBudgetDeleteModal(e) {
   if (!e || e.target.id === 'budgetDeleteOverlay') {
     document.getElementById('budgetDeleteOverlay').classList.remove('open');
     bmEditingId = null;
   }
 }
 
-async function doDeleteBudget() {
+export async function doDeleteBudget() {
   try {
     await budgetService.deleteBudget(bmEditingId);
     renderBudgetView();
@@ -791,7 +791,7 @@ async function doDeleteBudget() {
 }
 
 // Helpers
-function escHtml(str) {
+export function escHtml(str) {
   if (!str) return '';
   return String(str)
     .replace(/&/g, '&amp;')
@@ -801,7 +801,7 @@ function escHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-function formatDate(isoStr) {
+export function formatDate(isoStr) {
   if (!isoStr) return '';
   const d = new Date(isoStr);
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });

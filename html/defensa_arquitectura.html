@@ -10,7 +10,7 @@
     <header class="hero">
         <div class="badge">Presentación del Proyecto</div>
         <h1>Flujo: Gestor de Finanzas y Comparador de Precios</h1>
-        <p class="subtitle">Una app web y móvil para controlar tus gastos, conectar tus billeteras y saber dónde comprar más barato</p>
+        <p class="subtitle">Una aplicación web para controlar tus gastos, conectar tus billeteras y saber dónde comprar más barato</p>
     </header>
 
     <main class="container">
@@ -47,16 +47,16 @@
             <div class="arch-grid">
                 <!-- PASO 1 -->
                 <div class="arch-column col-clients">
-                    <div class="col-header">1. Pantallas (Frontend)</div>
+                    <div class="col-header">1. Pantallas (Frontend Web)</div>
                     <div class="arch-box">
-                        <div class="box-title">Versión Web</div>
-                        <div class="box-tech">HTML + CSS + TypeScript</div>
-                        <div class="box-desc">Para usarla desde la compu o el navegador del celu.</div>
+                        <div class="box-title">Vistas y Diseño</div>
+                        <div class="box-tech">HTML + CSS Modular</div>
+                        <div class="box-desc">Adaptable para usar desde la compu o desde el navegador del celular.</div>
                     </div>
                     <div class="arch-box">
-                        <div class="box-title">App del Celular</div>
-                        <div class="box-tech">Flutter (Android)</div>
-                        <div class="box-desc">Se conecta exactamente al mismo servidor que la web.</div>
+                        <div class="box-title">Lógica del Cliente</div>
+                        <div class="box-tech">TypeScript + Store Central</div>
+                        <div class="box-desc">Maneja los eventos de pantalla y le pide los datos al servidor.</div>
                     </div>
                 </div>
 
@@ -128,9 +128,9 @@
             <div class="decisions-grid">
                 <article class="decision-card">
                     <div class="decision-num">01</div>
-                    <h3>Un solo Backend para Web y Celular</h3>
-                    <p><strong>Qué hicimos:</strong> En vez de programar la lógica dos veces, hicimos una API en FastAPI y tanto la web como la app en Flutter le piden todo ahí.</p>
-                    <p><strong>Por qué:</strong> Si cambiamos cómo se calcula un presupuesto, se arregla en los dos lados al mismo tiempo.</p>
+                    <h3>Separar Pantallas (Frontend) de Servidor (API)</h3>
+                    <p><strong>Qué hicimos:</strong> Las pantallas en HTML/TS solo muestran los datos, y todo el trabajo pesado corre en una API aparte en Python (FastAPI).</p>
+                    <p><strong>Por qué:</strong> Así la página carga rápido, las claves quedan seguras en el servidor y el código no se mezcla.</p>
                 </article>
 
                 <article class="decision-card">
@@ -158,7 +158,7 @@
     </main>
 
     <footer class="footer">
-        <p><strong>En resumen:</strong> Un gestor de finanzas pensado para los problemas reales de acá, con Web + App Móvil y un código bien separado en capas.</p>
+        <p><strong>En resumen:</strong> Un gestor de finanzas pensado para los problemas reales de acá, con Frontend Web + API en Python y un código bien separado en capas.</p>
     </footer>
 </body>
 </html>

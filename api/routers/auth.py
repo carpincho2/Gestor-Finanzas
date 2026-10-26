@@ -12,7 +12,7 @@ from schemas import (
     ProfileUpdateRequest,
     RegisterRequest,
 )
-from security import get_current_user_id
+from security import create_access_token, get_current_user_id
 from services.auth_service import AuthService
 
 logger = logging.getLogger("flujo.auth")
@@ -42,7 +42,8 @@ async def get_me(
 ):
     try:
         user = auth_service.get_me(user_id)
-        return {"ok": True, "user": _serialize_user(user)}
+        access_token = create_access_token({"sub": str(user.id), "email": user.email})
+        return {"ok": True, "token": access_token, "user": _serialize_user(user)}
     except HTTPException as exc:
         request.session.clear()
         return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})

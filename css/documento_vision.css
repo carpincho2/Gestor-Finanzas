@@ -1,0 +1,235 @@
+/* Estilos Oficiales para el Documento de Visión (Estándar IBM RUP) */
+@page {
+    size: A4 portrait;
+    margin: 16mm 15mm 18mm 15mm;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    background-color: #ffffff;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.page {
+    width: 100%;
+    page-break-after: always;
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.page:last-child {
+    page-break-after: auto;
+}
+
+/* Cabecera Estilo IBM */
+.ibm-header {
+    border-top: 6px solid #0f62fe;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: 22px 26px;
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 18px;
+}
+
+.ibm-badge-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.ibm-tag {
+    background-color: #0f62fe;
+    color: #ffffff;
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 10px;
+    border-radius: 4px;
+}
+
+.doc-meta {
+    font-size: 8.5pt;
+    color: #cbd5e1;
+    font-family: 'Consolas', 'Courier New', monospace;
+}
+
+.ibm-header h1 {
+    font-size: 19pt;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    margin-bottom: 8px;
+    color: #ffffff;
+}
+
+.ibm-header p {
+    font-size: 10pt;
+    color: #94a3b8;
+}
+
+/* Títulos de Sección */
+h2.section-heading {
+    font-size: 13.5pt;
+    font-weight: 800;
+    color: #0f172a;
+    border-bottom: 2px solid #0f62fe;
+    padding-bottom: 4px;
+    margin: 14px 0 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sec-tag {
+    font-size: 8pt;
+    font-weight: 600;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+h3.sub-heading {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #1d4ed8;
+    margin: 10px 0 5px 0;
+}
+
+p {
+    margin-bottom: 8px;
+    text-align: justify;
+    color: #334155;
+}
+
+/* Tablas Estándar IBM RUP */
+table.rup-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 14px 0;
+    font-size: 9.2pt;
+}
+
+table.rup-table th {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: 700;
+    text-align: left;
+    padding: 7px 10px;
+    border: 1px solid #cbd5e1;
+    border-bottom: 2px solid #94a3b8;
+}
+
+table.rup-table td {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    vertical-align: top;
+    color: #334155;
+}
+
+table.rup-table tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+table.rup-table td.label-col {
+    width: 26%;
+    font-weight: 700;
+    color: #0f172a;
+    background-color: #f1f5f9;
+}
+
+/* Cajas Destacadas y Listas */
+.highlight-card {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #0f62fe;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 8px 0 12px 0;
+}
+
+.highlight-card.emerald {
+    border-left-color: #059669;
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.card-title {
+    font-weight: 700;
+    font-size: 10pt;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+ul.feature-list, ol.workflow-list {
+    margin: 4px 0 10px 20px;
+    color: #334155;
+}
+
+ul.feature-list li, ol.workflow-list li {
+    margin-bottom: 5px;
+    font-size: 9.8pt;
+}
+
+/* Grid de Módulos y Arquitectura */
+.module-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 8px 0 12px 0;
+}
+
+.module-box {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 9px 12px;
+    background-color: #ffffff;
+}
+
+.module-box h4 {
+    font-size: 10pt;
+    color: #0f172a;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 3px;
+}
+
+.module-box p {
+    font-size: 9pt;
+    margin-bottom: 0;
+    text-align: left;
+}
+
+.formula-banner {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9pt;
+    background-color: #0f172a;
+    color: #38bdf8;
+    padding: 7px 12px;
+    border-radius: 5px;
+    margin: 6px 0 10px 0;
+    text-align: center;
+}
+
+.page-footer {
+    margin-top: 14px;
+    padding-top: 6px;
+    border-top: 1px solid #cbd5e1;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8.5pt;
+    color: #64748b;
+}

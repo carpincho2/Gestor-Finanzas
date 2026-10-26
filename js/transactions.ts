@@ -38,7 +38,8 @@ function renderStats() {
 
   const fmt = n => '$' + n.toLocaleString('es-AR');
 
-  document.getElementById('statBalance').textContent = fmt(balance);
+  const elBal = document.getElementById('statBalance'); if (!elBal) return;
+  elBal.textContent = fmt(balance);
   document.getElementById('statIncome').textContent = fmt(income);
   document.getElementById('statExpenses').textContent = fmt(expenses);
   document.getElementById('statSavings').textContent = fmt(savings);
@@ -56,7 +57,9 @@ function renderStats() {
 function renderTransactions() {
   const list = [...state.transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
   const el = document.getElementById('txList');
-  document.getElementById('txCount').textContent = state.transactions.length + ' registros';
+  const countEl = document.getElementById('txCount');
+  if (!el || !countEl) return;
+  countEl.textContent = state.transactions.length + ' registros';
 
   if (list.length === 0) {
     el.innerHTML = `<div style="padding:32px;text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;">Sin transacciones aún.</div>`;

@@ -3,9 +3,7 @@ import { apiFetch } from '../api/apiClient.ts';
 
 export const accountService = {
   saveAccounts() {
-    if (!IS_SERVER) {
-      localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(state.accounts));
-    }
+    localStorage.setItem(userKey('flujo_accounts'), JSON.stringify(state.accounts));
   },
 
   initAccounts() {
@@ -47,14 +45,17 @@ export const accountService = {
     
     acc.balance = newBalance;
     if (IS_SERVER) {
-      return await apiFetch(`/accounts/${acc.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(acc)
-      });
-    } else {
-      this.saveAccounts();
-      return { ok: true };
+      try {
+        return await apiFetch(`/accounts/${acc.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(acc)
+        });
+      } catch (err) {
+        console.warn('Fallback local en updateAccountBalance:', err);
+      }
     }
+    this.saveAccounts();
+    return { ok: true };
   },
 
   async getWalletStatus(accountId) {
@@ -102,161 +103,181 @@ export const accountService = {
     if (!fromAcc || !toAcc) throw new Error("Account not found");
 
     if (IS_SERVER) {
-      const res = await apiFetch('/accounts/transfer', {
-        method: 'POST',
-        body: JSON.stringify({
-          from_account_id: fromId,
-          to_account_id: toId,
-          amount_from: amountFrom,
-          amount_to: amountTo,
-          desc_expense: descExpense,
-          desc_income: descIncome
-        })
-      });
-      if (res && res.ok) {
-        if (res.from_account) {
-          const idxF = state.accounts.findIndex(x => x.id === fromId);
-          if (idxF > -1) state.accounts[idxF] = res.from_account;
+      try {
+        const res = await apiFetch('/accounts/transfer', {
+          method: 'POST',
+          body: JSON.stringify({
+            from_account_id: fromId,
+            to_account_id: toId,
+            amount_from: amountFrom,
+            amount_to: amountTo,
+            desc_expense: descExpense,
+            desc_income: descIncome
+          })
+        });
+        if (res && res.ok) {
+          if (res.from_account) {
+            const idxF = state.accounts.findIndex(x => x.id === fromId);
+            if (idxF > -1) state.accounts[idxF] = res.from_account;
+          }
+          if (res.to_account) {
+            const idxT = state.accounts.findIndex(x => x.id === toId);
+            if (idxT > -1) state.accounts[idxT] = res.to_account;
+          }
         }
-        if (res.to_account) {
-          const idxT = state.accounts.findIndex(x => x.id === toId);
-          if (idxT > -1) state.accounts[idxT] = res.to_account;
-        }
+        return res;
+      } catch (err) {
+        console.warn('Fallback local en doTransfer:', err);
       }
-      return res;
-    } else {
-      fromAcc.balance -= amountFrom;
-      toAcc.balance += amountTo;
-      this.saveAccounts();
-
-      const dateStr = new Date().toISOString().split('T')[0];
-      const linkId = Date.now();
-      state.transactions.unshift({ id: linkId, type: 'expense', desc: descExpense, amount: amountFrom, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
-      state.transactions.unshift({ id: linkId + 1, type: 'income', desc: descIncome, amount: amountTo, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
-      return { ok: true, local: true };
     }
+    fromAcc.balance -= amountFrom;
+    toAcc.balance += amountTo;
+    this.saveAccounts();
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    const linkId = Date.now();
+    state.transactions.unshift({ id: linkId, type: 'expense', desc: descExpense, amount: amountFrom, cat: 'Otros', date: dateStr, accountId: fromId, transferId: linkId });
+    state.transactions.unshift({ id: linkId + 1, type: 'income', desc: descIncome, amount: amountTo, cat: 'Otros', date: dateStr, accountId: toId, transferId: linkId });
+    localStorage.setItem(userKey('flujo_tx'), JSON.stringify(state.transactions));
+    return { ok: true, local: true };
   },
 
   async toggleArchive(accountId) {
     if (IS_SERVER) {
-      const res = await apiFetch(`/accounts/${accountId}/archive`, { method: 'PATCH' });
-      if (res && res.ok && res.account) {
-        const idx = state.accounts.findIndex(x => x.id === accountId);
-        if (idx > -1) state.accounts[idx] = res.account;
+      try {
+        const res = await apiFetch(`/accounts/${accountId}/archive`, { method: 'PATCH' });
+        if (res && res.ok && res.account) {
+          const idx = state.accounts.findIndex(x => x.id === accountId);
+          if (idx > -1) state.accounts[idx] = res.account;
+        }
+        return res;
+      } catch (err) {
+        console.warn('Fallback local en toggleArchive:', err);
       }
-      return res;
-    } else {
-      const acc = state.accounts.find(x => x.id === accountId);
-      if (acc) {
-        acc.is_archived = !acc.is_archived;
-        this.saveAccounts();
-        return { ok: true, account: acc };
-      }
-      return { ok: false, error: 'Cuenta no encontrada' };
     }
+    const acc = state.accounts.find(x => x.id === accountId);
+    if (acc) {
+      acc.is_archived = !acc.is_archived;
+      this.saveAccounts();
+      return { ok: true, account: acc };
+    }
+    return { ok: false, error: 'Cuenta no encontrada' };
   },
 
   async toggleFavorite(accountId) {
     if (IS_SERVER) {
-      const res = await apiFetch(`/accounts/${accountId}/favorite`, { method: 'PATCH' });
-      if (res && res.ok && res.account) {
-        const idx = state.accounts.findIndex(x => x.id === accountId);
-        if (idx > -1) state.accounts[idx] = res.account;
+      try {
+        const res = await apiFetch(`/accounts/${accountId}/favorite`, { method: 'PATCH' });
+        if (res && res.ok && res.account) {
+          const idx = state.accounts.findIndex(x => x.id === accountId);
+          if (idx > -1) state.accounts[idx] = res.account;
+        }
+        return res;
+      } catch (err) {
+        console.warn('Fallback local en toggleFavorite:', err);
       }
-      return res;
-    } else {
-      const acc = state.accounts.find(x => x.id === accountId);
-      if (acc) {
-        acc.is_favorite = !acc.is_favorite;
-        this.saveAccounts();
-        return { ok: true, account: acc };
-      }
-      return { ok: false, error: 'Cuenta no encontrada' };
     }
+    const acc = state.accounts.find(x => x.id === accountId);
+    if (acc) {
+      acc.is_favorite = !acc.is_favorite;
+      this.saveAccounts();
+      return { ok: true, account: acc };
+    }
+    return { ok: false, error: 'Cuenta no encontrada' };
   },
 
   async reconcileAccount(accountId, realBalance, note) {
     if (IS_SERVER) {
-      const res = await apiFetch(`/accounts/${accountId}/reconcile`, {
-        method: 'POST',
-        body: JSON.stringify({ real_balance: realBalance, note: note || 'Ajuste de saldo' })
-      });
-      if (res && res.ok && res.account) {
-        const idx = state.accounts.findIndex(x => x.id === accountId);
-        if (idx > -1) state.accounts[idx] = res.account;
-      }
-      return res;
-    } else {
-      const acc = state.accounts.find(x => x.id === accountId);
-      if (!acc) throw new Error("Account not found");
-      const diff = Math.round((realBalance - acc.balance) * 100) / 100;
-      if (Math.abs(diff) >= 0.01) {
-        const dateStr = new Date().toISOString().split('T')[0];
-        const txType = diff > 0 ? 'income' : 'expense';
-        state.transactions.unshift({
-          id: Date.now(),
-          type: txType,
-          desc: `${note || 'Ajuste de saldo'} (${diff > 0 ? '+' : ''}${diff})`,
-          amount: Math.abs(diff),
-          cat: 'Otros',
-          date: dateStr,
-          accountId: acc.id
+      try {
+        const res = await apiFetch(`/accounts/${accountId}/reconcile`, {
+          method: 'POST',
+          body: JSON.stringify({ real_balance: realBalance, note: note || 'Ajuste de saldo' })
         });
+        if (res && res.ok && res.account) {
+          const idx = state.accounts.findIndex(x => x.id === accountId);
+          if (idx > -1) state.accounts[idx] = res.account;
+        }
+        return res;
+      } catch (err) {
+        console.warn('Fallback local en reconcileAccount:', err);
       }
-      acc.balance = realBalance;
-      this.saveAccounts();
-      return { ok: true, account: acc, diff };
     }
+    const acc = state.accounts.find(x => x.id === accountId);
+    if (!acc) throw new Error("Account not found");
+    const diff = Math.round((realBalance - acc.balance) * 100) / 100;
+    if (Math.abs(diff) >= 0.01) {
+      const dateStr = new Date().toISOString().split('T')[0];
+      const txType = diff > 0 ? 'income' : 'expense';
+      state.transactions.unshift({
+        id: Date.now(),
+        type: txType,
+        desc: `${note || 'Ajuste de saldo'} (${diff > 0 ? '+' : ''}${diff})`,
+        amount: Math.abs(diff),
+        cat: 'Otros',
+        date: dateStr,
+        accountId: acc.id
+      });
+      localStorage.setItem(userKey('flujo_tx'), JSON.stringify(state.transactions));
+    }
+    acc.balance = realBalance;
+    this.saveAccounts();
+    return { ok: true, account: acc, diff };
   },
 
   async saveAccount(payload, editingAccountId) {
     if (IS_SERVER) {
-      if (editingAccountId) {
-        const res = await apiFetch(`/accounts/${editingAccountId}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload)
-        });
-        if (res && res.ok) {
-          const idx = state.accounts.findIndex(x => x.id === editingAccountId);
-          if (idx > -1) {
-            state.accounts[idx] = res.account;
+      try {
+        if (editingAccountId) {
+          const res = await apiFetch(`/accounts/${editingAccountId}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+          });
+          if (res && res.ok) {
+            const idx = state.accounts.findIndex(x => x.id === editingAccountId);
+            if (idx > -1) {
+              state.accounts[idx] = res.account;
+            }
           }
+          return res;
+        } else {
+          const res = await apiFetch('/accounts', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+          if (res && res.ok) {
+            state.accounts.push(res.account);
+          }
+          return res;
         }
-        return res;
-      } else {
-        const res = await apiFetch('/accounts', {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        if (res && res.ok) {
-          state.accounts.push(res.account);
-        }
-        return res;
+      } catch (err) {
+        console.warn('Fallback local en saveAccount:', err);
       }
-    } else {
-      if (editingAccountId) {
-        const idx = state.accounts.findIndex(x => x.id === editingAccountId);
-        if (idx > -1) {
-          state.accounts[idx] = { ...state.accounts[idx], ...payload };
-          this.saveAccounts();
-        }
-        return { ok: true, account: state.accounts[idx] };
-      } else {
-        const newA = { id: Date.now(), ...payload };
-        state.accounts.push(newA);
+    }
+    if (editingAccountId) {
+      const idx = state.accounts.findIndex(x => x.id === editingAccountId);
+      if (idx > -1) {
+        state.accounts[idx] = { ...state.accounts[idx], ...payload };
         this.saveAccounts();
-        return { ok: true, account: newA };
       }
+      return { ok: true, account: state.accounts[idx] };
+    } else {
+      const newA = { id: Date.now(), ...payload };
+      state.accounts.push(newA);
+      this.saveAccounts();
+      return { ok: true, account: newA };
     }
   },
 
   async deleteAccount(id) {
     if (IS_SERVER) {
-      return await apiFetch(`/accounts/${id}`, { method: 'DELETE' });
-    } else {
-      state.accounts = state.accounts.filter(x => x.id !== id);
-      this.saveAccounts();
-      return { ok: true };
+      try {
+        return await apiFetch(`/accounts/${id}`, { method: 'DELETE' });
+      } catch (err) {
+        console.warn('Fallback local en deleteAccount:', err);
+      }
     }
+    state.accounts = state.accounts.filter(x => x.id !== id);
+    this.saveAccounts();
+    return { ok: true };
   }
 };

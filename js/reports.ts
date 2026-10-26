@@ -8,7 +8,9 @@ import { apiFetch } from './api/apiClient.ts';
    CHART
    ===================================================== */
 function renderChart() {
-  const ctx = document.getElementById('mainChart').getContext('2d');
+  const canvasEl = document.getElementById('mainChart');
+  if (!canvasEl || typeof Chart === 'undefined') return;
+  const ctx = canvasEl.getContext('2d');
   const { labels, incomeData, expenseData } = getChartData();
 
   if (state.chartInstance) state.chartInstance.destroy();

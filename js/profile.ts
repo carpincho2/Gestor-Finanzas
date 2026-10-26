@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { IS_SERVER, state, userKey } from './store/store.ts';
 import { fetchMe, logout, deleteAccount, updateProfile, updatePassword } from './api/authApi.ts';
-import { apiFetch } from './api/apiClient.ts';
+import { apiFetch, setAuthToken } from './api/apiClient.ts';
 import { showToast } from './utils/utils.ts';
 import { loadUserData, init } from './app.ts';
 
@@ -12,30 +12,21 @@ export async function authCheckSession() {
     try {
       const data = await fetchMe();
       if (data && data.user) {
-        authFinishLogin(data.user);
+        if (data.token) setAuthToken(data.token);
+        await authFinishLogin(data.user);
         return;
       }
     } catch (e) {
-      const msg = String((e && e.message) || e || '');
-      const isOffline =
-        (e && e.name === 'TypeError') ||
-        msg.includes('Failed to fetch') ||
-        msg.includes('NetworkError') ||
-        msg.includes('ERR_CONNECTION_REFUSED');
-
-      if (isOffline) {
-        const stored = localStorage.getItem(AUTH_KEY);
-        if (stored) {
-          try {
-            const user = JSON.parse(stored);
-            authFinishLogin(user);
-            return;
-          } catch (_) {
-            localStorage.removeItem(AUTH_KEY);
-          }
+      const stored = localStorage.getItem(AUTH_KEY);
+      if (stored) {
+        try {
+          const user = JSON.parse(stored);
+          await authFinishLogin(user);
+          return;
+        } catch (_) {
+          localStorage.removeItem(AUTH_KEY);
+          setAuthToken(null);
         }
-      } else {
-        localStorage.removeItem(AUTH_KEY);
       }
     }
   } else {
@@ -43,7 +34,7 @@ export async function authCheckSession() {
     if (stored) {
       try {
         const user = JSON.parse(stored);
-        authFinishLogin(user);
+        await authFinishLogin(user);
         return;
       } catch (e) {
         localStorage.removeItem(AUTH_KEY);
@@ -55,7 +46,6 @@ export async function authCheckSession() {
 
 export async function authFinishLogin(user) {
   state.currentUserEmail = user.email;
-  await loadUserData();
 
   const initials = user.avatar || (user.name ? user.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'JP');
   const avatarEl = document.querySelector('.user-avatar');
@@ -70,7 +60,7 @@ export async function authFinishLogin(user) {
   if (planEl) planEl.textContent = user.email || '';
 
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  init();
+  await init();
 }
 
 export async function authLogout() {
@@ -82,6 +72,7 @@ export async function authLogout() {
   }
   state.currentUserEmail = null;
   localStorage.removeItem(AUTH_KEY);
+  setAuthToken(null);
   window.location.href = IS_SERVER ? './' : 'index.html';
 }
 
@@ -106,6 +97,7 @@ export async function doDeleteUserAccount() {
   [userKey('flujo_tx'), userKey('flujo_budgets'), userKey('flujo_accounts'), userKey('flujo_goals'), userKey('flujo_scan_history')].forEach(k => localStorage.removeItem(k));
   state.currentUserEmail = null;
   localStorage.removeItem(AUTH_KEY);
+  setAuthToken(null);
   window.location.href = IS_SERVER ? './' : 'index.html';
 }
 

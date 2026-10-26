@@ -1,12 +1,33 @@
 // @ts-nocheck
 import { API_BASE } from '../store/store.ts';
 
+const AUTH_TOKEN_KEY = 'flujo_auth_token';
+
+export function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAuthToken(token) {
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+}
+
 export async function apiFetch(path, options = {}) {
   const url = API_BASE + path;
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(options.headers || {})
+  };
+
   const r = await fetch(url, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options
+    ...options,
+    headers
   });
   
   if (r.redirected) {
@@ -44,4 +65,3 @@ export async function apiFetch(path, options = {}) {
   
   return data;
 }
-

@@ -35,7 +35,10 @@ Object.assign(window, shoppingList);
 /* =====================================================
    INIT
    ===================================================== */
+let viewsLoaded = false;
+
 export async function loadViews() {
+  if (viewsLoaded) return;
   const viewsMap = {
     'dashboardView': 'dashboard',
     'txView': 'transactions',
@@ -50,18 +53,23 @@ export async function loadViews() {
     'shoppingView': 'shopping',
     'listaComprasView': 'lista_compras'
   };
-  
-  for (const [id, file] of Object.entries(viewsMap)) {
-    try {
-      const el = document.getElementById(id);
-      if (el) {
-        const res = await fetch(`html/views/${file}.html?v=${Date.now()}`);
-        el.innerHTML = await res.text();
+
+  await Promise.all(
+    Object.entries(viewsMap).map(async ([id, file]) => {
+      try {
+        const el = document.getElementById(id);
+        if (el) {
+          const res = await fetch(`html/views/${file}.html?v=${Date.now()}`);
+          if (res.ok) {
+            el.innerHTML = await res.text();
+          }
+        }
+      } catch (e) {
+        console.error(`Error loading view ${file}:`, e);
       }
-    } catch (e) {
-      console.error(`Error loading view ${file}:`, e);
-    }
-  }
+    })
+  );
+  viewsLoaded = true;
 }
 
 export async function loadUserData() {
@@ -81,7 +89,7 @@ export async function loadUserData() {
       
       state.scScanHistory = JSON.parse(localStorage.getItem(userKey('flujo_scan_history')) || '[]');
     } catch (err) {
-      console.warn("Backend no disponible, cargando almacenamiento local:", err);
+      console.warn("Backend no disponible o sesión local activa, cargando almacenamiento local:", err);
       state.transactions = JSON.parse(localStorage.getItem(userKey('flujo_tx')) || '[]');
       state.budgets = JSON.parse(localStorage.getItem(userKey('flujo_budgets')) || '[]');
       state.accounts = JSON.parse(localStorage.getItem(userKey('flujo_accounts')) || '[]');
@@ -176,10 +184,14 @@ window.save = save;
 window.scOCRTestSuite = scOCRTestSuite;
 window.loadUserData = loadUserData;
 
+// Pre-cargar vistas en paralelo con la verificación de sesión para que el Dashboard aparezca instantáneamente
+loadViews().then(() => {
+  if (window.renderAll) window.renderAll();
+});
+
 // INICIAR LA APP
 if (typeof window.authCheckSession === 'function') {
   window.authCheckSession();
 } else {
-  // Try directly from profile
   profile.authCheckSession();
 }

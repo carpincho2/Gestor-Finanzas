@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documento de Visión (Estándar IBM RUP) — Flujo Finance Manager</title>
+    <link rel="stylesheet" href="../css/documento_vision.css">
+</head>
+<body>
+
+    <!-- ==================== PÁGINA 1 ==================== -->
+    <div class="page">
+        <div class="ibm-header">
+            <div class="ibm-badge-row">
+                <span class="ibm-tag">Estándar de Ingeniería IBM RUP (Rational Unified Process)</span>
+                <span class="doc-meta">Versión 3.0 | Octubre 2026 | Estado: Producción</span>
+            </div>
+            <h1>Documento de Visión: Sistema de Gestión Inteligente de Gastos Personales y Optimización de Consumo ("Flujo")</h1>
+            <p>Especificación Estratégica, Funcional y Arquitectónica (Plataforma Web Full-Stack, IA Generativa, SEPA &amp; Simulador Financiero VPN)</p>
+        </div>
+
+        <h2 class="section-heading">
+            <span>Historial de Revisiones del Artefacto</span>
+            <span class="sec-tag">Trazabilidad RUP</span>
+        </h2>
+        <table class="rup-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Versión</th>
+                    <th>Descripción del Cambio</th>
+                    <th>Responsable</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Mayo 2026</td>
+                    <td><strong>1.0</strong></td>
+                    <td>Concepción inicial del alcance (Prototipo conceptual móvil y OCR básico de tickets).</td>
+                    <td>Equipo de Desarrollo</td>
+                </tr>
+                <tr>
+                    <td>Junio 2026</td>
+                    <td><strong>2.0</strong></td>
+                    <td>Evolución a Plataforma Web Full-Stack (FastAPI + TS), integración de Google Gemini 2.5 Flash, OAuth 2.0 con Mercado Pago y cifrado Fernet.</td>
+                    <td>Equipo de Desarrollo</td>
+                </tr>
+                <tr>
+                    <td>Octubre 2026</td>
+                    <td><strong>3.0</strong></td>
+                    <td><strong>Estandarización IBM RUP:</strong> Arquitectura Hexagonal (PHAME) y SOLID, Motor de Precios Claros (SEPA), Simulador Financiero E-Commerce (VPN / Cuotas vs. Inflación), Cuentas Multidivisa y Chatbot IA con <em>Function Calling</em>.</td>
+                    <td>Arquitectura &amp; QA</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 class="section-heading">
+            <span>1. Introducción</span>
+            <span class="sec-tag">Sección 1 — IBM RUP</span>
+        </h2>
+
+        <h3 class="sub-heading">1.1. Propósito del Documento</h3>
+        <p>El presente <strong>Documento de Visión</strong>, elaborado conforme a los lineamientos de ingeniería de software de <strong>IBM Rational Unified Process (RUP)</strong>, define la visión de alto nivel, el posicionamiento estratégico, las necesidades de las partes interesadas (<em>stakeholders</em>) y las capacidades técnicas del ecosistema <strong>Flujo</strong>. Sirve como contrato rector entre el liderazgo de producto, el equipo de ingeniería Full-Stack y los auditores de calidad.</p>
+
+        <h3 class="sub-heading">1.2. Alcance del Sistema</h3>
+        <p>El proyecto consiste en una <strong>Plataforma Web Full-Stack 100% Responsive (PWA-ready)</strong> y su <strong>API RESTful en FastAPI</strong>, orientada a la autonomía financiera y la protección del poder adquisitivo. Su núcleo tecnológico combina seis pilares productivos:</p>
+        <ul class="feature-list">
+            <li><strong>Contabilidad y Patrimonio Multidivisa (ARS, USD, EUR):</strong> Gestión integral de cuentas, presupuestos, metas y transferencias bimonetarias con cotización en vivo.</li>
+            <li><strong>Automatización Contable por OCR Híbrido + IA:</strong> Extracción óptica en cliente (<code>Tesseract.js</code>) refinada semánticamente mediante <strong>Google Gemini 2.5 Flash</strong> en formato JSON estructurado.</li>
+            <li><strong>Comparador Oficial de Supermercados (Motor SEPA):</strong> Ingesta automatizada de Precios Claros Argentina, búsqueda geoespacial (Haversine), lector de código de barras en góndola y optimizador de canasta completa (<em>Split Shopping</em>).</li>
+            <li><strong>Asistente de Compras E-Commerce (Cuotas vs. Inflación):</strong> Extracción universal de precios web y simulación matemática de <strong>Valor Presente Neto (VPN)</strong>, TNA de indiferencia, días de gracia y topes de reintegro.</li>
+            <li><strong>Conectividad Open Finance:</strong> Sincronización con <strong>Mercado Pago</strong> vía OAuth 2.0 + PKCE y notificaciones instantáneas por Webhooks firmados con HMAC.</li>
+            <li><strong>Asistente Conversacional con IA (Function Calling):</strong> Chatbot flotante e <em>IA Insights</em> que auditan el presupuesto y ejecutan transacciones reales en lenguaje natural.</li>
+        </ul>
+
+        <h3 class="sub-heading">1.3. Definiciones, Acrónimos y Abreviaturas</h3>
+        <table class="rup-table">
+            <thead>
+                <tr>
+                    <th>Término / Acrónimo</th>
+                    <th>Definición Técnica en el Contexto del Sistema</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>RUP / PHAME / SOLID</strong></td>
+                    <td><em>Rational Unified Process</em> (IBM); Arquitectura Hexagonal de Puertos y Adaptadores; Principios de diseño orientado a objetos de alta mantenibilidad.</td>
+                </tr>
+                <tr>
+                    <td><strong>SEPA</strong></td>
+                    <td><em>Sistema Electrónico de Publicidad de Precios Argentinos</em> (datos abiertos oficiales de precios minoristas en supermercados).</td>
+                </tr>
+                <tr>
+                    <td><strong>VPN y TNA de Indiferencia</strong></td>
+                    <td><em>Valor Presente Neto</em> de cuotas descontadas por inflación/rendimiento proyectado y Tasa Nominal Anual de equilibrio entre pago contado y financiado.</td>
+                </tr>
+                <tr>
+                    <td><strong>Fernet &amp; PKCE</strong></td>
+                    <td>Cifrado simétrico autenticado (<code>AES-128-CBC + HMAC-SHA256</code>) para tokens en reposo y extensión de seguridad para flujos OAuth 2.0.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="page-footer">
+            <span>Documento de Visión (Estándar IBM RUP) — Sistema de Gestión Inteligente "Flujo"</span>
+            <span>Página 1 de 4</span>
+        </div>
+    </div>
+
+    <!-- ==================== PÁGINA 2 ==================== -->
+    <div class="page">
+        <h2 class="section-heading">
+            <span>2. Posicionamiento y Visión del Producto</span>
+            <span class="sec-tag">Sección 2 — IBM RUP</span>
+        </h2>
+
+        <h3 class="sub-heading">2.1. Oportunidad de Negocio</h3>
+        <p>En economías con alta volatilidad nominal, dispersión de precios en supermercados y múltiples opciones de financiación bancaria, las aplicaciones tradicionales fracasan al comportarse como simples "planillas pasivas post-gasto". Existe una oportunidad crítica para una solución proactiva que intervenga <strong>antes y durante</strong> el acto de consumo, automatizando la carga contable y maximizando matemáticamente el rendimiento del ingreso familiar.</p>
+
+        <h3 class="sub-heading">2.2. Sentencia de Definición del Problema (Matriz Oficial IBM RUP)</h3>
+        <table class="rup-table">
+            <tbody>
+                <tr>
+                    <td class="label-col">El problema de</td>
+                    <td>La fragmentación del dinero en múltiples cuentas y divisas, la fricción del registro manual de tickets, la dispersión de precios entre supermercados y la complejidad matemática para evaluar cuotas frente a la inflación.</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Afecta a</td>
+                    <td>Individuos, estudiantes, profesionales y hogares que buscan administrar su presupuesto y proteger su poder de compra diario.</td>
+                </tr>
+                <tr>
+                    <td class="label-col">El impacto asociado es</td>
+                    <td>Pérdida sistemática de poder adquisitivo, abandono del control presupuestario por fatiga de carga manual, sobreendeudamiento y desaprovechamiento de promociones o arbitrajes de tasas.</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Una solución exitosa sería</td>
+                    <td>Un ecosistema digital inteligente que automatice la captura de transacciones (vía OCR+IA y OAuth con billeteras), compare precios oficiales de supermercados cercanos (SEPA) y calcule el medio de pago óptimo mediante Valor Presente Neto (VPN).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3 class="sub-heading">2.3. Sentencia de Posicionamiento del Producto (Matriz Oficial IBM RUP)</h3>
+        <table class="rup-table">
+            <tbody>
+                <tr>
+                    <td class="label-col">Para</td>
+                    <td>Usuarios y ahorristas que buscan autonomía financiera total y decisiones de compra respaldadas por datos.</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Que</td>
+                    <td>Necesitan centralizar sus finanzas multidivisa, erradicar la carga manual y optimizar cada compra de supermercado o comercio electrónico.</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Flujo es</td>
+                    <td>Una Plataforma Fintech Web Full-Stack impulsada por Inteligencia Artificial Generativa, datos abiertos SEPA y motores de matemática financiera.</td>
+                </tr>
+                <tr>
+                    <td class="label-col">A diferencia de</td>
+                    <td>Las aplicaciones contables tradicionales (registro manual retrospectivo) o los buscadores de precios aislados de las cuentas del usuario.</td>
+                </tr>
+                <tr>
+                    <td class="label-col">Nuestro producto</td>
+                    <td>Cruza en tiempo real los saldos, tarjetas registradas y presupuestos del usuario con los precios del mercado y tasas de inflación para recomendar la decisión óptima en un clic.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2 class="section-heading">
+            <span>3. Descripciones de los Interesados (Stakeholders) y Usuarios</span>
+            <span class="sec-tag">Sección 3 — IBM RUP</span>
+        </h2>
+        <table class="rup-table">
+            <thead>
+                <tr>
+                    <th>Actor / Interesado</th>
+                    <th>Rol y Descripción</th>
+                    <th>Responsabilidades y Necesidades Clave</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Usuarios Finales (Gestor del Hogar y Ahorrista)</strong></td>
+                    <td>Individuos que controlan sus ingresos, gastos, ahorros en divisas y compras cotidianas.</td>
+                    <td>Escaneo confiable de tickets sin errores de OCR, alertas de presupuesto, optimización del changuito de supermercado y simulación de cuotas.</td>
+                </tr>
+                <tr>
+                    <td><strong>Equipo de Arquitectura y Desarrollo</strong></td>
+                    <td>Ingenieros responsables de las capas de Frontend Web, Backend API, Base de Datos e IA.</td>
+                    <td>Garantizar el cumplimiento de los principios <strong>SOLID</strong>, la arquitectura <strong>PHAME (Hexagonal)</strong>, el cifrado de datos y un Índice de Mantenibilidad superior.</td>
+                </tr>
+                <tr>
+                    <td><strong>Product Owner</strong></td>
+                    <td>Líder estratégico encargado de definir las prioridades de negocio y la visión del producto.</td>
+                    <td>Alinear las funcionalidades con las necesidades reales del mercado financiero y validar los criterios de aceptación de cada módulo.</td>
+                </tr>
+                <tr>
+                    <td><strong>Ecosistemas Externos (APIs)</strong></td>
+                    <td>Proveedores integrados mediante Puertos y Adaptadores.</td>
+                    <td>Google Gemini API (IA), Mercado Pago API (OAuth 2.0 / Webhooks), Datos Abiertos SEPA (Precios Claros) y DolarAPI (cotizaciones).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="page-footer">
+            <span>Documento de Visión (Estándar IBM RUP) — Sistema de Gestión Inteligente "Flujo"</span>
+            <span>Página 2 de 4</span>
+        </div>
+    </div>
+
+    <!-- ==================== PÁGINA 3 ==================== -->
+    <div class="page">
+        <h2 class="section-heading">
+            <span>4. Características del Producto (Módulos Funcionales Activos)</span>
+            <span class="sec-tag">Sección 4 — IBM RUP</span>
+        </h2>
+        <p>El sistema articula su propuesta de valor a través de seis módulos funcionales completamente integrados en producción:</p>
+
+        <div class="module-grid">
+            <div class="module-box">
+                <h4>4.1. Registro Contable, Presupuestos y Metas</h4>
+                <p>Gestión de ingresos y egresos con categorización normalizada, presupuestos mensuales por rubro con semáforo de consumo (🟢🟡🔴), objetivos de ahorro y reportes estadísticos interactivos (<code>Chart.js</code>).</p>
+            </div>
+            <div class="module-box">
+                <h4>4.2. Patrimonio y Transferencias Multidivisa</h4>
+                <p>Administración de cuentas en <strong>ARS, USD y EUR</strong>. Motor de transferencia bimonetaria atómica conectado a <code>DolarAPI</code> con cálculo bidireccional de tipo de cambio y consolidación de patrimonio neto.</p>
+            </div>
+            <div class="module-box">
+                <h4>4.3. Digitalización de Tickets (OCR + Gemini IA)</h4>
+                <p>Pipeline híbrido: preprocesamiento de imagen en Canvas + <code>Tesseract.js</code> + validación en 5 niveles + estructuración semántica JSON mediante <strong>Google Gemini 2.5 Flash</strong> con <em>Few-Shot Prompting</em> e indicadores de confianza.</p>
+            </div>
+            <div class="module-box">
+                <h4>4.4. Buscador Oficial SEPA y "Changuito Óptimo"</h4>
+                <p>Comparador geolocalizado de supermercados (Coto, Carrefour, Día, Jumbo, etc.), escáner de código de barras en góndola (<code>BarcodeDetector</code>), cruce con promociones de las tarjetas del usuario y optimizador de <strong>Compra Dividida (Split Shopping)</strong>.</p>
+            </div>
+            <div class="module-box">
+                <h4>4.5. Simulador de Compras E-Commerce (VPN)</h4>
+                <p>Extractor semántico universal (Mercado Libre, Shopify, VTEX, etc. vía JSON-LD/Open Graph). Evalúa cuotas con o sin interés contra la inflación, calculando <strong>VPN</strong>, <strong>TNA de Indiferencia</strong>, días de gracia según cierre de tarjeta y topes de reintegro.</p>
+            </div>
+            <div class="module-box">
+                <h4>4.6. Billeteras OAuth 2.0 + Asistente IA (Tools)</h4>
+                <p>Sincronización legal con <strong>Mercado Pago</strong> (OAuth 2.0 + PKCE y Webhooks HMAC). Incluye <strong>Chatbot Flotante con IA</strong> e <em>IA Insights</em> con <strong>Function Calling</strong> para crear gastos y consultar saldos por voz/texto.</p>
+            </div>
+        </div>
+
+        <div class="formula-banner">
+            Motor Financiero VPN: VPN = Σ [ Cuota_t / (1 + TEM)^t ]  |  Ahorro Efectivo = min(Precio × %Desc, Tope_Reintegro)
+        </div>
+
+        <h2 class="section-heading">
+            <span>5. Arquitectura del Sistema (PHAME / Hexagonal &amp; SOLID)</span>
+            <span class="sec-tag">Sección 5 — IBM RUP</span>
+        </h2>
+        <p>La arquitectura está diseñada bajo el patrón <strong>Hexagonal (Puertos y Adaptadores — PHAME)</strong> y cumplimiento estricto de los principios <strong>SOLID</strong>, garantizando desacoplamiento total, escalabilidad y alta mantenibilidad:</p>
+
+        <table class="rup-table">
+            <thead>
+                <tr>
+                    <th>Capa Arquitectónica</th>
+                    <th>Tecnologías Productivas</th>
+                    <th>Responsabilidad Técnica (Principios SOLID)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Frontend Web Modular (SPA &amp; PWA)</strong></td>
+                    <td>TypeScript / ES6+, HTML5, CSS3 Modular, Chart.js, Vite</td>
+                    <td>Interfaz multiplataforma adaptable (Desktop/Mobile). Separación estricta entre Vistas (<code>html/views/</code>), Controladores (<code>js/*.ts</code>) y Servicios de Dominio Cliente (<code>js/services/*.ts</code>) con soporte <em>Offline-First</em>.</td>
+                </tr>
+                <tr>
+                    <td><strong>Backend API &amp; Dominio (Hexagonal)</strong></td>
+                    <td>Python 3.11+, FastAPI, Pydantic v2, Uvicorn, Structlog</td>
+                    <td>Orquestación mediante Casos de Uso (<code>api/application/</code>), Entidades puras (<code>api/domain/</code>), Puertos abstractos (<code>api/ports/</code>) e inyección de dependencias (DIP).</td>
+                </tr>
+                <tr>
+                    <td><strong>Persistencia Dual &amp; Motor SEPA</strong></td>
+                    <td>PostgreSQL (Cloud) / SQLite (Local), SQLAlchemy 2.0, Alembic, Pandas, RapidFuzz, APScheduler</td>
+                    <td>Repositorios concretos (<code>SQLAlchemy*Repository</code>) para usuarios, cuentas, transacciones, conexiones OAuth y catálogos geoespaciales de precios SEPA.</td>
+                </tr>
+                <tr>
+                    <td><strong>Procesamiento Óptico e Inteligencia Artificial</strong></td>
+                    <td><code>Tesseract.js</code> + Canvas API (Cliente) &amp; <strong>Google Gemini 2.5 Flash</strong> (<code>google-genai</code> SDK en Servidor)</td>
+                    <td>Conversión óptica de imágenes y comprensión contextual de documentos no deterministas, generación de <em>IA Insights</em> y ejecución de herramientas (<em>Function Calling</em>).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="page-footer">
+            <span>Documento de Visión (Estándar IBM RUP) — Sistema de Gestión Inteligente "Flujo"</span>
+            <span>Página 3 de 4</span>
+        </div>
+    </div>
+
+    <!-- ==================== PÁGINA 4 ==================== -->
+    <div class="page">
+        <h2 class="section-heading">
+            <span>6. Flujos de Trabajo Principales (Casos de Uso Core)</span>
+            <span class="sec-tag">Sección 6 — IBM RUP</span>
+        </h2>
+
+        <h3 class="sub-heading">6.1. Registro Inteligente mediante Ticket (Pipeline Híbrido OCR + Gemini IA)</h3>
+        <ol class="workflow-list">
+            <li><strong>Captura y Preprocesamiento Óptico:</strong> El usuario toma o carga la foto del ticket; el cliente aplica normalización de contraste y escala de grises en HTML5 Canvas.</li>
+            <li><strong>Extracción Primaria en Cliente:</strong> El motor <code>Tesseract.js</code> extrae el texto crudo y aplica heurísticas preliminares contra el diccionario local (<code>OCR_PATTERNS.json</code>).</li>
+            <li><strong>Estructuración Semántica en Backend (IA):</strong> Se envía el texto a <code>POST /api/ocr/parse</code>, donde <strong>Gemini 2.5 Flash</strong> corrige errores de lectura óptica (ej. <code>"C0T0"</code> &rarr; <code>"Coto"</code>) y devuelve un objeto <strong>JSON estructurado</strong> (comercio, fecha, total, categoría e ítems). En caso de falta de conectividad, actúa automáticamente el <em>fallback</em> local.</li>
+            <li><strong>Validación con Semáforo de Confianza y Persistencia:</strong> El usuario revisa los campos clasificados por nivel de certeza (🟢 &gt;85%, 🟡 50-85%, 🔴 &lt;50%) y confirma la transacción, impactando instantáneamente en el saldo de la cuenta seleccionada.</li>
+        </ol>
+
+        <h3 class="sub-heading">6.2. Optimización de Compras en Supermercados (SEPA) y E-Commerce (VPN)</h3>
+        <ol class="workflow-list">
+            <li><strong>Ingesta y Normalización SEPA:</strong> El <em>scheduler</em> del backend descarga y limpia los datasets oficiales de Precios Claros, indexando productos por código EAN y coordenadas de sucursal.</li>
+            <li><strong>Comparación por Lista o Código de Barras:</strong> El usuario arma su lista en <em>"Mi Lista del Súper"</em> o escanea un producto en góndola con la cámara (<code>BarcodeDetector</code>). El sistema calcula el <strong>Supermercado Único más barato</strong>, la estrategia de <strong>Compra Dividida (Split Shopping)</strong> y resalta las promociones que coinciden con las tarjetas registradas del usuario.</li>
+            <li><strong>Simulación E-Commerce (Cuotas vs. Inflación):</strong> Al pegar el enlace de cualquier tienda online, el patrón <em>Strategy + Registry</em> extrae el precio (vía API OAuth de Mercado Libre o metadatos <em>Schema.org JSON-LD</em>) y calcula el <strong>Valor Presente Neto (VPN)</strong> de cada plan de cuotas frente a la inflación, permitiendo registrar la compra como gasto en 1 clic.</li>
+        </ol>
+
+        <h2 class="section-heading">
+            <span>7. Requisitos de Seguridad, Calidad y Resiliencia (ISO 25010 / IBM)</span>
+            <span class="sec-tag">Sección 7 — IBM RUP</span>
+        </h2>
+        <div class="highlight-card">
+            <div class="card-title">Arquitectura de Seguridad de Grado Bancario (Defense in Depth)</div>
+            <ul class="feature-list">
+                <li><strong>Cifrado Simétrico Autenticado en Reposo (Fernet):</strong> Todos los tokens OAuth de billeteras virtuales se almacenan cifrados mediante <code>AES-128-CBC + HMAC-SHA256</code> con llave maestra en variables de entorno y migración automática en el arranque (<code>migrate_plaintext_tokens</code>).</li>
+                <li><strong>Protocolos de Autenticación y Firma de Webhooks:</strong> Inicio de sesión con <strong>Google OAuth 2.0</strong>, contraseñas hasheadas con <code>bcrypt</code>, flujo <strong>OAuth 2.0 + PKCE</strong> para Mercado Pago y validación criptográfica <code>HMAC</code> en notificaciones IPN.</li>
+                <li><strong>Proxy Seguro de IA y Endurecimiento HTTP:</strong> La clave <code>GEMINI_API_KEY</code> reside exclusivamente en el backend. Todas las respuestas incluyen cabeceras estrictas (<code>HSTS</code>, <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code> y <code>Referrer-Policy</code>).</li>
+                <li><strong>Resiliencia y Tolerancia a Fallos:</strong> Reintentos con <em>backoff exponencial</em> (2s, 4s, 8s) ante límites de tasa HTTP 429 en IA y conmutación automática a modo <em>Offline-First</em> en el navegador.</li>
+            </ul>
+        </div>
+
+        <h2 class="section-heading">
+            <span>8. Evolución del Producto y Hoja de Ruta (Post-Versión 3.0)</span>
+            <span class="sec-tag">Sección 8 — IBM RUP</span>
+        </h2>
+        <div class="highlight-card emerald">
+            <div class="card-title">✅ Hitos de Inteligencia de Documentos Completados en Versión 3.0</div>
+            <p>Las metas proyectadas en la versión inicial del documento —<em>clasificación con IA contextual, manejo de tickets no deterministas, recomendaciones proactivas de ahorro y adopción de formatos JSON estructurados</em>— <strong>ya se encuentran 100% implementadas y operativas en producción</strong>.</p>
+        </div>
+        <p>Hacia las próximas iteraciones evolutivas (Versión 4.0), la hoja de ruta técnica contempla:</p>
+        <ul class="feature-list">
+            <li><strong>Series Temporales de Inflación por Producto (Sparklines):</strong> Almacenamiento histórico de ingestas SEPA para visualizar la curva de precios de los últimos 90 días y auditar la veracidad de las ofertas.</li>
+            <li><strong>Cartografía Interactiva Embebida:</strong> Mapa interactivo (Leaflet / OpenStreetMap) en el Buscador SEPA con pines semaforizados por nivel de ahorro en cada sucursal.</li>
+            <li><strong>Expansión Open Banking Internacional:</strong> Puesta en producción de los adaptadores <code>PlaidAdapter</code> y <code>BelvoAdapter</code> para sincronización directa con cuentas bancarias CBU/IBAN.</li>
+        </ul>
+
+        <div class="page-footer">
+            <span>Documento de Visión (Estándar IBM RUP) — Sistema de Gestión Inteligente "Flujo"</span>
+            <span>Página 4 de 4</span>
+        </div>
+    </div>
+
+</body>
+</html>

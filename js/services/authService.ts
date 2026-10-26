@@ -1,5 +1,6 @@
 import { IS_SERVER } from '../store/store.ts';
 import { login, register, loginWithGoogle, fetchMe } from '../api/authApi.ts';
+import { setAuthToken } from '../api/apiClient.ts';
 
 const AUTH_KEY = 'flujo_auth_user';
 
@@ -77,11 +78,12 @@ export async function checkSession() {
   if (IS_SERVER) {
     try {
       const data = await fetchMe();
-      if (data && data.user) return data.user;
-    } catch (e) {
-      if (isNetworkError(e)) {
-        return getLocalStoredUser();
+      if (data && data.user) {
+        if (data.token) setAuthToken(data.token);
+        return data.user;
       }
+    } catch (e) {
+      return getLocalStoredUser();
     }
   } else {
     return getLocalStoredUser();
@@ -93,6 +95,7 @@ export async function loginUser(email, pw) {
   if (IS_SERVER) {
     try {
       const data = await login(email, pw);
+      if (data.token) setAuthToken(data.token);
       return data.user;
     } catch (e) {
       if (isNetworkError(e)) {
@@ -108,6 +111,7 @@ export async function registerUser(name, email, pw) {
   if (IS_SERVER) {
     try {
       const data = await register(name, email, pw);
+      if (data.token) setAuthToken(data.token);
       return data.user;
     } catch (e) {
       if (isNetworkError(e)) {
@@ -123,6 +127,7 @@ export async function googleLoginUser(credential, payload) {
   if (IS_SERVER) {
     try {
       const data = await loginWithGoogle(credential);
+      if (data.token) setAuthToken(data.token);
       return data.user;
     } catch (e) {
       if (isNetworkError(e) && payload) {

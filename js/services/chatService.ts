@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { API_BASE } from '../store/store.ts';
+import { getAuthToken } from '../api/apiClient.ts';
 
 /**
  * @typedef {Object} ChatMessage
@@ -19,15 +20,23 @@ export class ChatService {
    */
   async sendMessage(message, history = []) {
     try {
+      const token = getAuthToken();
+      const contexto = typeof window.aiBuildContext === 'function'
+        ? window.aiBuildContext()
+        : 'Usuario consultando desde el asistente rápido de Flujo.';
+      const cleanHistory = Array.isArray(history) ? history.slice(0, -1) : [];
+
       const response = await fetch(this.endpoint, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          message,
-          history
+          contexto_financiero: contexto,
+          pregunta: message,
+          historial: cleanHistory,
         }),
       });
 

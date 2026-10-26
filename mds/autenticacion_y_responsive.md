@@ -266,6 +266,10 @@ Para garantizar **alta disponibilidad 24/7**, implementamos tres mecanismos de d
 3. **Manejador Global de Excepciones JSON en [`api/main.py`](file:///h:/Gestor%20de%20Finanzas/api/main.py) y [`api/routers/auth.py`](file:///h:/Gestor%20de%20Finanzas/api/routers/auth.py)**:
    * Todos los endpoints de autenticación y el middleware global de FastAPI capturan cualquier excepción inesperada, la registran en el log del servidor y devuelven una respuesta `JSONResponse` estructurada en lugar de un texto plano `Internal Server Error`.
 
+4. **Autenticación Dual (Cookies + JWT Bearer Token) y Carga Paralela de Vistas en [`js/api/apiClient.ts`](file:///h:/Gestor%20de%20Finanzas/js/api/apiClient.ts) y [`js/app.ts`](file:///h:/Gestor%20de%20Finanzas/js/app.ts)**:
+   * Navegadores con bloqueo agresivo de cookies o escudos de privacidad (como Brave Shields) pueden impedir la persistencia de cookies `flujo_session`. Por ello, el cliente web almacena además el JWT devuelto por `/api/auth/login`, `/api/auth/register`, `/api/auth/google` y `/api/auth/me` y lo envía automáticamente en el encabezado `Authorization: Bearer <token>`.
+   * Las vistas modulares (`html/views/*.html`) se cargan en paralelo (`Promise.all`) inmediatamente al iniciar [`js/app.ts`](file:///h:/Gestor%20de%20Finanzas/js/app.ts) y se eliminó el conflicto de la clase `.is-hidden` (`display: none`) sobre las vistas en [`main.html`](file:///h:/Gestor%20de%20Finanzas/main.html), garantizando que tanto el Dashboard como el resto de las secciones se rendericen al instante sin quedar en negro.
+
 ---
 
 ¡Excelente trabajo! Con esto, Flujo cumple con altos estándares de seguridad en autenticación web, resiliencia en la nube y brinda una experiencia de usuario premium en cualquier dispositivo móvil.

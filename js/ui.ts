@@ -70,22 +70,20 @@ function setPage(el, page) {
 
   // Helper: ocultar todas las vistas
   function hideAll() {
-    document.getElementById('dashboardView').style.display = 'none';
-    document.getElementById('txView').style.display = 'none';
-    document.getElementById('budgetView').style.display = 'none';
-    document.getElementById('cuentasView').style.display = 'none';
-    document.getElementById('reportesView').style.display = 'none';
-    document.getElementById('objetivosView').style.display = 'none';
-    document.getElementById('scannerView').style.display = 'none';
-    document.getElementById('insightsView').style.display = 'none';
-    document.getElementById('perfilView').style.display = 'none';
-    const sepaEl = document.getElementById('supermercadosView');
-    if (sepaEl) sepaEl.style.display = 'none';
-    const shopEl = document.getElementById('shoppingView');
-    if (shopEl) shopEl.style.display = 'none';
-    const listEl = document.getElementById('listaComprasView');
-    if (listEl) listEl.style.display = 'none';
-    document.getElementById('pageDate').style.display = 'none';
+    const viewIds = [
+      'dashboardView', 'txView', 'budgetView', 'cuentasView',
+      'reportesView', 'objetivosView', 'scannerView', 'insightsView',
+      'perfilView', 'supermercadosView', 'shoppingView', 'listaComprasView'
+    ];
+    viewIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.display = 'none';
+        el.classList.remove('is-hidden');
+      }
+    });
+    const pageDate = document.getElementById('pageDate');
+    if (pageDate) pageDate.style.display = 'none';
   }
 
   if (page === 'dashboard') {

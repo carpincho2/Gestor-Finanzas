@@ -7,9 +7,9 @@
   <meta name="description" content="Flujo — tu gestor de finanzas personal con IA. Controlá gastos, presupuestos, objetivos y más."/>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
   <link rel="icon" type="image/png" href="/assets/descarga-DNCiibOt.png">
-  <script type="module" crossorigin src="/assets/dashboard-Cx3ajwto.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/chatbot-DIgsd4L8.js">
-  <link rel="stylesheet" crossorigin href="/assets/chatbot-n19bXKL1.css">
+  <script type="module" crossorigin src="/assets/dashboard-CdGt-qv7.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/chatbot-WGv6OkHS.js">
+  <link rel="stylesheet" crossorigin href="/assets/main-n19bXKL1.css">
 <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
 <body>
 
@@ -136,17 +136,17 @@
 
     <!-- ===== MODULAR VIEWS (Cargadas desde html/views/) ===== -->
     <div id="dashboardView"></div>
-    <div id="txView" class="is-hidden"></div>
-    <div id="budgetView" class="is-hidden"></div>
-    <div id="cuentasView" class="is-hidden"></div>
-    <div id="reportesView" class="is-hidden"></div>
-    <div id="objetivosView" class="is-hidden"></div>
-    <div id="scannerView" class="is-hidden"></div>
-    <div id="supermercadosView" class="is-hidden"></div>
-    <div id="listaComprasView" class="is-hidden"></div>
-    <div id="shoppingView" class="is-hidden"></div>
-    <div id="insightsView" class="is-hidden"></div>
-    <div id="perfilView" class="is-hidden"></div>
+    <div id="txView" style="display:none;"></div>
+    <div id="budgetView" style="display:none;"></div>
+    <div id="cuentasView" style="display:none;"></div>
+    <div id="reportesView" style="display:none;"></div>
+    <div id="objetivosView" style="display:none;"></div>
+    <div id="scannerView" style="display:none;"></div>
+    <div id="supermercadosView" style="display:none;"></div>
+    <div id="listaComprasView" style="display:none;"></div>
+    <div id="shoppingView" style="display:none;"></div>
+    <div id="insightsView" style="display:none;"></div>
+    <div id="perfilView" style="display:none;"></div>
 
   </main>
 </div>
@@ -352,12 +352,12 @@
       </div>
     </div>
 
-    <div id="amLimitWrap" class="mt-12 is-hidden">
+    <div id="amLimitWrap" class="mt-12" style="display:none;">
       <label class="field-label">Límite de crédito ($)</label>
       <input class="field-input" id="amLimit" type="number" placeholder="0"/>
     </div>
 
-    <div id="amCardDaysWrap" class="mt-12 is-hidden">
+    <div id="amCardDaysWrap" class="mt-12" style="display:none;">
       <div class="form-row">
         <div>
           <label class="field-label">Día de cierre (1-31)</label>
@@ -478,7 +478,7 @@
           <option value="custom">✏️ Personalizada…</option>
         </select>
       </div>
-      <div id="bmCustomWrap" class="is-hidden">
+      <div id="bmCustomWrap" style="display:none;">
         <label class="field-label">Categoría personalizada</label>
         <input class="field-input" id="bmCustomName" type="text" placeholder="Ej: Gimnasio"/>
       </div>
@@ -744,12 +744,12 @@
       </div>
 
       <!-- Preview of items (collapsible) -->
-      <div class="sc-raw-wrap is-hidden mt-12" id="scItemsWrap">
+      <div class="sc-raw-wrap mt-12" id="scItemsWrap" style="display:none;">
         <button class="sc-raw-toggle mb-8" onclick="scToggleItems()">
           <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
           Ver artículos detectados (<span id="scItemsCount">0</span>)
         </button>
-        <div id="scItemsList" class="sc-raw-text is-hidden"></div>
+        <div id="scItemsList" class="sc-raw-text" style="display:none;"></div>
       </div>
     </div>
 
@@ -759,7 +759,7 @@
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
         Ver texto crudo del ticket
       </button>
-      <div class="sc-raw-text is-hidden" id="scRawText"></div>
+      <div class="sc-raw-text" id="scRawText" style="display:none;"></div>
     </div>
 
     <div class="modal-actions mt-16">
@@ -776,7 +776,7 @@
 </div>
 
 <!-- ===== SCANNER LOADING OVERLAY ===== -->
-<div class="sc-loading-overlay is-hidden" id="scLoadingOverlay">
+<div class="sc-loading-overlay" id="scLoadingOverlay" style="display:none;">
   <div class="sc-loading-box">
     <div class="sc-loading-spinner"></div>
     <div class="sc-loading-title">Analizando ticket con IA…</div>

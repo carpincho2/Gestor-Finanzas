@@ -1,6 +1,6 @@
 import { state, IS_SERVER, userKey } from '../store/store.ts';
 import { apiFetch } from '../api/apiClient.ts';
-import { loadUserData } from '../app.ts';
+import { loadUserData } from './dataLoader.ts';
 
 function saveTransactionsLocal() {
   localStorage.setItem(userKey('flujo_tx'), JSON.stringify(state.transactions));

@@ -3,7 +3,7 @@ import { IS_SERVER, state, userKey } from './store/store.ts';
 import { fetchMe, logout, deleteAccount, updateProfile, updatePassword } from './api/authApi.ts';
 import { apiFetch, setAuthToken } from './api/apiClient.ts';
 import { showToast } from './utils/utils.ts';
-import { loadUserData, init } from './app.ts';
+import { loadUserData } from './services/dataLoader.ts';
 
 const AUTH_KEY = 'flujo_auth_user';
 
@@ -60,7 +60,9 @@ export async function authFinishLogin(user) {
   if (planEl) planEl.textContent = user.email || '';
 
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  await init();
+  if (typeof window.init === 'function') {
+    await window.init();
+  }
 }
 
 export async function authLogout() {

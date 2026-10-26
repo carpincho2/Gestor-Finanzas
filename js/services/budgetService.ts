@@ -1,10 +1,9 @@
 import { state, IS_SERVER, userKey } from '../store/store.ts';
 import { apiFetch } from '../api/apiClient.ts';
+import { loadUserData } from './dataLoader.ts';
 
 const reloadUserData = async () => {
-    if (window.loadUserData) {
-        await window.loadUserData();
-    }
+    await loadUserData();
 };
 
 export function saveBudgetsLocal() {

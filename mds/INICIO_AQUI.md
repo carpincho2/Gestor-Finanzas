@@ -21,6 +21,7 @@ Hemos simplificado la carpeta `mds/` dejando exclusivamente archivos de document
 | Archivo | ¿Qué contiene? | ¿Cuándo leerlo? |
 | :--- | :--- | :--- |
 | 📁 [organizacion.md](organizacion.md) | La estructura completa de directorios del proyecto y por qué se dividió el Frontend del Backend. | Al inicio, para entender cómo interactúan los archivos. |
+| 🏛️ [DOCUMENTO_DE_VISION_IBM.md](DOCUMENTO_DE_VISION_IBM.md) | **Documento de Visión Oficial (Estándar IBM RUP v3.0)** con la especificación estratégica, funcional, arquitectónica (PHAME/SOLID), SEPA, VPN e IA. | Para presentar la visión ejecutiva y técnica completa del proyecto bajo estándares internacionales de ingeniería. |
 | 🔐 [autenticacion_y_responsive.md](autenticacion_y_responsive.md) | Detalle de la implementación segura de Google Sign-In en el backend y el sistema adaptable unificado (CSS media queries, menú hamburguesa). | Para aprender sobre flujos OAuth2 seguros en backend y diseño responsive avanzado. |
 | 💡 [OCR_IMPROVEMENT_PLAN.md](OCR_IMPROVEMENT_PLAN.md) | Plan técnico completo con los conceptos y algoritmos detrás de la mejora del OCR (Fuzzy Matching, distancia Levenshtein). | Para comprender la teoría académica y lógica del procesamiento de texto. |
 | 🚀 [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) | Guía paso a paso sobre cómo y dónde insertar el código de validación de OCR en tu archivo de script principal. | Cuando vayas a programar e implementar las mejoras en `js/app.js`. |

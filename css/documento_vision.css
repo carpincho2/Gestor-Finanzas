@@ -1,7 +1,7 @@
-/* Estilos Oficiales para el Documento de Visión (Estándar IBM RUP) */
+/* Estilos Oficiales para el Documento de Visión (Estándar IBM RUP) — Optimizado a 4 páginas exactas A4 */
 @page {
     size: A4 portrait;
-    margin: 16mm 15mm 18mm 15mm;
+    margin: 11mm 13mm 11mm 13mm;
 }
 
 * {
@@ -14,113 +14,124 @@ body {
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     color: #1e293b;
     background-color: #ffffff;
-    font-size: 10.5pt;
-    line-height: 1.5;
+    font-size: 9.2pt;
+    line-height: 1.38;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
 }
 
 .page {
     width: 100%;
+    height: 273mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     page-break-after: always;
-    position: relative;
-    padding-bottom: 12px;
+    break-after: page;
+    overflow: hidden;
 }
 
 .page:last-child {
     page-break-after: auto;
+    break-after: auto;
+}
+
+.page-content {
+    flex: 1;
 }
 
 /* Cabecera Estilo IBM */
 .ibm-header {
-    border-top: 6px solid #0f62fe;
+    border-top: 5px solid #0f62fe;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: #ffffff;
-    padding: 22px 26px;
+    padding: 15px 20px;
     border-radius: 0 0 8px 8px;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
 }
 
 .ibm-badge-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .ibm-tag {
     background-color: #0f62fe;
     color: #ffffff;
-    font-size: 8.5pt;
+    font-size: 7.8pt;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    padding: 3px 10px;
+    letter-spacing: 0.7px;
+    padding: 2px 8px;
     border-radius: 4px;
 }
 
 .doc-meta {
-    font-size: 8.5pt;
+    font-size: 8pt;
     color: #cbd5e1;
     font-family: 'Consolas', 'Courier New', monospace;
 }
 
 .ibm-header h1 {
-    font-size: 19pt;
+    font-size: 16pt;
     font-weight: 800;
     letter-spacing: -0.3px;
-    line-height: 1.2;
-    margin-bottom: 8px;
+    line-height: 1.18;
+    margin-bottom: 5px;
     color: #ffffff;
 }
 
 .ibm-header p {
-    font-size: 10pt;
+    font-size: 8.8pt;
     color: #94a3b8;
+    margin-bottom: 0;
 }
 
 /* Títulos de Sección */
 h2.section-heading {
-    font-size: 13.5pt;
+    font-size: 11.8pt;
     font-weight: 800;
     color: #0f172a;
     border-bottom: 2px solid #0f62fe;
-    padding-bottom: 4px;
-    margin: 14px 0 10px 0;
+    padding-bottom: 3px;
+    margin: 10px 0 7px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .sec-tag {
-    font-size: 8pt;
+    font-size: 7.5pt;
     font-weight: 600;
     background-color: #eff6ff;
     color: #1d4ed8;
     border: 1px solid #bfdbfe;
-    padding: 2px 8px;
-    border-radius: 12px;
+    padding: 1px 7px;
+    border-radius: 10px;
 }
 
 h3.sub-heading {
-    font-size: 11pt;
+    font-size: 9.8pt;
     font-weight: 700;
     color: #1d4ed8;
-    margin: 10px 0 5px 0;
+    margin: 7px 0 3px 0;
 }
 
 p {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-align: justify;
     color: #334155;
+    font-size: 9pt;
 }
 
 /* Tablas Estándar IBM RUP */
 table.rup-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 8px 0 14px 0;
-    font-size: 9.2pt;
+    margin: 5px 0 9px 0;
+    font-size: 8.4pt;
 }
 
 table.rup-table th {
@@ -128,13 +139,13 @@ table.rup-table th {
     color: #0f172a;
     font-weight: 700;
     text-align: left;
-    padding: 7px 10px;
+    padding: 5px 8px;
     border: 1px solid #cbd5e1;
     border-bottom: 2px solid #94a3b8;
 }
 
 table.rup-table td {
-    padding: 6px 10px;
+    padding: 4.5px 8px;
     border: 1px solid #cbd5e1;
     vertical-align: top;
     color: #334155;
@@ -145,7 +156,7 @@ table.rup-table tr:nth-child(even) {
 }
 
 table.rup-table td.label-col {
-    width: 26%;
+    width: 24%;
     font-weight: 700;
     color: #0f172a;
     background-color: #f1f5f9;
@@ -157,8 +168,8 @@ table.rup-table td.label-col {
     border: 1px solid #e2e8f0;
     border-left: 4px solid #0f62fe;
     border-radius: 6px;
-    padding: 10px 14px;
-    margin: 8px 0 12px 0;
+    padding: 8px 12px;
+    margin: 6px 0 8px 0;
 }
 
 .highlight-card.emerald {
@@ -169,67 +180,67 @@ table.rup-table td.label-col {
 
 .card-title {
     font-weight: 700;
-    font-size: 10pt;
+    font-size: 9.2pt;
     color: #0f172a;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
 
 ul.feature-list, ol.workflow-list {
-    margin: 4px 0 10px 20px;
+    margin: 3px 0 7px 18px;
     color: #334155;
 }
 
 ul.feature-list li, ol.workflow-list li {
-    margin-bottom: 5px;
-    font-size: 9.8pt;
+    margin-bottom: 3.5px;
+    font-size: 8.8pt;
 }
 
 /* Grid de Módulos y Arquitectura */
 .module-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 8px 0 12px 0;
+    gap: 8px;
+    margin: 6px 0 9px 0;
 }
 
 .module-box {
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    padding: 9px 12px;
+    padding: 7px 10px;
     background-color: #ffffff;
 }
 
 .module-box h4 {
-    font-size: 10pt;
+    font-size: 9.2pt;
     color: #0f172a;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 3px;
+    padding-bottom: 2px;
 }
 
 .module-box p {
-    font-size: 9pt;
+    font-size: 8.3pt;
     margin-bottom: 0;
     text-align: left;
+    line-height: 1.32;
 }
 
 .formula-banner {
     font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 9pt;
+    font-size: 8.4pt;
     background-color: #0f172a;
     color: #38bdf8;
-    padding: 7px 12px;
+    padding: 6px 10px;
     border-radius: 5px;
-    margin: 6px 0 10px 0;
+    margin: 5px 0 8px 0;
     text-align: center;
 }
 
 .page-footer {
-    margin-top: 14px;
-    padding-top: 6px;
+    padding-top: 5px;
     border-top: 1px solid #cbd5e1;
     display: flex;
     justify-content: space-between;
-    font-size: 8.5pt;
+    font-size: 8pt;
     color: #64748b;
 }

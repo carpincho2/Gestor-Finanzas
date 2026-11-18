@@ -27,14 +27,14 @@
 .sepa-row__title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sepa-row__name { font-weight: 700; font-size: 14px; color: var(--text); }
 .sepa-row__trophy { font-size: 14px; }
-.sepa-row__meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.sepa-row__meta { font-size: 13px; color: #cbd5e1; margin-top: 3px; }
 .sepa-row__meta strong { color: var(--text); }
 
 .sepa-row__aside { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
 /* ----- Precio ----- */
 .sepa-price { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; min-width: 130px; }
-.sepa-price__old { font-size: 12px; color: var(--muted); text-decoration: line-through; }
+.sepa-price__old { font-size: 13px; color: var(--muted); text-decoration: line-through; }
 .sepa-price__now { font-size: 18px; font-weight: 800; color: var(--accent); letter-spacing: -.3px; }
 .sepa-row--best .sepa-price__now { color: var(--accent); text-shadow: 0 0 14px rgba(0, 255, 170, .35); }
 
@@ -42,7 +42,7 @@
 .sepa-badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 3px 8px; border-radius: 999px;
-  font-size: 11px; font-weight: 700;
+  font-size: 13px; font-weight: 700;
 }
 .sepa-badge--promo { background: rgba(0, 255, 170, .12); color: var(--accent); }
 .sepa-badge--match {
@@ -56,8 +56,8 @@
 
 .sepa-action {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 12px; border-radius: 10px;
-  font-family: var(--font-head); font-size: 12px; font-weight: 600;
+  padding: 10px 14px; min-height: 40px; border-radius: 10px;
+  font-family: var(--font-head); font-size: 13px; font-weight: 600;
   line-height: 1; text-decoration: none; white-space: nowrap;
   cursor: pointer;
   border: 1px solid transparent;

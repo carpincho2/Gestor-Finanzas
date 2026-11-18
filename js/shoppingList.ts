@@ -326,58 +326,39 @@ function createItemCardHtml(item) {
 
   const emoji = categoryEmojis[item.category || ''] || '🛒';
 
+  const ariaName = String(item.name).replace(/"/g, '&quot;');
+
   return `
-    <div class="shopping-item-card" style="
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 16px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      margin-bottom: 8px;
-      opacity: ${isDone ? '0.6' : '1'};
-      transition: all 0.2s ease;
-    ">
-      <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+    <div class="shopping-item ${isDone ? 'shopping-item--done' : ''}" role="listitem">
+      <div class="shopping-item__main">
         <input
           type="checkbox"
+          class="shopping-item__check"
           ${isDone ? 'checked' : ''}
           onchange="toggleShoppingListItem('${item.id}')"
-          style="width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer;"
+          aria-label="Marcar ${ariaName} como ${isDone ? 'pendiente' : 'comprado'}"
         />
-        <div style="font-size: 20px; line-height: 1;">${emoji}</div>
-        <div style="flex: 1; min-width: 0;">
-          <div style="
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            text-decoration: ${isDone ? 'line-through' : 'none'};
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          ">
-            ${item.name}
-          </div>
-          <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">
-            Cant: <strong style="color:var(--text);">${item.quantity || '1'}</strong> · ${item.category || 'Almacén'}
+        <span class="shopping-item__emoji" aria-hidden="true">${emoji}</span>
+        <div class="shopping-item__text">
+          <div class="shopping-item__name">${item.name}${isDone ? ' <span class="sr-only">(comprado)</span>' : ''}</div>
+          <div class="shopping-item__meta">
+            Cantidad: <strong>${item.quantity || '1'}</strong> · ${item.category || 'Almacén'}
           </div>
         </div>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+      <div class="shopping-item__actions">
         ${
           !isDone
             ? `
           <button
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-secondary shopping-item__btn"
             onclick="searchItemInSepa('${safeName}')"
             title="Comparar mejores precios en supermercados SEPA"
-            style="padding: 6px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; color: var(--accent); border-color: rgba(0, 229, 160, 0.3);"
+            aria-label="Ver precios SEPA de ${ariaName}"
           >
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Precios SEPA
           </button>
         `
@@ -386,12 +367,12 @@ function createItemCardHtml(item) {
 
         <button
           type="button"
-          class="btn btn-ghost"
+          class="btn btn-ghost shopping-item__remove"
           onclick="removeShoppingListItem('${item.id}')"
           title="Eliminar de la lista"
-          style="padding: 6px; font-size: 12px; color: var(--muted); border-radius: 8px;"
+          aria-label="Eliminar ${ariaName} de la lista"
         >
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </button>
       </div>
     </div>

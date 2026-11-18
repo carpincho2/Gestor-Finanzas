@@ -1,0 +1,73 @@
+/* =======================================
+   LISTA DE COMPRAS (vista lista_compras.html + shoppingList.ts)
+   Estilos extraídos de atributos style="" inline.
+   Tamaño mínimo de texto 13px y objetivos táctiles >= 36px.
+   ======================================= */
+
+.shopping-wrap { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; padding-bottom: 40px; }
+.shopping-panel { padding: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+
+/* ----- Encabezado ----- */
+.shopping-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.shopping-header__id { display: flex; align-items: center; gap: 16px; }
+.shopping-header__icon { width: 48px; height: 48px; background: rgba(0,229,160,.12); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
+.shopping-header__title { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.shopping-header__desc { color: #cbd5e1; font-size: 14px; line-height: 1.5; margin: 0; }
+.shopping-header__actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.shopping-btn { min-height: 44px; padding: 0 18px; font-size: 14px; font-weight: 600; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; }
+
+/* ----- Panel de canasta ----- */
+.shopping-basket { display: none; margin-bottom: 24px; padding: 18px; background: rgba(0,229,160,.05); border: 1px solid rgba(0,229,160,.4); border-radius: 14px; }
+.shopping-basket__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.shopping-basket__title { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+
+/* ----- Formulario ----- */
+.shopping-form { background: rgba(255,255,255,.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+.shopping-form__title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.shopping-form__row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.shopping-form__field { display: flex; flex-direction: column; gap: 4px; }
+.shopping-form__field--name { flex: 2; min-width: 220px; }
+.shopping-form__field--qty { flex: 1; min-width: 120px; max-width: 160px; }
+.shopping-form__field--cat { flex: 1; min-width: 140px; }
+.shopping-form__label { font-size: 13px; font-weight: 600; color: #cbd5e1; }
+.shopping-form__control { height: 44px; font-size: 14px; padding: 0 14px; border-radius: 8px; margin: 0; }
+select.shopping-form__control { background: var(--surface2); }
+
+/* ----- Canastas rápidas ----- */
+.shopping-presets { margin-top: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.shopping-presets__label { font-size: 13px; color: #cbd5e1; font-weight: 600; }
+.shopping-chip { cursor: pointer; background: var(--surface2); border: 1px solid rgba(255,255,255,.28); color: var(--text); padding: 8px 14px; min-height: 36px; border-radius: 20px; font-size: 13px; font-family: var(--font-head); }
+.shopping-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ----- Encabezados de sección ----- */
+.shopping-section { margin-bottom: 24px; }
+.shopping-section__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.shopping-section__title { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.shopping-count { background: rgba(0,229,160,.18); color: var(--accent); padding: 3px 10px; border-radius: 12px; font-size: 13px; font-weight: 700; }
+.shopping-completed { display: none; border-top: 1px dashed rgba(255,255,255,.2); padding-top: 18px; }
+.shopping-completed__title { font-size: 14px; font-weight: 600; color: #cbd5e1; }
+
+/* ----- Ítem de la lista ----- */
+.shopping-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; transition: background .2s ease; }
+.shopping-item__main { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.shopping-item__check { width: 24px; height: 24px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.shopping-item__emoji { font-size: 22px; line-height: 1; }
+.shopping-item__text { flex: 1; min-width: 0; }
+.shopping-item__name { font-size: 15px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.shopping-item__meta { font-size: 13px; color: #cbd5e1; margin-top: 2px; }
+.shopping-item__meta strong { color: var(--text); }
+.shopping-item__actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Comprado: se distingue por tachado + marca, SIN bajar la opacidad (mantiene el contraste) */
+.shopping-item--done { background: rgba(255,255,255,.02); }
+.shopping-item--done .shopping-item__name { text-decoration: line-through; color: #cbd5e1; }
+
+.shopping-item__btn { min-height: 38px; padding: 0 14px; font-size: 13px; font-weight: 700; border-radius: 8px; }
+.shopping-item__remove { min-width: 38px; min-height: 38px; padding: 0; justify-content: center; border-radius: 8px; }
+
+@media (max-width: 560px) {
+  .shopping-item { flex-direction: column; align-items: stretch; }
+  .shopping-item__actions { justify-content: space-between; }
+  .shopping-header__actions, .shopping-btn { width: 100%; justify-content: center; }
+}

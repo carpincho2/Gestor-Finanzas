@@ -1,0 +1,63 @@
+/* =======================================
+   ACCESIBILIDAD (WCAG 2.2 AA)
+   - Contraste de texto >= 4.5:1 y de controles >= 3:1
+   - Foco visible para navegación con teclado
+   - Respeto a "reducir movimiento" y modo de alto contraste
+   ======================================= */
+
+/* Texto solo para lectores de pantalla */
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ----- Foco visible global ----- */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--accent3);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ----- Botón secundario (antes sin estilos: salía blanco sobre blanco) ----- */
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 255, 170, 0.6);
+  color: var(--text);
+}
+.btn-secondary:hover {
+  background: rgba(0, 255, 170, 0.14);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Ghost: más contraste que el gris atenuado original */
+.btn-ghost { border-color: rgba(255, 255, 255, 0.28); color: #cbd5e1; }
+.btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+/* Estado deshabilitado claro (no depende solo del color) */
+.btn:disabled, .btn[aria-disabled="true"] {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ----- Respeto a "reducir movimiento" ----- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ----- Modo de alto contraste del sistema (Windows) ----- */
+@media (forced-colors: active) {
+  .btn, .sepa-action, .shopping-item { border: 1px solid ButtonText; }
+  .btn-primary, .sepa-action--primary { background: Highlight; color: HighlightText; }
+}

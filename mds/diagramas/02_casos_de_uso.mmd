@@ -1,0 +1,29 @@
+flowchart LR
+    classDef actor fill:#1e1b4b,stroke:#a78bfa,stroke-width:3px,color:#fff
+    classDef uc fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff
+    classDef ai fill:#042f2e,stroke:#2dd4bf,stroke-width:2px,color:#fff
+
+    U(["👤 Usuario / Cliente"]):::actor
+
+    subgraph SYS["🚀 Sistema Flujo"]
+        direction TB
+        subgraph G1["Gestión financiera"]
+            UC1["🏦 Gestionar cuentas y billeteras"]
+            UC2["✍️ Registrar transacción manual"]
+            UC5["🎯 Establecer presupuestos y objetivos"]
+        end
+        subgraph G2["Automatización e inteligencia"]
+            UC3["🧾 Escanear ticket con OCR"]
+            UC6["🛒 Comparar precios en supermercados"]
+        end
+        subgraph G3["Análisis"]
+            UC4["📊 Visualizar dashboard y gráficos"]
+        end
+    end
+
+    U --> UC1 & UC2 & UC3 & UC4 & UC5 & UC6
+    UC3 -. "«include»" .-> UC2
+    UC4 -. "«extend»" .-> UC5
+
+    class UC1,UC2,UC4,UC5 uc
+    class UC3,UC6 ai

@@ -1,0 +1,32 @@
+flowchart TB
+    classDef front fill:#1e1b4b,stroke:#a78bfa,stroke-width:2px,color:#fff
+    classDef back fill:#042f2e,stroke:#2dd4bf,stroke-width:2px,color:#fff
+    classDef data fill:#431407,stroke:#fb923c,stroke-width:2px,color:#fff
+    classDef ext fill:#172554,stroke:#60a5fa,stroke-width:2px,color:#fff
+
+    subgraph L1["📱 Capa de Presentación"]
+        UI["<b>Cliente (Flutter / Web)</b><br/>Vistas · Estado · Captura de cámara"]
+    end
+
+    subgraph L2["⚙️ Capa de Aplicación"]
+        API["<b>FastAPI REST</b><br/>Routers · Validación Pydantic"]
+        SVC["<b>Servicios de Negocio</b><br/>Transacciones · Presupuestos · OCR"]
+        API --> SVC
+    end
+
+    subgraph L3["💾 Capa de Persistencia"]
+        DB[("<b>PostgreSQL</b><br/>Base de datos relacional")]
+    end
+
+    subgraph L4["🌐 Servicios Externos"]
+        AI["🤖 Motor OCR / IA<br/>Gemini 2.5 Flash"]
+    end
+
+    UI -- "HTTPS · JSON / Base64" --> API
+    SVC -- "SQLAlchemy ORM" --> DB
+    SVC -- "Imagen → JSON estructurado" --> AI
+
+    class UI front
+    class API,SVC back
+    class DB data
+    class AI ext

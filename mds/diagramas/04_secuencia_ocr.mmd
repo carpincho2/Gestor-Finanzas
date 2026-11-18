@@ -1,0 +1,30 @@
+sequenceDiagram
+    autonumber
+    actor U as 👤 Usuario
+    participant FE as 📱 Frontend
+    participant BE as ⚙️ Backend (FastAPI)
+    participant AI as 🤖 Motor OCR / IA
+    participant DB as 💾 PostgreSQL
+
+    U->>FE: Toma foto del ticket
+    FE->>BE: POST /transacciones/ocr (imagen Base64)
+    activate BE
+    BE->>AI: Envía imagen para extracción
+    activate AI
+
+    alt Extracción exitosa
+        AI-->>BE: JSON estructurado (ítems, montos, comercio)
+        deactivate AI
+        BE->>DB: INSERT transacción procesada
+        activate DB
+        DB-->>BE: Confirma persistencia
+        deactivate DB
+        BE-->>FE: 201 Created (gasto registrado)
+        FE-->>U: ✅ Actualiza dashboard y balance
+    else IA saturada (HTTP 429) o texto ilegible
+        AI-->>BE: Error / confianza baja
+        Note over BE,AI: Reintentos con backoff (2s, 4s, 8s)<br/>y fallback al parser local
+        BE-->>FE: 422 con datos parciales
+        FE-->>U: ⚠️ Formulario precompletado para corregir
+    end
+    deactivate BE

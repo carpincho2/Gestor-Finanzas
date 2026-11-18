@@ -1,0 +1,36 @@
+erDiagram
+    USUARIO ||--o{ CUENTA : posee
+    USUARIO ||--o{ TRANSACCION : realiza
+    CUENTA ||--o{ TRANSACCION : registra
+    CATEGORIA ||--o{ TRANSACCION : clasifica
+
+    USUARIO {
+        int id_usuario PK
+        string nombre
+        string email UK
+        json preferencias_ia
+    }
+
+    CUENTA {
+        int id_cuenta PK
+        int id_usuario FK
+        string tipo "efectivo, debito, credito, billetera"
+        string moneda "ARS, USD, EUR"
+        decimal saldo_actual
+    }
+
+    CATEGORIA {
+        int id_categoria PK
+        string nombre_rubro UK
+        json metadatos_ocr
+    }
+
+    TRANSACCION {
+        int id_transaccion PK
+        int id_usuario FK
+        int id_cuenta FK
+        int id_categoria FK
+        decimal monto
+        date fecha
+        string comercio
+    }

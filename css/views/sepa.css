@@ -1,0 +1,100 @@
+/* =======================================
+   BUSCADOR SEPA — FILAS DE SUCURSALES
+   (Reemplaza los estilos inline de js/supermercados.ts)
+   ======================================= */
+
+/* Fila de una sucursal dentro de la tarjeta de producto */
+.sepa-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  transition: background .2s ease, border-color .2s ease;
+}
+.sepa-row:hover { background: var(--surface2); }
+
+/* Mejor precio de la zona: acento lateral + brillo suave */
+.sepa-row--best {
+  background: linear-gradient(90deg, rgba(0, 255, 170, 0.08), rgba(0, 255, 170, 0.02));
+  border-left-color: var(--accent);
+}
+
+.sepa-row__info { flex: 1; min-width: 200px; }
+.sepa-row__title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sepa-row__name { font-weight: 700; font-size: 14px; color: var(--text); }
+.sepa-row__trophy { font-size: 14px; }
+.sepa-row__meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.sepa-row__meta strong { color: var(--text); }
+
+.sepa-row__aside { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+/* ----- Precio ----- */
+.sepa-price { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; min-width: 130px; }
+.sepa-price__old { font-size: 12px; color: var(--muted); text-decoration: line-through; }
+.sepa-price__now { font-size: 18px; font-weight: 800; color: var(--accent); letter-spacing: -.3px; }
+.sepa-row--best .sepa-price__now { color: var(--accent); text-shadow: 0 0 14px rgba(0, 255, 170, .35); }
+
+/* ----- Etiquetas de promoción ----- */
+.sepa-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+}
+.sepa-badge--promo { background: rgba(0, 255, 170, .12); color: var(--accent); }
+.sepa-badge--match {
+  background: rgba(0, 255, 170, .16);
+  border: 1px solid rgba(0, 255, 170, .45);
+  color: var(--accent);
+}
+
+/* ----- Acciones ----- */
+.sepa-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.sepa-action {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 10px;
+  font-family: var(--font-head); font-size: 12px; font-weight: 600;
+  line-height: 1; text-decoration: none; white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .15s ease, background .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.sepa-action:hover { transform: translateY(-1px); }
+.sepa-action:active { transform: translateY(0); }
+.sepa-action:focus-visible { outline: 2px solid var(--accent3); outline-offset: 2px; }
+.sepa-action svg { flex-shrink: 0; }
+
+/* Secundarios tipo "ghost": legibles sobre fondo oscuro */
+.sepa-action--map {
+  background: rgba(0, 229, 255, .08);
+  border-color: rgba(0, 229, 255, .35);
+  color: var(--accent3);
+}
+.sepa-action--map:hover { background: rgba(0, 229, 255, .16); border-color: var(--accent3); }
+
+.sepa-action--expense {
+  background: rgba(255, 255, 255, .04);
+  border-color: rgba(255, 255, 255, .18);
+  color: var(--text);
+}
+.sepa-action--expense:hover { background: rgba(0, 255, 170, .1); border-color: var(--accent); color: var(--accent); }
+
+/* Principal: sólido con degradado */
+.sepa-action--primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent3));
+  color: #04120d;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 255, 170, .25);
+}
+.sepa-action--primary:hover { box-shadow: 0 6px 22px rgba(0, 229, 255, .4); }
+
+/* ----- Responsive ----- */
+@media (max-width: 640px) {
+  .sepa-row__aside { width: 100%; justify-content: space-between; }
+  .sepa-actions { width: 100%; }
+  .sepa-action { flex: 1; justify-content: center; }
+}

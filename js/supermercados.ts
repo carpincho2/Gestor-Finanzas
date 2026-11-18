@@ -676,20 +676,12 @@ function renderMultiProductResults(data) {
           if (s.promo_tag) {
             if (matchingAccount) {
               promoHtml = `
-              <span style="
-                display: inline-flex; align-items: center; gap: 4px;
-                padding: 3px 8px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 6px;
-                font-size: 11px; font-weight: 700; color: #22c55e; margin-left: 8px;
-              " title="¡Aplica con tu cuenta ${matchingAccount} registrada en la app!">
+              <span class="sepa-badge sepa-badge--match" title="¡Aplica con tu cuenta ${matchingAccount} registrada en la app!">
                 ⭐ ¡Aplica con tu ${matchingAccount}! (-${s.ahorro_pct}%)
               </span>`;
             } else {
               promoHtml = `
-              <span style="
-                display: inline-flex; align-items: center; gap: 4px;
-                padding: 2px 8px; background: rgba(0, 229, 160, 0.12); border-radius: 4px;
-                font-size: 11px; font-weight: 600; color: var(--accent); margin-left: 8px;
-              ">
+              <span class="sepa-badge sepa-badge--promo">
                 <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                 ${s.promo_tag} -${s.ahorro_pct}%
               </span>`;
@@ -698,7 +690,7 @@ function renderMultiProductResults(data) {
 
           let tachadoHtml = '';
           if (s.precio_lista > s.precio_final) {
-            tachadoHtml = `<span style="text-decoration:line-through; font-size:12px; color:var(--muted); margin-right:6px;">$${s.precio_lista.toFixed(2)}</span>`;
+            tachadoHtml = `<span class="sepa-price__old">$${s.precio_lista.toFixed(2)}</span>`;
           }
 
           const safeNombre = producto.nombre.replace(/'/g, "\\'");
@@ -706,43 +698,36 @@ function renderMultiProductResults(data) {
           const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
 
           return `
-          <div style="
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
-            padding: 14px 18px;
-            border-top: 1px solid var(--border);
-            ${isBest ? 'background: rgba(0, 229, 160, 0.04);' : ''}
-          ">
-            <div style="flex: 1; min-width: 200px;">
-              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                ${isBest ? '<span style="color: var(--green); font-size: 13px;" title="Mejor precio de la zona">🏆</span>' : ''}
-                <span style="font-weight: 700; font-size: 14px; color: var(--text);">${s.comercio}</span>
+          <div class="sepa-row ${isBest ? 'sepa-row--best' : ''}">
+            <div class="sepa-row__info">
+              <div class="sepa-row__title">
+                ${isBest ? '<span class="sepa-row__trophy" title="Mejor precio de la zona">🏆</span>' : ''}
+                <span class="sepa-row__name">${s.comercio}</span>
                 ${promoHtml}
               </div>
-              <div style="font-size: 12px; color: var(--muted); margin-top: 3px;">
-                ${s.sucursal || ''} ${s.direccion ? '· ' + s.direccion : ''} · <strong style="color:var(--text);">${s.distancia_km.toFixed(1)} km</strong>
+              <div class="sepa-row__meta">
+                ${s.sucursal || ''} ${s.direccion ? '· ' + s.direccion : ''} · <strong>${s.distancia_km.toFixed(1)} km</strong>
               </div>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 14px;">
-              <div style="text-align: right;">
+            <div class="sepa-row__aside">
+              <div class="sepa-price">
                 ${tachadoHtml}
-                <span style="font-size: 17px; font-weight: 800; color: ${isBest ? 'var(--green)' : 'var(--accent)'};">
-                  $${s.precio_final.toFixed(2)}
-                </span>
+                <span class="sepa-price__now">$${s.precio_final.toFixed(2)}</span>
               </div>
 
               <!-- Botones de acción directa -->
-              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" title="Cómo llegar (Google Maps)" style="padding: 6px 10px; font-size: 11px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+              <div class="sepa-actions">
+                <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="sepa-action sepa-action--map" title="Cómo llegar (Google Maps)">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
                   Mapa
                 </a>
-                <button type="button" class="btn btn-secondary" onclick="registerExpenseFromSepa('${safeComercio}', '${safeNombre}', ${s.precio_final})" title="Registrar esta compra como un gasto en tu presupuesto" style="padding: 6px 10px; font-size: 11px; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; color: var(--green); border-color: rgba(34, 197, 94, 0.3);">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <button type="button" class="sepa-action sepa-action--expense" onclick="registerExpenseFromSepa('${safeComercio}', '${safeNombre}', ${s.precio_final})" title="Registrar esta compra como un gasto en tu presupuesto">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                   Gasto
                 </button>
-                <button type="button" class="btn btn-primary" onclick="openShoppingFromSepa('${safeNombre}', ${s.precio_final}, '${safeComercio}')" title="Calcular finanzas y cuotas con tus tarjetas" style="padding: 6px 10px; font-size: 11px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px;">
-                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                <button type="button" class="sepa-action sepa-action--primary" onclick="openShoppingFromSepa('${safeNombre}', ${s.precio_final}, '${safeComercio}')" title="Calcular finanzas y cuotas con tus tarjetas">
+                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                   Calcular Cuotas
                 </button>
               </div>

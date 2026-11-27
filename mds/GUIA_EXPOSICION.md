@@ -1,5 +1,8 @@
 # Guía Completa para Exponer **Flujo Finance Manager**
 
+> **Presentación lista en Google Slides (12 diapositivas + notas del orador):** https://docs.google.com/presentation/d/14A1gAjYODB5ZXJCGpY9Wdp0ZSexok0KLP5t7VwWbB8U/edit  
+> **Versión Web Interactiva (offline / PDF):** `html/presentacion.html` (tecla `N` para guion, `F` pantalla completa)
+>
 > **Objetivo de esta guía:** que entiendas de punta a punta cómo funciona el proyecto mirando el código real (sin humo), que sepas exactamente qué te falta o qué corregir de los 5 diagramas que tenés en Google Drive, y que tengas un guion armado + respuestas listas para defenderlo frente a los profesores/jurado.
 
 ---

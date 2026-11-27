@@ -1,6 +1,14 @@
 # Guía Completa para Exponer **Flujo Finance Manager**
 
-> **Presentación lista en Google Slides (12 diapositivas + notas del orador):** https://docs.google.com/presentation/d/14A1gAjYODB5ZXJCGpY9Wdp0ZSexok0KLP5t7VwWbB8U/edit  
+> **Presentación lista en Google Slides (17 diapositivas + 5 diagramas Figma + notas del orador):** https://docs.google.com/presentation/d/14A1gAjYODB5ZXJCGpY9Wdp0ZSexok0KLP5t7VwWbB8U/edit  
+> **Carpeta con los 5 diagramas PNG listos:** `new diagrams/`  
+> **Diagramas editables en Figma (FigJam):**
+> - 01 Arquitectura por Capas y PHAME: https://www.figma.com/board/AyLG5i4YntIUNa4jVeYsnQ
+> - 02 Casos de Uso del Sistema: https://www.figma.com/board/BlvIKTHdZGAng671667Db1
+> - 03 Modelo Entidad–Relación (14 Tablas): https://www.figma.com/board/FEV5PzSm3ZjtEbDn1bWHmA
+> - 04 Secuencia OCR Híbrido: https://www.figma.com/board/LJymsbcOoap3YPckgluj8W
+> - 05 Diagrama de Despliegue Cloud (Render): https://www.figma.com/board/R8MjiGl3uR92ET1sTtwQ3a
+>
 > **Versión Web Interactiva (offline / PDF):** `html/presentacion.html` (tecla `N` para guion, `F` pantalla completa)
 >
 > **Objetivo de esta guía:** que entiendas de punta a punta cómo funciona el proyecto mirando el código real (sin humo), que sepas exactamente qué te falta o qué corregir de los 5 diagramas que tenés en Google Drive, y que tengas un guion armado + respuestas listas para defenderlo frente a los profesores/jurado.

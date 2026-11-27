@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Presentación - Flujo: Gestor de Finanzas</title>
+    <title>Presentación — Flujo Finance Manager</title>
     <link rel="stylesheet" href="../css/presentacion.css">
 </head>
 <body>
@@ -11,297 +11,524 @@
         <!-- Barra superior -->
         <header class="deck-topbar">
             <div class="brand">
-                <span class="brand-dot"></span>
+                <span class="brand-dot" aria-hidden="true"></span>
                 <span>Flujo — Defensa de Proyecto</span>
             </div>
-            <div class="slide-counter">
-                Diapositiva <span id="currentSlideNum">1</span> de <span id="totalSlidesNum">7</span>
+
+            <div class="slide-counter" aria-live="polite">
+                Diapositiva <span id="currentSlideNum">1</span> de <span id="totalSlidesNum">12</span>
             </div>
+
             <div class="top-actions">
-                <button id="fullscreenBtn" class="btn-Action" title="Pantalla Completa (Tecla F)">⛶ Pantalla Completa</button>
+                <button id="notesBtn" class="btn-action" type="button" aria-pressed="false" title="Mostrar/ocultar guion del orador (Tecla N)">
+                    🎤 Guion (N)
+                </button>
+                <button id="printBtn" class="btn-action" type="button" title="Exportar a PDF o imprimir (Ctrl+P)">
+                    🖨️ PDF
+                </button>
+                <button id="fullscreenBtn" class="btn-action btn-action-primary" type="button" title="Pantalla Completa (Tecla F)">
+                    ⛶ Pantalla Completa
+                </button>
             </div>
         </header>
+
+        <!-- Barra de progreso -->
+        <div class="progress-track" aria-hidden="true">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
 
         <!-- Contenedor de Diapositivas -->
         <main class="slides-viewport">
 
             <!-- SLIDE 1: PORTADA -->
-            <section class="slide active" data-slide="1">
+            <section class="slide active" data-slide="1" data-notes="Arrancá tranquilo: presentá tu nombre y decí en una frase qué es Flujo: 'Es una aplicación web full-stack que armamos para resolver un problema real de Argentina: no solo anotar gastos, sino ayudarte a decidir dónde y cómo pagar para ahorrar de verdad usando datos oficiales, matemática financiera e inteligencia artificial.'">
                 <div class="slide-content hero-slide">
                     <span class="pill-tag">Defensa de Proyecto Integrador</span>
                     <h1 class="main-title">Flujo Finance Manager</h1>
                     <p class="hero-lead">
-                        Gestor de finanzas personales, comparador de precios de supermercados y asistente inteligente de compras pensado para Argentina.
+                        Plataforma Web Full-Stack de finanzas personales multidivisa, escaneo inteligente de tickets, comparador oficial de supermercados (SEPA) y simulador financiero de compras.
                     </p>
                     <div class="tech-pills">
-                        <span>🌐 Web App (HTML / CSS / TS)</span>
-                        <span>🐍 Backend API (Python / FastAPI)</span>
-                        <span>🛒 Precios Claros (SEPA)</span>
-                        <span>🤖 Inteligencia Artificial &amp; OCR</span>
+                        <span>🌐 Web SPA / PWA (HTML5 · CSS3 · TypeScript)</span>
+                        <span>🐍 Backend API (Python · FastAPI)</span>
+                        <span>🤖 Google Gemini 2.5 Flash + Tesseract OCR</span>
+                        <span>🛒 Precios Claros (SEPA) + Mercado Pago OAuth</span>
                     </div>
                 </div>
             </section>
 
-            <!-- SLIDE 2: EL PROBLEMA Y LA IDEA -->
-            <section class="slide" data-slide="2">
+            <!-- SLIDE 2: EL PROBLEMA REAL -->
+            <section class="slide" data-slide="2" data-notes="Contá el porqué del proyecto conectándolo con la vida cotidiana: casi todas las apps financieras miran para atrás (anotan lo que ya gastaste). Nosotros atacamos 3 problemas concretos que sufre cualquiera todos los meses: plata dividida entre pesos, dólares y billeteras; diferencias enormes de precios entre supermercados cercanos; y la dificultad de calcular si conviene contado con descuento o cuotas con inflación.">
                 <div class="slide-content">
-                    <span class="slide-kicker">01. El Problema Real</span>
-                    <h2>¿Por qué hicimos este proyecto?</h2>
-                    <p class="slide-subtitle">Las apps comunes solo sirven para anotar gastos a mano, pero en el día a día tenemos 3 problemas reales:</p>
+                    <span class="slide-kicker">01. Contexto y Problema</span>
+                    <h2>¿Qué problema real resuelve Flujo?</h2>
+                    <p class="slide-subtitle">Las apps tradicionales solo anotan gastos pasados. En la práctica, el bolsillo enfrenta 3 dolores diarios:</p>
 
                     <div class="grid-3">
-                        <div class="feature-card card-rose">
-                            <div class="card-icon">💸</div>
-                            <h3>Plata repartida por todos lados</h3>
-                            <p>Tenés plata en efectivo, en el banco y en billeteras como Mercado Pago. A mitad de mes es muy difícil saber cuánto tenés disponible realmente.</p>
-                        </div>
+                        <article class="feature-card card-rose">
+                            <div class="card-icon" aria-hidden="true">💸</div>
+                            <h3>Plata fragmentada y carga tediosa</h3>
+                            <p>Efectivo, bancos, tarjetas y billeteras virtuales en pesos y dólares. Cargar tickets a mano cansa y hace que la gente abandone el control.</p>
+                        </article>
 
-                        <div class="feature-card card-amber">
-                            <div class="card-icon">🛒</div>
-                            <h3>Precios muy distintos en el súper</h3>
-                            <p>Por la inflación, el mismo producto puede salir un 30% o 40% más caro en un supermercado que en otro que está a tres cuadras.</p>
-                        </div>
+                        <article class="feature-card card-amber">
+                            <div class="card-icon" aria-hidden="true">🛒</div>
+                            <h3>Dispersión de precios en supermercados</h3>
+                            <p>El mismo producto puede variar entre un 25% y 40% entre dos cadenas a pocas cuadras, sumado a promociones bancarias distintas cada día.</p>
+                        </article>
 
-                        <div class="feature-card card-blue">
-                            <div class="card-icon">💳</div>
-                            <h3>Dudas al momento de pagar</h3>
-                            <p>Cuando querés comprar algo grande (como en Mercado Libre), cuesta calcular rápido con qué tarjeta o billetera te conviene pagar para ahorrar.</p>
-                        </div>
+                        <article class="feature-card card-blue">
+                            <div class="card-icon" aria-hidden="true">💳</div>
+                            <h3>Incertidumbre al financiar compras</h3>
+                            <p>Al comprar online es difícil calcular rápido si conviene pagar al contado con descuento o en 3, 6 o 12 cuotas frente a la inflación y el cierre de la tarjeta.</p>
+                        </article>
                     </div>
                 </div>
             </section>
 
-            <!-- SLIDE 3: QUÉ ES CADA SECCIÓN (PARTE 1: FINANZAS) -->
-            <section class="slide" data-slide="3">
+            <!-- SLIDE 3: MÓDULOS PARTE 1 -->
+            <section class="slide" data-slide="3" data-notes="Recorré los 4 pilares de control financiero. Remarcá dos detalles copados que están en el código: 1) Las cuentas manejan 3 monedas (ARS, USD, EUR) y si transferís entre distintas monedas consulta DolarAPI y crea dos movimientos enlazados por transfer_id. 2) Al cerrar una cuenta se archiva en vez de borrarse para no romper el historial ni los gráficos.">
                 <div class="slide-content">
-                    <span class="slide-kicker">02. Recorrido por la App — Parte 1</span>
-                    <h2>El Control de tu Plata</h2>
-                    <p class="slide-subtitle">Cómo organizamos las herramientas principales para el día a día:</p>
+                    <span class="slide-kicker">02. Solución Funcional — Parte 1</span>
+                    <h2>Control Financiero Integral</h2>
+                    <p class="slide-subtitle">12 vistas modulares en una SPA rápida con soporte online y respaldo offline:</p>
 
                     <div class="grid-2x2">
-                        <div class="info-box">
+                        <article class="info-box">
                             <div class="info-header">
-                                <span class="info-emoji">📊</span>
-                                <h3>1. Dashboard (Resumen)</h3>
+                                <span class="info-emoji" aria-hidden="true">📊</span>
+                                <h3>Dashboard y Reportes</h3>
                             </div>
-                            <p>Es la pantalla principal. Te muestra de un vistazo tu plata total, cuánto te entró y cuánto gastaste en el mes, con gráficos simples para ver en qué se te va el dinero.</p>
-                        </div>
+                            <p>Patrimonio consolidado, balance mensual de ingresos vs. egresos, distribución por categoría y gráficos interactivos con <strong>Chart.js</strong>.</p>
+                        </article>
 
-                        <div class="info-box">
+                        <article class="info-box">
                             <div class="info-header">
-                                <span class="info-emoji">🏦</span>
-                                <h3>2. Cuentas</h3>
+                                <span class="info-emoji" aria-hidden="true">🏦</span>
+                                <h3>Cuentas Multidivisa (ARS / USD / EUR)</h3>
                             </div>
-                            <p>Donde registrás todos los lugares donde guardás plata (Efectivo, Bancos, Mercado Pago, Tarjetas, en Pesos o Dólares). Cada movimiento o transferencia actualiza el saldo solo.</p>
-                        </div>
+                            <p>Efectivo, débito, crédito (con día de cierre y vencimiento) y billeteras. Incluye transferencias bimonetarias con <strong>DolarAPI</strong>, conciliación de saldo y archivado seguro.</p>
+                        </article>
 
-                        <div class="info-box">
+                        <article class="info-box">
                             <div class="info-header">
-                                <span class="info-emoji">🧾</span>
-                                <h3>3. Transacciones + Lector OCR</h3>
+                                <span class="info-emoji" aria-hidden="true">🧾</span>
+                                <h3>Transacciones y Detalle de Tickets</h3>
                             </div>
-                            <p>El historial de ingresos y gastos. Podés anotarlos a mano o <strong>sacarle una foto al ticket del súper (OCR)</strong> para que la IA lea los productos y cargue el gasto sola.</p>
-                        </div>
+                            <p>Alta manual, edición, importación masiva, deduplicación por <code>external_id</code> y guardado ítem por ítem de tickets escaneados.</p>
+                        </article>
 
-                        <div class="info-box">
+                        <article class="info-box">
                             <div class="info-header">
-                                <span class="info-emoji">🎯</span>
-                                <h3>4. Presupuestos y Objetivos</h3>
+                                <span class="info-emoji" aria-hidden="true">🎯</span>
+                                <h3>Presupuestos y Objetivos</h3>
                             </div>
-                            <p><strong>Presupuestos:</strong> Límites de gasto por mes (ej. Salidas) con alertas si te estás por pasar.<br><strong>Objetivos:</strong> Alcancías virtuales para ahorrar hacia una meta (ej. Notebook o Vacaciones).</p>
-                        </div>
+                            <p>Topes mensuales por rubro con alertas visuales y metas de ahorro con historial de aportes y retiros vinculados a tus cuentas.</p>
+                        </article>
                     </div>
                 </div>
             </section>
 
-            <!-- SLIDE 4: QUÉ ES CADA SECCIÓN (PARTE 2: AHORRO INTELIGENTE) -->
-            <section class="slide" data-slide="4">
+            <!-- SLIDE 4: MÓDULOS PARTE 2 -->
+            <section class="slide" data-slide="4" data-notes="Esta es la diapositiva diferenciadora: lo que convierte a Flujo en un asistente activo de ahorro. Explicá brevemente cada uno: el escáner híbrido que te evita tipear, SEPA + Lista del Súper para comprar más barato, el simulador matemático de cuotas para e-commerce, y el combo IA (Chatbot con Function Calling que puede operar sobre tus datos + Mercado Pago OAuth).">
                 <div class="slide-content">
-                    <span class="slide-kicker">03. Recorrido por la App — Parte 2</span>
-                    <h2>Herramientas para Ahorrar de Verdad</h2>
-                    <p class="slide-subtitle">Lo que diferencia a Flujo de cualquier anotador de gastos tradicional:</p>
+                    <span class="slide-kicker">03. Solución Funcional — Parte 2</span>
+                    <h2>Motores de Ahorro Inteligente e IA</h2>
+                    <p class="slide-subtitle">Herramientas activas que te ayudan antes y durante la compra:</p>
 
                     <div class="grid-2x2">
-                        <div class="info-box highlight-emerald">
+                        <article class="info-box highlight-emerald">
                             <div class="info-header">
-                                <span class="info-emoji">📍</span>
-                                <h3>5. Buscador de Supermercados (SEPA)</h3>
+                                <span class="info-emoji" aria-hidden="true">📸</span>
+                                <h3>Escáner OCR Híbrido + IA</h3>
                             </div>
-                            <p>Un comparador de precios conectado a la lista oficial de Precios Claros del gobierno. Usa tu ubicación para decirte en qué supermercado cercano te sale más barato tu carrito.</p>
-                        </div>
+                            <p>Fotografiás el ticket y el sistema detecta comercio, fecha, total, categoría e ítems con semáforo de confianza antes de confirmar el gasto.</p>
+                        </article>
 
-                        <div class="info-box highlight-blue">
+                        <article class="info-box highlight-blue">
                             <div class="info-header">
-                                <span class="info-emoji">🛍️</span>
-                                <h3>6. Asistente de Compras</h3>
+                                <span class="info-emoji" aria-hidden="true">📍</span>
+                                <h3>Buscador SEPA + Mi Lista del Súper</h3>
                             </div>
-                            <p>Pegás el link de un producto (por ejemplo de Mercado Libre), la app extrae el precio sola y te recomienda con qué billetera o tarjeta tuya te conviene pagarlo.</p>
-                        </div>
+                            <p>Precios oficiales geolocalizados, escáner de códigos de barras <code>EAN-13</code>, cruce con promos de tus tarjetas y <strong>Compra Dividida</strong>.</p>
+                        </article>
 
-                        <div class="info-box highlight-purple">
+                        <article class="info-box highlight-amber">
                             <div class="info-header">
-                                <span class="info-emoji">🤖</span>
-                                <h3>7. Chatbot con IA</h3>
+                                <span class="info-emoji" aria-hidden="true">🛍️</span>
+                                <h3>Asistente E-Commerce (VPN)</h3>
                             </div>
-                            <p>Un asistente dentro de la app al que le podés preguntar cosas normales sobre tu plata (<em>"¿En qué gasté más este mes?"</em>) y te responde analizando tus propios números.</p>
-                        </div>
+                            <p>Pegás un link (Mercado Libre o cualquier tienda) y calcula matemáticamente si conviene contado o cuotas según inflación y tus tarjetas.</p>
+                        </article>
 
-                        <div class="info-box highlight-amber">
+                        <article class="info-box highlight-purple">
                             <div class="info-header">
-                                <span class="info-emoji">🔄</span>
-                                <h3>8. Sincronización con Mercado Pago</h3>
+                                <span class="info-emoji" aria-hidden="true">🤖</span>
+                                <h3>Chatbot IA + Mercado Pago OAuth</h3>
                             </div>
-                            <p>Conexión directa con la API de <strong>Mercado Pago</strong> mediante un adaptador propio para importar tus gastos reales automáticamente sin duplicarlos.</p>
-                        </div>
+                            <p>Asistente con <strong>Function Calling</strong> (consulta saldos y carga gastos) + sincronización segura con Mercado Pago vía OAuth 2.0 + PKCE.</p>
+                        </article>
                     </div>
                 </div>
             </section>
 
-            <!-- SLIDE 5: DIAGRAMA DE ARQUITECTURA SIMPLE -->
-            <section class="slide" data-slide="5">
+            <!-- SLIDE 5: FLUJO OCR HÍBRIDO -->
+            <section class="slide" data-slide="5" data-notes="Explicá por qué este flujo es robusto: no mandamos ciegamente la foto a una IA para que guarde cualquier cosa. Paso 1: el navegador mejora la imagen (endereza, quita ruido y binariza con algoritmo de Otsu) y corre Tesseract.js. Paso 2: FastAPI manda el texto a Gemini 2.5 Flash para estructurarlo en JSON; si Gemini devuelve 429 reintenta con backoff (2s, 4s, 8s) y si falla, cae al parser heurístico local. Paso 3: el usuario SIEMPRE valida los campos con semáforo de confianza antes de guardar.">
                 <div class="slide-content">
-                    <span class="slide-kicker">04. Arquitectura del Sistema</span>
-                    <h2>¿Cómo está armado por dentro?</h2>
-                    <p class="slide-subtitle">Dividimos el sistema en 4 capas bien separadas para trabajar ordenados y no mezclar todo:</p>
+                    <span class="slide-kicker">04. Flujo Técnico Clave #1</span>
+                    <h2>Digitalización de Tickets: OCR Híbrido + IA</h2>
+                    <p class="slide-subtitle">Combinamos visión en el navegador, estructuración con Gemini 2.5 Flash y degradación elegante:</p>
+
+                    <div class="pipeline-flow">
+                        <div class="pipe-step step-blue">
+                            <span class="pipe-num">1</span>
+                            <h3>Preprocesamiento</h3>
+                            <p><strong>Canvas API:</strong> escala de grises, corrección de inclinación (<em>deskew</em>), filtro de mediana y umbralización de <strong>Otsu</strong>.</p>
+                        </div>
+
+                        <div class="pipe-arrow" aria-hidden="true">➔</div>
+
+                        <div class="pipe-step step-indigo">
+                            <span class="pipe-num">2</span>
+                            <h3>Extracción OCR</h3>
+                            <p><strong>Tesseract.js</strong> corre localmente en el cliente (<code>spa+eng</code>) y extrae el texto crudo del comprobante.</p>
+                        </div>
+
+                        <div class="pipe-arrow" aria-hidden="true">➔</div>
+
+                        <div class="pipe-step step-emerald">
+                            <span class="pipe-num">3</span>
+                            <h3>Refinamiento IA</h3>
+                            <p><code>POST /api/ocr/parse</code> invoca a <strong>Gemini 2.5 Flash</strong> (JSON estricto) con backoff <strong>2s / 4s / 8s</strong> ante HTTP 429.</p>
+                        </div>
+
+                        <div class="pipe-arrow" aria-hidden="true">➔</div>
+
+                        <div class="pipe-step step-amber">
+                            <span class="pipe-num">4</span>
+                            <h3>Validación y Alta</h3>
+                            <p>Semáforo de confianza (🟢🟡🔴) + diccionario aprendido. Al confirmar guarda en <code>transactions</code> y <code>ticket_items</code>.</p>
+                        </div>
+                    </div>
+
+                    <div class="callout-strip">
+                        <strong>Resiliencia comprobada:</strong> si no hay cuota de IA o falla la red, el sistema devuelve <code>fallback: true</code> y responde el parser heurístico local (patrones + distancia de Levenshtein) sin cortar al usuario. También existe <code>POST /api/ocr/scan-ticket</code> para detección directa desde imagen.
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 6: MOTOR SEPA Y SPLIT SHOPPING -->
+            <section class="slide" data-slide="6" data-notes="Acá mostrá criterio de ingeniería: los archivos del Estado (SEPA / Precios Claros) tienen cientos de miles de filas. Si los leyéramos en vivo al buscar, la app se colgaría. Por eso armamos un pipeline ETL programado con APScheduler y Pandas que procesa los CSV en chunks de 100.000 filas y los deja indexados en 5 tablas. Sobre eso corre búsqueda por radio Haversine, escáner de código de barras en góndola y Compra Dividida.">
+                <div class="slide-content">
+                    <span class="slide-kicker">05. Flujo Técnico Clave #2</span>
+                    <h2>Comparador SEPA y Compra Dividida</h2>
+                    <p class="slide-subtitle">De datos abiertos masivos del Estado a decisiones de ahorro en milisegundos:</p>
+
+                    <div class="grid-2-asym">
+                        <div class="stack-cards">
+                            <article class="info-box highlight-emerald">
+                                <h3>1. Pipeline ETL en Background (<code>APScheduler</code>)</h3>
+                                <p>Descarga el ZIP oficial de SEPA, limpia comercios, sucursales y precios en lotes de <strong>100.000 filas con Pandas</strong>, hace upsert en BD y audita cada corrida en <code>ingesta_logs</code>.</p>
+                            </article>
+
+                            <article class="info-box highlight-blue">
+                                <h3>2. Búsqueda Geoespacial y Escáner EAN-13</h3>
+                                <p>Calcula distancias reales por <strong>fórmula de Haversine</strong> con índice compuesto <code>(lat, lng)</code>, búsqueda difusa con <code>RapidFuzz</code> y lectura de códigos de barras vía <code>BarcodeDetector</code>.</p>
+                            </article>
+                        </div>
+
+                        <article class="highlight-panel">
+                            <span class="panel-badge">Valor para el bolsillo</span>
+                            <h3>Changuito Óptimo (<em>Split Shopping</em>)</h3>
+                            <ul class="clean-list">
+                                <li><strong>Cruce con tus tarjetas:</strong> detecta promos bancarias vigentes según tus cuentas registradas.</li>
+                                <li><strong>Supermercado Único Ganador:</strong> suma toda tu lista por cadena cercana.</li>
+                                <li><strong>Estrategia Dividida:</strong> elige el mejor precio por ítem entre cadenas y calcula el ahorro exacto en pesos y porcentaje.</li>
+                                <li><strong>Alta en 1 clic:</strong> convertís el total de la compra directo en una transacción.</li>
+                            </ul>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 7: MATEMÁTICA FINANCIERA E-COMMERCE -->
+            <section class="slide" data-slide="7" data-notes="Esta slide impresiona mucho porque muestra algoritmos reales en api/services/recommendation.py. Explicá las dos partes: 1) Extractores con patrón Strategy + Registry (uno para Mercado Libre y uno genérico que lee Schema.org JSON-LD y OpenGraph de cualquier tienda, con fallback al slug de la URL si hay bloqueo WAF). 2) Motor financiero que calcula VPN cuota a cuota descontado a tasa diaria, días de gracia según el cierre de tu tarjeta, tope de reintegro y TNA de indiferencia por bisección numérica.">
+                <div class="slide-content">
+                    <span class="slide-kicker">06. Flujo Técnico Clave #3</span>
+                    <h2>Asistente E-Commerce y Matemática Financiera</h2>
+                    <p class="slide-subtitle"><code>api/services/recommendation.py</code> evalúa cada medio de pago disponible en tu cartera:</p>
+
+                    <div class="grid-3">
+                        <article class="feature-card card-blue">
+                            <div class="card-icon" aria-hidden="true">🔎</div>
+                            <h3>Extracción Universal</h3>
+                            <p>Patrón <strong>Strategy + Registry</strong>: <code>MercadoLibreExtractor</code> + <code>GenericECommerceExtractor</code> (JSON-LD, OpenGraph y fallback seguro por slug si hay WAF).</p>
+                        </article>
+
+                        <article class="feature-card card-emerald">
+                            <div class="card-icon" aria-hidden="true">📐</div>
+                            <h3>Valor Presente Neto (VPN)</h3>
+                            <p>Descuenta cada cuota futura según tu TNA de inflación/rendimiento y calcula los <strong>días de gracia exactos</strong> usando <code>closing_day</code> y <code>due_day</code> de tu tarjeta.</p>
+                        </article>
+
+                        <article class="feature-card card-amber">
+                            <div class="card-icon" aria-hidden="true">⚖️</div>
+                            <h3>TNA de Indiferencia y Topes</h3>
+                            <p>Aplica <strong>bisección numérica</strong> para hallar la TNA exacta donde empatan cuotas con recargo vs. contado, contemplando topes de reintegro y límite de crédito.</p>
+                        </article>
+                    </div>
+
+                    <div class="formula-strip">
+                        <span><code>VPN = Σ [ Cuota / (1 + TNA / 365)^días_k ]</code></span>
+                        <span class="divider" aria-hidden="true">•</span>
+                        <span>Cronograma cuota a cuota + Comparador Oferta A vs. B + Impacto en Presupuesto</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 8: ARQUITECTURA INTERNA -->
+            <section class="slide" data-slide="8" data-notes="Mostrá cómo está organizado el código sin mezclar responsabilidades. Seguimos Arquitectura en Capas + Hexagonal (PHAME) y SOLID: el Frontend modular habla por HTTPS/JSON con los 10 Routers de FastAPI; los routers delegan a Casos de Uso y Servicios; estos hablan con Puertos abstractos (interfaces); y los Adaptadores (Repositorios SQLAlchemy, MercadoPagoAdapter, Extractores Web) implementan esos puertos. Si mañana cambiamos de billetera o de base de datos, el núcleo de negocio no se toca.">
+                <div class="slide-content">
+                    <span class="slide-kicker">07. Arquitectura de Software</span>
+                    <h2>Arquitectura en Capas + Hexagonal (PHAME)</h2>
+                    <p class="slide-subtitle">Bajo acoplamiento, alta cohesión e Inversión de Dependencias (SOLID):</p>
 
                     <div class="arch-flow">
                         <div class="arch-step step-1">
-                            <div class="step-badge">Capa 1</div>
-                            <h3>Pantallas (Frontend)</h3>
+                            <div class="step-badge">Presentación</div>
+                            <h3>Frontend Web SPA</h3>
                             <div class="step-item">
-                                <strong>Vistas y Estilos</strong>
-                                <span>HTML y CSS Modular</span>
+                                <strong>12 Vistas + CSS Modular</strong>
+                                <span>HTML5 semántico + WCAG AA</span>
                             </div>
                             <div class="step-item">
-                                <strong>Lógica de Pantalla</strong>
-                                <span>TypeScript + Estado Central</span>
+                                <strong>TypeScript + Store</strong>
+                                <span>12 servicios + <code>apiClient</code></span>
                             </div>
                         </div>
 
-                        <div class="flow-arrow">➔</div>
+                        <div class="flow-arrow" aria-hidden="true">➔</div>
 
                         <div class="arch-step step-2">
-                            <div class="step-badge">Capa 2</div>
-                            <h3>Entrada al Servidor</h3>
+                            <div class="step-badge">Adaptadores Primarios</div>
+                            <h3>FastAPI REST</h3>
                             <div class="step-item">
-                                <strong>Rutas (FastAPI)</strong>
-                                <span>Reciben pedidos y validan datos</span>
+                                <strong>10 Routers + Pydantic</strong>
+                                <span>Validación y contratos HTTP</span>
                             </div>
                             <div class="step-item">
-                                <strong>Seguridad (JWT)</strong>
-                                <span>Login y claves encriptadas</span>
+                                <strong>Seguridad Dual</strong>
+                                <span>JWT Bearer + Cookie sesión</span>
                             </div>
                         </div>
 
-                        <div class="flow-arrow">➔</div>
+                        <div class="flow-arrow" aria-hidden="true">➔</div>
 
                         <div class="arch-step step-3">
-                            <div class="step-badge">Capa 3</div>
-                            <h3>Lógica (Servicios)</h3>
+                            <div class="step-badge">Núcleo (Dominio/App)</div>
+                            <h3>Servicios y Puertos</h3>
                             <div class="step-item">
-                                <strong>Cuentas y Gastos</strong>
-                                <span>Suma/resta saldos y alertas</span>
+                                <strong>Casos de Uso y Servicios</strong>
+                                <span>Finanzas, VPN, IA, OCR, SEPA</span>
                             </div>
                             <div class="step-item">
-                                <strong>Motor SEPA, OCR e IA</strong>
-                                <span>Limpia precios y lee tickets</span>
+                                <strong>Puertos Abstractos</strong>
+                                <span><code>api/ports/</code> + DI en <code>dependencies.py</code></span>
                             </div>
                         </div>
 
-                        <div class="flow-arrow">➔</div>
+                        <div class="flow-arrow" aria-hidden="true">➔</div>
 
                         <div class="arch-step step-4">
-                            <div class="step-badge">Capa 4</div>
-                            <h3>Datos y Conexiones</h3>
+                            <div class="step-badge">Infraestructura</div>
+                            <h3>Adaptadores y Datos</h3>
                             <div class="step-item">
-                                <strong>Repositorios (BD)</strong>
-                                <span>Guarda todo con SQLAlchemy</span>
+                                <strong>7 Repositorios SQLAlchemy</strong>
+                                <span>PostgreSQL 15 ⇄ SQLite</span>
                             </div>
                             <div class="step-item">
-                                <strong>Adaptadores</strong>
-                                <span>Conecta con Mercado Pago</span>
+                                <strong>Integraciones Externas</strong>
+                                <span>Gemini, MP, SEPA, DolarAPI</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- SLIDE 6: DECISIONES DE ARQUITECTURA -->
-            <section class="slide" data-slide="6">
+            <!-- SLIDE 9: MODELO DE DATOS REAL -->
+            <section class="slide" data-slide="9" data-notes="Aclarale al jurado que el modelo relacional real tiene 14 tablas separadas claramente en dos dominios en api/models.py: 9 tablas para la contabilidad personal y sincronización de billeteras, y 5 tablas para el motor de precios SEPA. Mencioná también el failover automático en api/database.py: en Render corre PostgreSQL 15, pero si falla el ping inicial hace fallback transparente a SQLite local.">
                 <div class="slide-content">
-                    <span class="slide-kicker">05. Defensa Técnica</span>
-                    <h2>4 Decisiones Importantes que Tomamos</h2>
-                    <p class="slide-subtitle">Problemas reales que nos encontramos al programar y cómo los resolvimos:</p>
+                    <span class="slide-kicker">08. Persistencia</span>
+                    <h2>Modelo de Datos Real: 14 Tablas en 2 Dominios</h2>
+                    <p class="slide-subtitle">SQLAlchemy 2.0 ORM + Alembic sobre PostgreSQL 15 (Render) con failover automático a SQLite:</p>
+
+                    <div class="grid-2-equal">
+                        <article class="db-domain domain-blue">
+                            <div class="domain-header">
+                                <h3>Dominio Financiero y Billeteras</h3>
+                                <span class="count-pill">9 Tablas</span>
+                            </div>
+                            <div class="table-chips">
+                                <span><strong>users</strong> · Auth local y Google</span>
+                                <span><strong>accounts</strong> · Multidivisa, cierre, archivo</span>
+                                <span><strong>transactions</strong> · transfer_id y external_id</span>
+                                <span><strong>budgets</strong> · Límites por categoría</span>
+                                <span><strong>goals</strong> · Metas de ahorro</span>
+                                <span><strong>goal_contributions</strong> · Aportes/retiros</span>
+                                <span><strong>ticket_items</strong> · Ítems de OCR</span>
+                                <span><strong>wallet_connections</strong> · Tokens cifrados</span>
+                                <span><strong>sync_log</strong> · Auditoría de sync</span>
+                            </div>
+                        </article>
+
+                        <article class="db-domain domain-emerald">
+                            <div class="domain-header">
+                                <h3>Dominio Comparador SEPA</h3>
+                                <span class="count-pill">5 Tablas</span>
+                            </div>
+                            <div class="table-chips">
+                                <span><strong>comercios</strong> · Cadenas oficiales (CUIT)</span>
+                                <span><strong>sucursales</strong> · GPS con índice (lat, lng)</span>
+                                <span><strong>productos</strong> · Catálogo único por EAN</span>
+                                <span><strong>precios</strong> · Lista, promo A/B y vigencia</span>
+                                <span><strong>ingesta_logs</strong> · Trazabilidad del ETL</span>
+                            </div>
+                            <div class="db-note">
+                                <strong>Failover 24/7:</strong> al iniciar, <code>database.py</code> prueba <code>SELECT 1</code> en PostgreSQL y conmuta a SQLite si el servidor remoto no responde.
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 10: SEGURIDAD, DESPLIEGUE Y ACCESIBILIDAD -->
+            <section class="slide" data-slide="10" data-notes="En finanzas la seguridad no es opcional. Enumerá las capas reales que tiene el código: contraseñas con bcrypt y dummy hash contra timing attacks; tokens de Mercado Pago obtenidos con OAuth 2.0 + PKCE y guardados cifrados con Fernet (AES-128 + HMAC); validación HMAC-SHA256 en webhooks; API key de Gemini aislada en el servidor; cabeceras HTTP de endurecimiento (HSTS, X-Frame-Options, nosniff); despliegue reproducible en render.yaml; y mejoras de accesibilidad WCAG 2.2 AA.">
+                <div class="slide-content">
+                    <span class="slide-kicker">09. Calidad, Seguridad e Infraestructura</span>
+                    <h2>Seguridad Bancaria, Cloud y Accesibilidad</h2>
+                    <p class="slide-subtitle">Atributos de calidad implementados en producción (ISO 25010 / WCAG 2.2 AA):</p>
+
+                    <div class="grid-2x2">
+                        <article class="info-box highlight-blue">
+                            <div class="info-header">
+                                <span class="info-emoji" aria-hidden="true">🔐</span>
+                                <h3>Autenticación y Cifrado en Reposo</h3>
+                            </div>
+                            <p>Login local (<strong>bcrypt</strong> + protección anti <em>timing attack</em>) y Google OAuth. Sesiones con <strong>JWT + cookies firmadas</strong>. Tokens de billeteras cifrados con <strong>Fernet (AES-128 + HMAC)</strong>.</p>
+                        </article>
+
+                        <article class="info-box highlight-amber">
+                            <div class="info-header">
+                                <span class="info-emoji" aria-hidden="true">🛡️</span>
+                                <h3>Open Finance Seguro y Proxy IA</h3>
+                            </div>
+                            <p>Mercado Pago usa <strong>OAuth 2.0 + PKCE</strong> y webhooks verificados por firma <code>x-signature</code> HMAC-SHA256. La clave de Gemini jamás sale del servidor. Cabeceras HTTP de seguridad (HSTS, DENY, nosniff).</p>
+                        </article>
+
+                        <article class="info-box highlight-emerald">
+                            <div class="info-header">
+                                <span class="info-emoji" aria-hidden="true">☁️</span>
+                                <h3>Despliegue Cloud en Render</h3>
+                            </div>
+                            <p>Definido como código en <code>render.yaml</code> (Python 3.11 + PostgreSQL 15), endpoint <code>/health</code> y tarea asíncrona de <strong>keep-alive</strong> cada 14 minutos para evitar hibernación.</p>
+                        </article>
+
+                        <article class="info-box highlight-purple">
+                            <div class="info-header">
+                                <span class="info-emoji" aria-hidden="true">♿</span>
+                                <h3>Accesibilidad WCAG 2.2 AA</h3>
+                            </div>
+                            <p>Hoja dedicada <code>css/accessibility.css</code>: contraste alto (&gt;13:1), foco visible por teclado, etiquetas ARIA/semánticas, targets táctiles amplios, <code>prefers-reduced-motion</code> y alto contraste Windows.</p>
+                        </article>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 11: DECISIONES TÉCNICAS Y AUTOCRÍTICA -->
+            <section class="slide" data-slide="11" data-notes="Esta diapositiva demuestra madurez de ingeniería. Contá 2 decisiones que nos salieron muy bien (Web SPA en vez de duplicar app móvil, y arquitectura modular con tests pytest + métricas de mantenibilidad) y 2 puntos honestos de mejora futura (ampliar cobertura de tests a auth/AI/OCR y seguir modularizando los archivos grandes del frontend detectados en nuestro reporte de deuda técnica).">
+                <div class="slide-content">
+                    <span class="slide-kicker">10. Defensa Técnica y Evolución</span>
+                    <h2>Decisiones Clave y Hoja de Ruta</h2>
+                    <p class="slide-subtitle">Criterio de ingeniería detrás del proyecto y próximos pasos identificados:</p>
 
                     <div class="decisions-list">
-                        <div class="decision-row">
+                        <article class="decision-row">
                             <div class="dec-number">1</div>
                             <div class="dec-text">
-                                <h3>Separar el Frontend (Web) del Backend (API)</h3>
-                                <p>Las pantallas solo muestran datos y toda la lógica pesada (cálculos, saldos, IA y precios) corre en el servidor con <strong>FastAPI</strong>. Así la página es rápida y segura.</p>
+                                <h3>Web Responsive (PWA) sobre App Nativa</h3>
+                                <p>Un único código accesible desde celular y escritorio, aprovechando cámara, Canvas y <code>BarcodeDetector</code> sin fricción de instalación.</p>
                             </div>
-                        </div>
+                        </article>
 
-                        <div class="decision-row">
+                        <article class="decision-row">
                             <div class="dec-number">2</div>
                             <div class="dec-text">
-                                <h3>Separar en Capas (Rutas ➔ Servicios ➔ Repositorios)</h3>
-                                <p>Al principio teníamos todo mezclado en el mismo archivo. Lo separamos para que cada parte haga una sola cosa: las rutas reciben el pedido, los servicios calculan y los repositorios guardan en la base de datos.</p>
+                                <h3>Patrón Adapter para Escalar Billeteras</h3>
+                                <p><code>BaseWalletAdapter</code> ya opera con Mercado Pago y deja listas las bases para sumar <strong>Plaid</strong> y <strong>Belvo</strong> sin modificar servicios.</p>
                             </div>
-                        </div>
+                        </article>
 
-                        <div class="decision-row">
+                        <article class="decision-row">
                             <div class="dec-number">3</div>
                             <div class="dec-text">
-                                <h3>Descargar y limpiar antes los precios del Súper (SEPA)</h3>
-                                <p>Los archivos del gobierno tienen cientos de miles de precios y buscarlos en vivo colgaba todo. Armamos un proceso que primero los descarga, los limpia y los guarda listos para que el buscador responda al instante.</p>
+                                <h3>Tests y Medición de Deuda Técnica</h3>
+                                <p>Contamos con 5 suites en <code>api/tests/</code> (<code>pytest</code>) y un reporte automatizado de Complejidad Ciclomática e Índice de Mantenibilidad.</p>
                             </div>
-                        </div>
+                        </article>
 
-                        <div class="decision-row">
+                        <article class="decision-row">
                             <div class="dec-number">4</div>
                             <div class="dec-text">
-                                <h3>Cuidar el Historial y la Privacidad</h3>
-                                <p>No existen usuarios "Admin" porque la plata de cada persona es privada (protegida por su token JWT). Y cuando cerrás una cuenta, se <strong>archiva</strong> en vez de borrarse para no romper los gastos de meses anteriores.</p>
+                                <h3>Próximos Pasos Honestos</h3>
+                                <p>Ampliar tests a <code>auth</code>/<code>ai</code>/<code>ocr</code>, modularizar vistas grandes del frontend, extender WCAG AA a todas las pantallas e incorporar histórico de inflación por producto.</p>
                             </div>
-                        </div>
+                        </article>
                     </div>
                 </div>
             </section>
 
-            <!-- SLIDE 7: CIERRE -->
-            <section class="slide" data-slide="7">
+            <!-- SLIDE 12: DEMO Y CIERRE -->
+            <section class="slide" data-slide="12" data-notes="Cerrá invitando a ver la demo en vivo (o pasá a la pestaña de la app): 1) Dashboard y cuentas multidivisa, 2) Escaneo de un ticket real con OCR, 3) Buscador SEPA y Compra Dividida, 4) Simulador de cuotas E-Commerce y Chatbot IA. Después agradecé y abrí a preguntas.">
                 <div class="slide-content hero-slide">
-                    <span class="pill-tag">Conclusión</span>
+                    <span class="pill-tag">Demo en Vivo y Conclusión</span>
                     <h1 class="main-title">¡Muchas Gracias!</h1>
                     <p class="hero-lead">
-                        Un proyecto pensado para resolver un problema real del bolsillo, construido de forma ordenada, escalable y multiplataforma.
+                        Un ecosistema pensado para proteger el bolsillo real, construido con arquitectura limpia, seguridad de grado productivo e inteligencia artificial aplicada.
                     </p>
                     <div class="summary-boxes">
                         <div class="sum-box">
-                            <strong>+8 Módulos</strong>
-                            <span>Integrados en un solo lugar</span>
+                            <strong>12 Vistas · 10 Routers</strong>
+                            <span>Web SPA + FastAPI desacoplados</span>
                         </div>
                         <div class="sum-box">
-                            <strong>Frontend + API</strong>
-                            <span>Rápido, seguro y desacoplado</span>
+                            <strong>14 Tablas · 5 APIs</strong>
+                            <span>Finanzas, SEPA, Gemini y Mercado Pago</span>
                         </div>
                         <div class="sum-box">
-                            <strong>Arquitectura en Capas</strong>
-                            <span>Fácil de mantener y escalar</span>
+                            <strong>PHAME + SOLID</strong>
+                            <span>Seguro, resiliente y escalable</span>
                         </div>
                     </div>
-                    <p class="qa-prompt">¿Preguntas?</p>
+                    <p class="qa-prompt">¿Pasamos a la demo / Preguntas?</p>
                 </div>
             </section>
 
         </main>
 
+        <!-- Panel desplegable de Guion del Orador (oculto por defecto) -->
+        <aside id="speakerNotesPanel" class="speaker-notes" aria-label="Guion del orador" hidden>
+            <div class="speaker-notes-header">
+                <strong>🎤 Guion sugerido para esta diapositiva</strong>
+                <button id="closeNotesBtn" class="notes-close" type="button" aria-label="Cerrar guion">✕</button>
+            </div>
+            <p id="speakerNotesText"></p>
+        </aside>
+
         <!-- Barra inferior de navegación -->
         <footer class="deck-footer">
-            <button id="prevBtn" class="nav-btn" disabled>⬅ Anterior</button>
-            <div class="dots-nav" id="dotsContainer"></div>
-            <button id="nextBtn" class="nav-btn nav-btn-primary">Siguiente ➔</button>
+            <button id="prevBtn" class="nav-btn" type="button">← Anterior</button>
+            <div id="dotsContainer" class="dots-nav" role="tablist" aria-label="Navegación de diapositivas"></div>
+            <button id="nextBtn" class="nav-btn nav-btn-primary" type="button">Siguiente →</button>
         </footer>
     </div>
 

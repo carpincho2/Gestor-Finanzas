@@ -114,9 +114,9 @@ En contextos de alta volatilidad nominal, dispersión de precios entre cadenas c
 
 ```mermaid
 flowchart LR
-    User(["👤 Usuario Final<br/>(Web Desktop / Mobile)"])
+    User(["Usuario Final<br/>(Web Desktop / Mobile)"])
     
-    subgraph Flujo["🚀 Ecosistema Flujo (Frontend TS + Backend FastAPI)"]
+    subgraph Flujo["Ecosistema Flujo (Frontend TS + Backend FastAPI)"]
         UI["Capa de Presentación<br/>SPA Modular & Estado Reactivo"]
         Core["Núcleo de Dominio (PHAME)<br/>Servicios Financieros, OCR, SEPA & IA"]
         DB[("Persistencia Dual<br/>PostgreSQL / SQLite")]
@@ -124,11 +124,11 @@ flowchart LR
         Core <--> DB
     end
 
-    MP["💳 Mercado Pago API<br/>(OAuth 2.0 + PKCE & Webhooks)"]
-    Gemini["🤖 Google Gemini 2.5 Flash<br/>(SDK google-genai)"]
-    SEPA["🛒 Datos Oficiales SEPA<br/>(Precios Claros Argentina)"]
-    EComm["🌐 Tiendas E-Commerce<br/>(Mercado Libre, Shopify, VTEX)"]
-    FX["💱 DolarAPI<br/>(Cotizaciones USD / EUR)"]
+    MP["Mercado Pago API<br/>(OAuth 2.0 + PKCE & Webhooks)"]
+    Gemini["Google Gemini 2.5 Flash<br/>(SDK google-genai)"]
+    SEPA["Datos Oficiales SEPA<br/>(Precios Claros Argentina)"]
+    EComm["Tiendas E-Commerce<br/>(Mercado Libre, Shopify, VTEX)"]
+    FX["DolarAPI<br/>(Cotizaciones USD / EUR)"]
 
     User <--> UI
     Core <--> MP
@@ -199,14 +199,14 @@ El sistema ha sido diseñado y refactorizado siguiendo rigurosamente la arquitec
 
 ```mermaid
 flowchart TD
-    subgraph Frontend["🌐 Capa de Presentación Web (Frontend Modular TS/ES6)"]
+    subgraph Frontend["Capa de Presentación Web (Frontend Modular TS/ES6)"]
         Views["Vistas Dinámicas HTML5 + CSS3 Modular<br/>(html/views/*.html, css/views/*.css)"]
         Controllers["Controladores de Vista UI<br/>(js/accounts.ts, shopping.ts, supermercados.ts, scanner.ts)"]
         FE_Services["Servicios de Dominio Cliente & Store Reactivo<br/>(js/services/*.ts, js/store/store.ts)"]
         Views <--> Controllers <--> FE_Services
     end
 
-    subgraph Backend["🐍 Núcleo Backend (FastAPI - Arquitectura Hexagonal)"]
+    subgraph Backend["Núcleo Backend (FastAPI - Arquitectura Hexagonal)"]
         Routers["Adaptadores Primarios: Routers REST<br/>(api/routers/*.py)"]
         UseCases["Capa de Aplicación y Servicios de Negocio<br/>(api/application/, api/services/)"]
         Domain["Núcleo de Dominio: Entidades y Excepciones<br/>(api/domain/)"]

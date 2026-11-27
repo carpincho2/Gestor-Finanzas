@@ -17,9 +17,9 @@ La arquitectura profesional implementada en este proyecto introduce a nuestro se
 
 ```mermaid
 sequenceDiagram
-    participant Usuario as 💻 Navegador (Cliente)
-    participant Servidor as 🐍 FastAPI (Backend)
-    participant Gemini as ☁️ Gemini API (Google)
+    participant Usuario as Navegador (Cliente)
+    participant Servidor as FastAPI (Backend)
+    participant Gemini as Gemini API (Google)
     
     Usuario->>Servidor: POST /api/ai/chat (Contexto + Pregunta)
     Note over Servidor: Carga GEMINI_API_KEY desde .env<br/>de forma totalmente invisible y segura

@@ -14,22 +14,22 @@ flowchart TB
     classDef data fill:#431407,stroke:#fb923c,stroke-width:2px,color:#fff
     classDef ext fill:#172554,stroke:#60a5fa,stroke-width:2px,color:#fff
 
-    subgraph L1["📱 Capa de Presentación"]
+    subgraph L1[" Capa de Presentación"]
         UI["<b>Cliente (Flutter / Web)</b><br/>Vistas · Estado · Captura de cámara"]
     end
 
-    subgraph L2["⚙️ Capa de Aplicación"]
+    subgraph L2[" Capa de Aplicación"]
         API["<b>FastAPI REST</b><br/>Routers · Validación Pydantic"]
         SVC["<b>Servicios de Negocio</b><br/>Transacciones · Presupuestos · OCR"]
         API --> SVC
     end
 
-    subgraph L3["💾 Capa de Persistencia"]
+    subgraph L3[" Capa de Persistencia"]
         DB[("<b>PostgreSQL</b><br/>Base de datos relacional")]
     end
 
-    subgraph L4["🌐 Servicios Externos"]
-        AI["🤖 Motor OCR / IA<br/>Gemini 2.5 Flash"]
+    subgraph L4[" Servicios Externos"]
+        AI[" Motor OCR / IA<br/>Gemini 2.5 Flash"]
     end
 
     UI -- "HTTPS · JSON / Base64" --> API
@@ -52,21 +52,21 @@ flowchart LR
     classDef uc fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff
     classDef ai fill:#042f2e,stroke:#2dd4bf,stroke-width:2px,color:#fff
 
-    U(["👤 Usuario / Cliente"]):::actor
+    U([" Usuario / Cliente"]):::actor
 
-    subgraph SYS["🚀 Sistema Flujo"]
+    subgraph SYS[" Sistema Flujo"]
         direction TB
         subgraph G1["Gestión financiera"]
-            UC1["🏦 Gestionar cuentas y billeteras"]
-            UC2["✍️ Registrar transacción manual"]
-            UC5["🎯 Establecer presupuestos y objetivos"]
+            UC1[" Gestionar cuentas y billeteras"]
+            UC2[" Registrar transacción manual"]
+            UC5[" Establecer presupuestos y objetivos"]
         end
         subgraph G2["Automatización e inteligencia"]
-            UC3["🧾 Escanear ticket con OCR"]
-            UC6["🛒 Comparar precios en supermercados"]
+            UC3[" Escanear ticket con OCR"]
+            UC6[" Comparar precios en supermercados"]
         end
         subgraph G3["Análisis"]
-            UC4["📊 Visualizar dashboard y gráficos"]
+            UC4[" Visualizar dashboard y gráficos"]
         end
     end
 
@@ -131,11 +131,11 @@ erDiagram
 ```mermaid
 sequenceDiagram
     autonumber
-    actor U as 👤 Usuario
-    participant FE as 📱 Frontend
-    participant BE as ⚙️ Backend (FastAPI)
-    participant AI as 🤖 Motor OCR / IA
-    participant DB as 💾 PostgreSQL
+    actor U as Usuario
+    participant FE as Frontend
+    participant BE as Backend (FastAPI)
+    participant AI as Motor OCR / IA
+    participant DB as PostgreSQL
 
     U->>FE: Toma foto del ticket
     FE->>BE: POST /transacciones/ocr (imagen Base64)
@@ -151,12 +151,12 @@ sequenceDiagram
         DB-->>BE: Confirma persistencia
         deactivate DB
         BE-->>FE: 201 Created (gasto registrado)
-        FE-->>U: ✅ Actualiza dashboard y balance
+        FE-->>U: Actualiza dashboard y balance
     else IA saturada (HTTP 429) o texto ilegible
         AI-->>BE: Error / confianza baja
         Note over BE,AI: Reintentos con backoff (2s, 4s, 8s)<br/>y fallback al parser local
         BE-->>FE: 422 con datos parciales
-        FE-->>U: ⚠️ Formulario precompletado para corregir
+        FE-->>U: Formulario precompletado para corregir
     end
     deactivate BE
 ```
